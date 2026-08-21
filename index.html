@@ -502,23 +502,17 @@ footer div+div{margin-top:6px}
   aspect-ratio:16/10;object-fit:cover;
 }
 
-/* 小红书识别标：白底圆角方块 + 品牌红的「书」字。
-   不是官方 logo，只是让人一眼认出这颗按钮跳去哪个 App。 */
-.xhs-ic{
-  width:23px;height:23px;border-radius:7px;flex:0 0 auto;
-  display:grid;place-items:center;
-  background:#fff;color:#FF2442;
-  font-size:13.5px;font-weight:900;line-height:1;
-  box-shadow:0 1px 3px rgba(0,0,0,.16);
-}
-.go-next.xhs > .xhs-ic{margin-right:1px}
 
 /* 小红书分类入口 */
-.xhs-row{flex:1 1 100%;display:flex;flex-direction:column;gap:8px;margin-bottom:2px}
-.xhs-row-lbl{
-  display:inline-flex;align-items:center;gap:7px;
-  font-size:12.5px;font-weight:700;color:var(--ink-soft);
+.xhs-row{
+  display:flex;flex-direction:column;gap:8px;
+  margin:0 0 16px;padding-bottom:15px;
+  border-bottom:1px solid var(--line);
 }
+.xhs-row-lbl{
+  font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--ink-faint);
+}
+.xhs-hint{font-size:11px;line-height:1.5;color:var(--ink-faint)}
 .xhs-chips{display:flex;flex-wrap:wrap;gap:7px}
 .xhs-chip{
   display:inline-flex;align-items:center;gap:5px;
@@ -543,6 +537,9 @@ footer div+div{margin-top:6px}
   background:#3A1D24;color:#FF8FA3;border-color:#54262F;
 }
 :root[data-theme="dark"] .xhs-chip:hover{background:#48232C}
+
+/* 弹窗底部现在是空的，别留出一条空白带 */
+.sheet-foot:empty{display:none;padding:0;border:0}
 /* ===== 折叠区（其他资料）专用样式，全部限定在 .more-body 内 ===== */
 .more-body .standfirst{margin:0;max-width:62ch;color:var(--ink-2);font-size:clamp(15px,2.4vw,17px)}
 .more-body h2{
@@ -2310,6 +2307,33 @@ xhs:'乌江画廊 龚滩'}
 
     body.innerHTML = '';
 
+    /* 小红书分类入口：放在最上面，因为这是最常点的东西。
+       角度按景点挑过，没配到的退回通用攻略。 */
+    var ang = window.__xhsAngles && window.__xhsAngles(key);
+    var chips = ang ? ang.list : [{label:'攻略', ic:'bulb', kw:d.xhs}];
+    var row = document.createElement('div');
+    row.className = 'xhs-row';
+    row.innerHTML =
+      '<span class="xhs-row-lbl">小红书搜这里的</span>' +
+      '<div class="xhs-chips">' +
+        chips.map(function(c){
+          return '<button class="xhs-chip" type="button" data-kw="' + c.kw + '">' +
+                 ic(c.ic) + c.label + '</button>';
+        }).join('') +
+      '</div>' +
+      '<span class="xhs-hint">点了会跳小红书 App，关键词也会同时复制好</span>';
+    body.appendChild(row);
+
+    Array.prototype.forEach.call(row.querySelectorAll('.xhs-chip'), function(btn){
+      btn.addEventListener('click', function(){
+        var kw = btn.getAttribute('data-kw');
+        copyText(kw).then(function(){
+          toast('已复制「' + kw + '」，正在打开小红书…');
+          setTimeout(function(){ window.location.href = xhsScheme(kw); }, 350);
+        });
+      });
+    });
+
     /* 照片（可选）：把图片放进 photos/ 文件夹，文件名用景点的 key，
        例如 photos/luohan.jpg。放了就自动显示，没放就当作没这回事，
        页面完全不受影响。支持 .jpg，找不到会静默隐藏。 */
@@ -2345,32 +2369,7 @@ xhs:'乌江画廊 龚滩'}
       body.appendChild(fw);
     }
 
-    // 小红书分类搜：按这个景点适合的角度给几个入口
-    var ang = window.__xhsAngles && window.__xhsAngles(key);
-    var chips = ang ? ang.list : [{label:'攻略', ic:'bulb', kw:d.xhs}];
-
-    foot.innerHTML =
-      '<div class="xhs-row">' +
-        '<span class="xhs-row-lbl"><span class="xhs-ic" aria-hidden="true">书</span>小红书看这里的</span>' +
-        '<div class="xhs-chips">' +
-          chips.map(function(c, i){
-            return '<button class="xhs-chip" type="button" data-kw="' + c.kw + '">' +
-                   ic(c.ic) + c.label + '</button>';
-          }).join('') +
-        '</div>' +
-      '</div>' +
-      '<a class="lnk" target="_blank" rel="noopener noreferrer" href="' + mapURL(d.n) + '">' + ic('map') + '高德地图导航</a>' +
-      '<span class="foot-note">点了会复制关键词并唤起小红书 App。网页版要登录才看得到搜索结果，所以直接跳 App；没装的话关键词也已经复制好了。</span>';
-
-    Array.prototype.forEach.call(foot.querySelectorAll('.xhs-chip'), function(btn){
-      btn.addEventListener('click', function(){
-        var kw = btn.getAttribute('data-kw');
-        copyText(kw).then(function(){
-          toast('已复制「' + kw + '」，正在打开小红书…');
-          setTimeout(function(){ window.location.href = xhsScheme(kw); }, 350);
-        });
-      });
-    });
+    foot.innerHTML = '';   // 底部不再放东西：导航在卡片右上角已有
 
     scrim.hidden = false;
     requestAnimationFrame(function(){ scrim.classList.add('open'); });
@@ -2505,8 +2504,8 @@ xhs:'乌江画廊 龚滩'}
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'go-next xhs';
-      b.innerHTML = '<span class="xhs-ic" aria-hidden="true">书</span>' +
-        '<span class="gn-txt"><span class="gn-lbl">小红书看这里的' + top.label + '</span>' +
+      b.innerHTML = icon(top.ic || 'bulb') +
+        '<span class="gn-txt"><span class="gn-lbl">小红书搜这里的' + top.label + '</span>' +
         '<span class="gn-dest">' + top.kw + '</span></span>' +
         '<span class="gn-arrow">' + icon('chev') + '</span>';
       b.addEventListener('click', function(){
