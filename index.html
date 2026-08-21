@@ -540,6 +540,20 @@ footer div+div{margin-top:6px}
 
 /* 弹窗底部现在是空的，别留出一条空白带 */
 .sheet-foot:empty{display:none;padding:0;border:0}
+
+/* 当前站卡片上的分类行（复用弹窗那套，只是收窄一点） */
+.xhs-row.on-card{
+  margin:12px 0 0;padding:11px 0 0;
+  border-bottom:0;border-top:1px solid var(--line);
+  background:none;box-shadow:none;
+}
+.xhs-row.on-card .xhs-chip{font-size:13px;padding:8px 12px}
+
+/* 最后一晚的「去机场」用强调色，跟平时的回酒店区分开 */
+.hotel-fab.to-airport{
+  background:var(--hero-grad);color:#fff;
+  box-shadow:0 10px 26px -8px color-mix(in srgb, var(--accent) 70%, transparent), 0 2px 6px rgba(20,24,34,.25);
+}
 /* ===== 折叠区（其他资料）专用样式，全部限定在 .more-body 内 ===== */
 .more-body .standfirst{margin:0;max-width:62ch;color:var(--ink-2);font-size:clamp(15px,2.4vw,17px)}
 .more-body h2{
@@ -656,6 +670,7 @@ footer div+div{margin-top:6px}
 <symbol id="i-nav" viewBox="0 0 24 24"><path d="M21 3 3 10.5l7.3 3.2L13.5 21z"/><path d="M10.3 13.7 21 3"/></symbol>
 <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5.5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5v1"/></symbol>
 <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v5H6.5A2.5 2.5 0 0 1 4 19.5z"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.6 4H9.4L7.2 6.8H4.2A2.2 2.2 0 0 0 2 9v9.2a2.2 2.2 0 0 0 2.2 2.2h15.6a2.2 2.2 0 0 0 2.2-2.2V9a2.2 2.2 0 0 0-2.2-2.2h-3z"/><circle cx="12" cy="13.2" r="3.4"/></symbol>
 </defs></svg>
 
 <div class="wrap">
@@ -2497,24 +2512,31 @@ xhs:'乌江画廊 龚滩'}
     var d = poiBtn && typeof POI !== 'undefined' ? POI[poiBtn.getAttribute('data-p')] : null;
 
     if (d && d.xhs) {
-      // 用这个景点最贴切的那个角度：磁器口→美食，李子坝→机位，动物园→带娃
+      // 三个分类直接摆在卡片上，不用点进弹窗才能选
       var ang = window.__xhsAngles && window.__xhsAngles(poiBtn.getAttribute('data-p'));
-      var top = ang && ang.list.length ? ang.list[0] : {label:'攻略', kw:d.xhs};
+      var list = ang && ang.list.length ? ang.list : [{label:'攻略', ic:'bulb', kw:d.xhs}];
 
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'go-next xhs';
-      b.innerHTML = icon(top.ic || 'bulb') +
-        '<span class="gn-txt"><span class="gn-lbl">小红书搜这里的' + top.label + '</span>' +
-        '<span class="gn-dest">' + top.kw + '</span></span>' +
-        '<span class="gn-arrow">' + icon('chev') + '</span>';
-      b.addEventListener('click', function(){
-        copyText(top.kw).then(function(){
-          toast('已复制「' + top.kw + '」，正在打开小红书…');
-          setTimeout(function(){ window.location.href = xhsScheme(top.kw); }, 350);
+      var row = document.createElement('div');
+      row.className = 'xhs-row on-card go-next';
+      row.innerHTML =
+        '<span class="xhs-row-lbl">小红书搜这里的</span>' +
+        '<div class="xhs-chips">' +
+          list.map(function(c){
+            return '<button class="xhs-chip" type="button" data-kw="' + c.kw + '">' +
+                   icon(c.ic) + c.label + '</button>';
+          }).join('') +
+        '</div>';
+      Array.prototype.forEach.call(row.querySelectorAll('.xhs-chip'), function(btn){
+        btn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          var kw = btn.getAttribute('data-kw');
+          copyText(kw).then(function(){
+            toast('已复制「' + kw + '」，正在打开小红书…');
+            setTimeout(function(){ window.location.href = xhsScheme(kw); }, 350);
+          });
         });
       });
-      card.appendChild(b);
+      card.appendChild(row);
       return;
     }
 
@@ -2542,22 +2564,42 @@ xhs:'乌江画廊 龚滩'}
     card.appendChild(a);
   }
 
-  /* ---------- 3. 常驻的「回酒店」按钮 ---------- */
-  function currentHotel(){
+  /* ---------- 3. 常驻按钮：平时回酒店，最后一晚改成去机场 ----------
+     9/5 行李在 22:00 才从酒店取走，所以 22:30 出发之后才切成机场，
+     切太早会害你打不到车回去拿行李。                                */
+  var AIRPORT = '重庆江北国际机场T3航站楼';
+
+  function fabTarget(){
     var now = document.querySelector('.ev.now');
+    var di, hhmm;
     if (now) {
-      var art = now.closest('.day');
-      return hotelFor(parseInt(art.getAttribute('data-day'),10), now.getAttribute('data-time'));
+      di = parseInt(now.closest('.day').getAttribute('data-day'), 10);
+      hhmm = now.getAttribute('data-time');
+    } else {
+      var shown = document.querySelector('.day:not([hidden])');
+      if (!shown) return {mode:'hotel', name:HOTELS.jiefangbei};
+      di = parseInt(shown.getAttribute('data-day'), 10);
+      hhmm = '23:00';
     }
-    var shown = document.querySelector('.day:not([hidden])');
-    if (shown) return hotelFor(parseInt(shown.getAttribute('data-day'),10), '23:00');
-    return HOTELS.jiefangbei;
+    var mins = 0;
+    if (hhmm) { var p = hhmm.split(':'); mins = (+p[0]) * 60 + (+p[1]); }
+    // 最后一天 22:30 之后，或已经过了午夜（凌晨那两条）→ 去机场
+    if (di === 7 && (mins >= 22 * 60 + 30 || mins < 6 * 60)) {
+      return {mode:'airport', name:AIRPORT};
+    }
+    return {mode:'hotel', name:hotelFor(di, hhmm)};
   }
 
   var fab = document.createElement('button');
   fab.type = 'button';
   fab.className = 'hotel-fab';
-  fab.innerHTML = icon('hotel') + '<span>回酒店</span>';
+  function paintFab(){
+    var t = fabTarget();
+    fab.innerHTML = icon(t.mode === 'airport' ? 'plane' : 'hotel') +
+      '<span>' + (t.mode === 'airport' ? '去机场' : '回酒店') + '</span>';
+    fab.classList.toggle('to-airport', t.mode === 'airport');
+  }
+  paintFab();
   document.body.appendChild(fab);
 
   var scrim = document.getElementById('scrim');
@@ -2586,12 +2628,15 @@ xhs:'乌江画廊 龚滩'}
   }
 
   fab.addEventListener('click', function(){
-    var h = currentHotel();
-    sheet.title.textContent = '回酒店';
-    sheet.area.innerHTML = icon('pin') + '<span>今晚住这里</span>';
+    var t = fabTarget(), h = t.name, air = t.mode === 'airport';
+    sheet.title.textContent = air ? '去机场' : '回酒店';
+    sheet.area.innerHTML = icon('pin') + '<span>' + (air ? '回程航班 02:35' : '今晚住这里') + '</span>';
     sheet.body.innerHTML =
       '<div class="hotel-name">' + h + '</div>' +
-      '<p class="para" style="margin-top:10px">打车时把上面这个名字给司机看，或者按下面的「复制名称」贴到打车软件里。</p>';
+      '<p class="para" style="margin-top:10px">' +
+      (air ? '把上面这个名字给司机看。国际航班一般起飞前 3 小时开柜，别卡点。'
+           : '打车时把上面这个名字给司机看，或者按下面的「复制名称」贴到打车软件里。') +
+      '</p>';
     sheet.foot.innerHTML =
       '<a class="lnk primary" target="_blank" rel="noopener noreferrer" href="' + amap(h) + '">' + icon('nav') + '高德导航</a>' +
       '<button class="lnk" type="button" id="copyHotel">' + icon('copy') + '复制名称</button>' +
@@ -2608,7 +2653,7 @@ xhs:'乌江画廊 龚滩'}
 
   // 时间推进 / 换天时，重算「下一站」按钮
   refreshNowAction();
-  setInterval(refreshNowAction, 30000);
+  setInterval(function(){ refreshNowAction(); paintFab(); }, 30000);
   document.addEventListener('click', function(e){
     if (e.target.closest && e.target.closest('.dtab')) setTimeout(refreshNowAction, 50);
   });
