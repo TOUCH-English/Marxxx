@@ -512,6 +512,37 @@ footer div+div{margin-top:6px}
   box-shadow:0 1px 3px rgba(0,0,0,.16);
 }
 .go-next.xhs > .xhs-ic{margin-right:1px}
+
+/* 小红书分类入口 */
+.xhs-row{flex:1 1 100%;display:flex;flex-direction:column;gap:8px;margin-bottom:2px}
+.xhs-row-lbl{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;font-weight:700;color:var(--ink-soft);
+}
+.xhs-chips{display:flex;flex-wrap:wrap;gap:7px}
+.xhs-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
+  padding:9px 14px;border-radius:12px;
+  background:#FFF1F3;color:#D8203C;border:1px solid #FFD9DF;
+  transition:transform .12s,background .15s;
+}
+.xhs-chip svg.i{font-size:15px}
+.xhs-chip:active{transform:scale(.95)}
+.xhs-chip:hover{background:#FFE4E8}
+.xhs-chip:focus-visible{outline:2px solid #FF2442;outline-offset:2px}
+:root[data-theme="dark"] .xhs-chip,
+:root:not([data-theme="light"]) .xhs-chip{}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .xhs-chip{
+    background:#3A1D24;color:#FF8FA3;border-color:#54262F;
+  }
+  :root:not([data-theme="light"]) .xhs-chip:hover{background:#48232C}
+}
+:root[data-theme="dark"] .xhs-chip{
+  background:#3A1D24;color:#FF8FA3;border-color:#54262F;
+}
+:root[data-theme="dark"] .xhs-chip:hover{background:#48232C}
 /* ===== 折叠区（其他资料）专用样式，全部限定在 .more-body 内 ===== */
 .more-body .standfirst{margin:0;max-width:62ch;color:var(--ink-2);font-size:clamp(15px,2.4vw,17px)}
 .more-body h2{
@@ -627,6 +658,7 @@ footer div+div{margin-top:6px}
 <symbol id="i-kid" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.6"/><path d="M12 10.6V16"/><path d="M7.5 12.5 12 14l4.5-1.5"/><path d="M9.5 21 12 16l2.5 5"/></symbol>
 <symbol id="i-nav" viewBox="0 0 24 24"><path d="M21 3 3 10.5l7.3 3.2L13.5 21z"/><path d="M10.3 13.7 21 3"/></symbol>
 <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5.5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5v1"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v5H6.5A2.5 2.5 0 0 1 4 19.5z"/></symbol>
 </defs></svg>
 
 <div class="wrap">
@@ -1989,6 +2021,66 @@ xhs:'乌江画廊 龚滩'}
 
 };
 
+/* ==================== 小红书：按景点分类搜 ====================
+   每个景点配的角度是逐个挑过的，不是一套模板套所有：
+   古镇小吃街才给「美食」，网红打卡点才给「机位」，
+   带娃场所才给「亲子」，红色纪念地只给攻略和历史 ——
+   在渣滓洞放「打卡机位」既没用也不合适。                        */
+(function(){
+  'use strict';
+
+  var ANGLE = {
+    gonglue: {label:'攻略',   suffix:'攻略',   ic:'bulb'},
+    meishi:  {label:'美食',   suffix:'美食',   ic:'food'},
+    jiwei:   {label:'拍照机位', suffix:'机位',   ic:'camera'},
+    qinzi:   {label:'带娃',   suffix:'亲子',   ic:'kid'},
+    lishi:   {label:'历史',   suffix:'历史',   ic:'book'}
+  };
+
+  // base = 干净的地名（不带角度词），后面自动接上「攻略/美食/机位…」
+  var SPOTS = {
+    luohan:           {base:'重庆罗汉寺',        tags:['gonglue','meishi','qinzi']},
+    xiaoshizi:        {base:'重庆小什字批发市场',  tags:['gonglue','meishi']},
+    jiefangbei:       {base:'重庆解放碑',        tags:['meishi','gonglue','jiwei']},
+    chaotianmen:      {base:'重庆朝天门来福士',   tags:['jiwei','gonglue','meishi']},
+    liangjiangyou:    {base:'重庆两江游轮',      tags:['gonglue','jiwei']},
+    hongyadong:       {base:'重庆洪崖洞',        tags:['jiwei','gonglue','meishi']},
+    suodao:           {base:'重庆长江索道',      tags:['gonglue','jiwei']},
+    baixiangju:       {base:'重庆白象居',        tags:['jiwei','gonglue']},
+    shibati:          {base:'重庆十八梯',        tags:['gonglue','jiwei','meishi']},
+    erchang:          {base:'重庆鹅岭二厂',      tags:['jiwei','gonglue']},
+    liziba:           {base:'重庆李子坝轻轨穿楼', tags:['jiwei','gonglue']},
+    sanxia:           {base:'重庆三峡博物馆',    tags:['gonglue','lishi','qinzi']},
+    longmenhao:       {base:'重庆龙门浩老街',    tags:['jiwei','gonglue']},
+    wurenji:          {base:'重庆无人机表演',    tags:['jiwei','gonglue']},
+    danzishi:         {base:'重庆弹子石老街',    tags:['jiwei','meishi','gonglue']},
+    ciqikou:          {base:'重庆磁器口',        tags:['meishi','gonglue','jiwei']},
+    // 红色纪念地：不放美食和打卡机位
+    zhazidong:        {base:'重庆渣滓洞',        tags:['gonglue','lishi']},
+    baigongguan:      {base:'重庆白公馆',        tags:['gonglue','lishi']},
+    dongwuyuan:       {base:'重庆动物园',        tags:['qinzi','gonglue','jiwei']},
+    guanyinqiao:      {base:'重庆观音桥',        tags:['meishi','gonglue']},
+    xiannvshan:       {base:'武隆仙女山',        tags:['qinzi','gonglue','jiwei']},
+    tianshengsanqiao: {base:'武隆天生三桥',      tags:['gonglue','jiwei']},
+    longshuixia:      {base:'武隆龙水峡地缝',    tags:['gonglue','qinzi']},
+    jiulicheng:       {base:'彭水蚩尤九黎城',    tags:['gonglue','jiwei']},
+    gongtan:          {base:'酉阳龚滩古镇',      tags:['gonglue','jiwei','meishi']},
+    wujiang:          {base:'乌江画廊',          tags:['gonglue','jiwei']}
+  };
+
+  window.__xhsAngles = function(key){
+    var s = SPOTS[key];
+    if (!s) return null;
+    return {
+      base: s.base,
+      list: s.tags.map(function(t){
+        var a = ANGLE[t];
+        return {label:a.label, ic:a.ic, kw:s.base + ' ' + a.suffix};
+      })
+    };
+  };
+})();
+
 /* ==================== 行程：日期切换 ==================== */
 (function(){
   'use strict';
@@ -2253,15 +2345,30 @@ xhs:'乌江画廊 龚滩'}
       body.appendChild(fw);
     }
 
-    foot.innerHTML =
-      '<button class="lnk primary" id="xhsBtn" type="button"><span class="xhs-ic" aria-hidden="true">书</span>小红书看攻略</button>' +
-      '<a class="lnk" target="_blank" rel="noopener noreferrer" href="' + mapURL(d.n) + '">' + ic('map') + '高德地图</a>' +
-      '<span class="foot-note">会复制关键词「' + d.xhs + '」并唤起小红书 App。网页版要登录才看得到搜索结果，所以直接跳 App；没装的话关键词也已经复制好了。</span>';
+    // 小红书分类搜：按这个景点适合的角度给几个入口
+    var ang = window.__xhsAngles && window.__xhsAngles(key);
+    var chips = ang ? ang.list : [{label:'攻略', ic:'bulb', kw:d.xhs}];
 
-    document.getElementById('xhsBtn').addEventListener('click', function(){
-      copyText(d.xhs).then(function(){
-        toast('已复制「' + d.xhs + '」，正在打开小红书…');
-        setTimeout(function(){ window.location.href = xhsScheme(d.xhs); }, 350);
+    foot.innerHTML =
+      '<div class="xhs-row">' +
+        '<span class="xhs-row-lbl"><span class="xhs-ic" aria-hidden="true">书</span>小红书看这里的</span>' +
+        '<div class="xhs-chips">' +
+          chips.map(function(c, i){
+            return '<button class="xhs-chip" type="button" data-kw="' + c.kw + '">' +
+                   ic(c.ic) + c.label + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<a class="lnk" target="_blank" rel="noopener noreferrer" href="' + mapURL(d.n) + '">' + ic('map') + '高德地图导航</a>' +
+      '<span class="foot-note">点了会复制关键词并唤起小红书 App。网页版要登录才看得到搜索结果，所以直接跳 App；没装的话关键词也已经复制好了。</span>';
+
+    Array.prototype.forEach.call(foot.querySelectorAll('.xhs-chip'), function(btn){
+      btn.addEventListener('click', function(){
+        var kw = btn.getAttribute('data-kw');
+        copyText(kw).then(function(){
+          toast('已复制「' + kw + '」，正在打开小红书…');
+          setTimeout(function(){ window.location.href = xhsScheme(kw); }, 350);
+        });
       });
     });
 
@@ -2391,17 +2498,21 @@ xhs:'乌江画廊 龚滩'}
     var d = poiBtn && typeof POI !== 'undefined' ? POI[poiBtn.getAttribute('data-p')] : null;
 
     if (d && d.xhs) {
+      // 用这个景点最贴切的那个角度：磁器口→美食，李子坝→机位，动物园→带娃
+      var ang = window.__xhsAngles && window.__xhsAngles(poiBtn.getAttribute('data-p'));
+      var top = ang && ang.list.length ? ang.list[0] : {label:'攻略', kw:d.xhs};
+
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'go-next xhs';
       b.innerHTML = '<span class="xhs-ic" aria-hidden="true">书</span>' +
-        '<span class="gn-txt"><span class="gn-lbl">看看这里有什么</span>' +
-        '<span class="gn-dest">小红书搜「' + d.xhs + '」</span></span>' +
+        '<span class="gn-txt"><span class="gn-lbl">小红书看这里的' + top.label + '</span>' +
+        '<span class="gn-dest">' + top.kw + '</span></span>' +
         '<span class="gn-arrow">' + icon('chev') + '</span>';
       b.addEventListener('click', function(){
-        copyText(d.xhs).then(function(){
-          toast('已复制「' + d.xhs + '」，正在打开小红书…');
-          setTimeout(function(){ window.location.href = xhsScheme(d.xhs); }, 350);
+        copyText(top.kw).then(function(){
+          toast('已复制「' + top.kw + '」，正在打开小红书…');
+          setTimeout(function(){ window.location.href = xhsScheme(top.kw); }, 350);
         });
       });
       card.appendChild(b);
