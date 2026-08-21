@@ -501,6 +501,17 @@ footer div+div{margin-top:6px}
   width:100%;height:auto;display:block;
   aspect-ratio:16/10;object-fit:cover;
 }
+
+/* 小红书识别标：白底圆角方块 + 品牌红的「书」字。
+   不是官方 logo，只是让人一眼认出这颗按钮跳去哪个 App。 */
+.xhs-ic{
+  width:23px;height:23px;border-radius:7px;flex:0 0 auto;
+  display:grid;place-items:center;
+  background:#fff;color:#FF2442;
+  font-size:13.5px;font-weight:900;line-height:1;
+  box-shadow:0 1px 3px rgba(0,0,0,.16);
+}
+.go-next.xhs > .xhs-ic{margin-right:1px}
 /* ===== 折叠区（其他资料）专用样式，全部限定在 .more-body 内 ===== */
 .more-body .standfirst{margin:0;max-width:62ch;color:var(--ink-2);font-size:clamp(15px,2.4vw,17px)}
 .more-body h2{
@@ -2243,7 +2254,7 @@ xhs:'乌江画廊 龚滩'}
     }
 
     foot.innerHTML =
-      '<button class="lnk primary" id="xhsBtn" type="button">' + ic('search') + '小红书看攻略</button>' +
+      '<button class="lnk primary" id="xhsBtn" type="button"><span class="xhs-ic" aria-hidden="true">书</span>小红书看攻略</button>' +
       '<a class="lnk" target="_blank" rel="noopener noreferrer" href="' + mapURL(d.n) + '">' + ic('map') + '高德地图</a>' +
       '<span class="foot-note">会复制关键词「' + d.xhs + '」并唤起小红书 App。网页版要登录才看得到搜索结果，所以直接跳 App；没装的话关键词也已经复制好了。</span>';
 
@@ -2383,7 +2394,7 @@ xhs:'乌江画廊 龚滩'}
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'go-next xhs';
-      b.innerHTML = icon('search') +
+      b.innerHTML = '<span class="xhs-ic" aria-hidden="true">书</span>' +
         '<span class="gn-txt"><span class="gn-lbl">看看这里有什么</span>' +
         '<span class="gn-dest">小红书搜「' + d.xhs + '」</span></span>' +
         '<span class="gn-arrow">' + icon('chev') + '</span>';
