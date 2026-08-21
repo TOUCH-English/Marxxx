@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FF7A59">
+<title>我的行程</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F4EF;
+    --card: #FFFFFF;
+    --ink: #22293A;
+    --ink-soft: #6B7385;
+    --ink-faint: #9AA1B2;
+    --line: #ECE7DF;
+    --accent: #FF7A59;
+    --accent-deep: #F25C3D;
+    --accent-soft: #FFF1EC;
+    --hero-grad: linear-gradient(135deg, #FF8A5C 0%, #FF6B4A 55%, #F0484F 100%);
+    --shadow: 0 10px 30px rgba(34, 41, 58, .08);
+    --shadow-sm: 0 4px 14px rgba(34, 41, 58, .07);
+    --radius: 20px;
+
+    --c-flight: #5B8DEF;   --c-flight-bg: #EDF3FE;
+    --c-hotel: #9B7BD8;    --c-hotel-bg: #F4EFFC;
+    --c-food: #FF8A3D;     --c-food-bg: #FFF2E7;
+    --c-sight: #3FAF7C;    --c-sight-bg: #E9F7F0;
+    --c-transport: #2FA8BE; --c-transport-bg: #E7F6F9;
+    --c-shopping: #E86FA4; --c-shopping-bg: #FCEEF5;
+    --c-other: #8A94A6;    --c-other-bg: #F0F2F5;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  .app { max-width: 520px; margin: 0 auto; min-height: 100vh; position: relative; padding-bottom: 110px; }
+
+  svg.ic { width: 1em; height: 1em; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    background: var(--hero-grad);
+    border-radius: 0 0 32px 32px;
+    padding: max(20px, env(safe-area-inset-top)) 22px 58px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: ""; position: absolute; right: -60px; top: -70px;
+    width: 240px; height: 240px; border-radius: 50%;
+    background: rgba(255,255,255,.12);
+  }
+  .hero::after {
+    content: ""; position: absolute; right: 40px; bottom: -90px;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: rgba(255,255,255,.09);
+  }
+  .hero-top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; margin-top: 8px; }
+  .hero-eyebrow { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; opacity: .92; letter-spacing: .06em; }
+  .hero-eyebrow .ic { font-size: 15px; }
+  .btn-ghost {
+    background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+    color: #fff; border-radius: 999px; width: 38px; height: 38px;
+    display: grid; place-items: center; cursor: pointer; font-size: 17px;
+    backdrop-filter: blur(4px); transition: background .15s;
+  }
+  .btn-ghost:active { background: rgba(255,255,255,.32); }
+  .hero h1 { font-size: 30px; font-weight: 900; margin: 14px 0 10px; position: relative; z-index: 1; line-height: 1.25; }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; position: relative; z-index: 1; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.28);
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 500;
+    backdrop-filter: blur(4px);
+  }
+  .chip .ic { font-size: 14px; }
+
+  /* ---------- Day tabs ---------- */
+  .day-strip {
+    display: flex; gap: 10px; overflow-x: auto; padding: 0 20px 6px;
+    margin-top: -34px; position: relative; z-index: 2;
+    scrollbar-width: none;
+  }
+  .day-strip::-webkit-scrollbar { display: none; }
+  .day-tab {
+    flex: 0 0 auto; min-width: 74px; text-align: center; cursor: pointer;
+    background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+    padding: 11px 14px 9px; box-shadow: var(--shadow-sm);
+    transition: transform .15s, background .15s;
+    user-select: none;
+  }
+  .day-tab:active { transform: scale(.96); }
+  .day-tab .d-label { font-size: 11px; font-weight: 700; color: var(--ink-faint); letter-spacing: .08em; }
+  .day-tab .d-date { font-size: 16px; font-weight: 900; margin-top: 2px; }
+  .day-tab .d-week { font-size: 11px; color: var(--ink-soft); margin-top: 1px; }
+  .day-tab.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .day-tab.active .d-label { color: rgba(255,255,255,.65); }
+  .day-tab.active .d-week { color: rgba(255,255,255,.75); }
+  .day-tab.add-day { display: grid; place-items: center; min-width: 56px; color: var(--accent); font-size: 20px; border-style: dashed; border-color: #E4B8AA; background: var(--accent-soft); box-shadow: none; }
+
+  /* ---------- Day summary ---------- */
+  .day-head { display: flex; align-items: center; justify-content: space-between; padding: 22px 24px 4px; }
+  .day-head h2 { font-size: 19px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+  .day-head h2 .ic { color: var(--accent); font-size: 20px; }
+  .day-stats { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+  .day-stats .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-faint); }
+
+  /* ---------- Timeline ---------- */
+  .timeline { padding: 12px 20px 8px; position: relative; }
+  .tl-item { display: flex; gap: 14px; position: relative; padding-bottom: 16px; }
+  .tl-rail { display: flex; flex-direction: column; align-items: center; width: 44px; flex: 0 0 44px; }
+  .tl-icon {
+    width: 44px; height: 44px; border-radius: 15px; display: grid; place-items: center;
+    font-size: 20px; box-shadow: var(--shadow-sm); position: relative; z-index: 1;
+  }
+  .tl-line { flex: 1; width: 2px; border-radius: 2px; background: var(--line); margin-top: 6px; min-height: 14px; }
+  .tl-item:last-child .tl-line { display: none; }
+  .tl-card {
+    flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 16px; box-shadow: var(--shadow-sm); cursor: pointer;
+    transition: transform .15s; min-width: 0;
+  }
+  .tl-card:active { transform: scale(.985); }
+  .tl-time { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--ink-soft); background: var(--bg); border-radius: 999px; padding: 3px 10px; margin-bottom: 7px; }
+  .tl-time .ic { font-size: 12px; }
+  .tl-title { font-size: 16px; font-weight: 700; line-height: 1.4; }
+  .tl-loc { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--ink-soft); margin-top: 5px; }
+  .tl-loc .ic { font-size: 13px; flex: 0 0 auto; }
+  .tl-note { font-size: 12.5px; color: var(--ink-faint); margin-top: 6px; line-height: 1.55; border-top: 1px dashed var(--line); padding-top: 7px; }
+  .tl-cost { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--c-sight); background: var(--c-sight-bg); padding: 3px 10px; border-radius: 999px; }
+  .tl-actions { display: flex; gap: 8px; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .mini-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: none; cursor: pointer; font-family: inherit;
+    font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px;
+    background: #FDECEF; color: #E23D57; transition: transform .12s;
+  }
+  .mini-btn:active { transform: scale(.94); }
+  .mini-btn .ic { font-size: 13px; }
+
+  /* ---------- Empty state ---------- */
+  .empty { text-align: center; padding: 54px 30px 30px; color: var(--ink-faint); }
+  .empty .art { font-size: 46px; margin-bottom: 14px; display: inline-grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+  .empty p { font-size: 14px; line-height: 1.7; }
+  .empty b { color: var(--ink-soft); font-size: 15px; display: block; margin-bottom: 4px; }
+
+  /* ---------- FAB ---------- */
+  .fab-wrap { position: fixed; bottom: max(24px, env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: center; z-index: 30; pointer-events: none; }
+  .fab {
+    pointer-events: auto; display: inline-flex; align-items: center; gap: 9px;
+    background: var(--ink); color: #fff; border: none; cursor: pointer;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    padding: 15px 26px; border-radius: 999px;
+    box-shadow: 0 14px 34px rgba(34,41,58,.32);
+    transition: transform .15s;
+  }
+  .fab:active { transform: scale(.95); }
+  .fab .ic { font-size: 18px; }
+
+  /* ---------- Sheet / Modal ---------- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(24,28,40,.45); z-index: 40;
+    opacity: 0; pointer-events: none; transition: opacity .22s;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    max-width: 520px; margin: 0 auto;
+    background: var(--card); border-radius: 26px 26px 0 0;
+    padding: 10px 22px calc(22px + env(safe-area-inset-bottom));
+    transform: translateY(105%); transition: transform .28s cubic-bezier(.32,.72,.33,1);
+    max-height: 88vh; overflow-y: auto;
+  }
+  .sheet.show { transform: translateY(0); }
+  .sheet-grip { width: 42px; height: 5px; border-radius: 3px; background: var(--line); margin: 4px auto 14px; }
+  .sheet h3 { font-size: 18px; font-weight: 900; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .sheet h3 .ic { color: var(--accent); }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); margin-bottom: 7px; }
+  .field input, .field textarea {
+    width: 100%; border: 1.5px solid var(--line); border-radius: 14px;
+    background: var(--bg); padding: 12px 14px; font-size: 15px; font-family: inherit;
+    color: var(--ink); outline: none; transition: border-color .15s, background .15s;
+  }
+  .field textarea { resize: none; min-height: 68px; line-height: 1.5; }
+  .field input:focus, .field textarea:focus { border-color: var(--accent); background: #fff; }
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field { flex: 1; }
+
+  .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+  .cat-opt {
+    border: 1.5px solid var(--line); border-radius: 15px; background: var(--bg);
+    padding: 10px 4px 8px; text-align: center; cursor: pointer; transition: all .15s;
+  }
+  .cat-opt .co-ic { font-size: 21px; display: grid; place-items: center; height: 24px; margin-bottom: 4px; }
+  .cat-opt .co-name { font-size: 11.5px; font-weight: 500; color: var(--ink-soft); }
+  .cat-opt.sel { border-color: currentColor; }
+  .cat-opt.sel .co-name { font-weight: 700; color: inherit; }
+
+  .sheet-actions { display: flex; gap: 12px; margin-top: 20px; }
+  .btn {
+    flex: 1; border: none; cursor: pointer; font-family: inherit;
+    font-size: 15px; font-weight: 700; padding: 14px; border-radius: 16px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform .12s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--hero-grad); color: #fff; box-shadow: 0 8px 20px rgba(242,92,61,.35); }
+  .btn-muted { background: var(--bg); color: var(--ink-soft); border: 1.5px solid var(--line); flex: 0 0 auto; padding: 14px 20px; }
+  .btn-danger { background: #FDEEEC; color: #E0402C; flex: 0 0 auto; padding: 14px 18px; }
+
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 14px; }
+  .settings-row span { font-size: 13px; color: var(--ink-soft); font-weight: 500; }
+  .link-danger { background: none; border: none; font-family: inherit; color: #E0402C; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 104px; transform: translateX(-50%) translateY(14px);
+    background: var(--ink); color: #fff; font-size: 13.5px; font-weight: 500;
+    padding: 11px 20px; border-radius: 999px; z-index: 60;
+    opacity: 0; pointer-events: none; transition: all .25s; white-space: nowrap;
+    box-shadow: 0 10px 26px rgba(34,41,58,.3);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (min-width: 560px) {
+    .hero { border-radius: 0 0 36px 36px; }
+    .app { padding-top: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 顶部：行程封面 -->
+  <header class="hero">
+    <div class="hero-top">
+      <div class="hero-eyebrow"><svg class="ic"><use href="#i-compass"/></svg>我的行程</div>
+      <button class="btn-ghost" id="btnSettings" aria-label="行程设置"><svg class="ic"><use href="#i-settings"/></svg></button>
+    </div>
+    <h1 id="tripTitle">我的旅程</h1>
+    <div class="hero-meta">
+      <span class="chip"><svg class="ic"><use href="#i-calendar"/></svg><span id="tripRange">—</span></span>
+      <span class="chip"><svg class="ic"><use href="#i-sun"/></svg><span id="tripDays">0 天</span></span>
+      <span class="chip"><svg class="ic"><use href="#i-wallet"/></svg><span id="tripBudget">RM 0</span></span>
+    </div>
+  </header>
+
+  <!-- 日期切换 -->
+  <nav class="day-strip" id="dayStrip"></nav>
+
+  <!-- 当日概览 -->
+  <div class="day-head">
+    <h2><svg class="ic"><use href="#i-map"/></svg><span id="dayTitle">第 1 天</span></h2>
+    <div class="day-stats" id="dayStats"></div>
+  </div>
+
+  <!-- 时间轴 -->
+  <main class="timeline" id="timeline"></main>
+
+  <!-- 新增按钮 -->
+  <div class="fab-wrap">
+    <button class="fab" id="btnAdd"><svg class="ic"><use href="#i-plus"/></svg>添加行程</button>
+  </div>
+</div>
+
+<!-- 遮罩 -->
+<div class="overlay" id="overlay"></div>
+
+<!-- 新增 / 编辑行程 -->
+<div class="sheet" id="sheetActivity">
+  <div class="sheet-grip"></div>
+  <h3><svg class="ic"><use href="#i-pin"/></svg><span id="sheetActivityTitle">添加行程</span></h3>
+
+  <div class="field">
+    <label>类型</label>
+    <div class="cat-grid" id="catGrid"></div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label>时间</label>
+      <input type="time" id="fTime" value="09:00">
+    </div>
+    <div class="field">
+      <label>花费（RM，可留空）</label>
+      <input type="number" id="fCost" inputmode="decimal" placeholder="0" min="0" step="0.01">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>做什么</label>
+    <input type="text" id="fTitle" placeholder="例如：抵达机场 / 吃午餐 / 看夜景" maxlength="60">
+  </div>
+
+  <div class="field">
+    <label>地点（可留空）</label>
+    <input type="text" id="fLoc" placeholder="例如：KLIA T1 / 浅草寺" maxlength="60">
+  </div>
+
+  <div class="field">
+    <label>备注（可留空）</label>
+    <textarea id="fNote" placeholder="订单号、注意事项、提醒自己的话…" maxlength="200"></textarea>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn btn-danger" id="btnDelete" style="display:none" aria-label="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
+    <button class="btn btn-muted" id="btnCancel">取消</button>
+    <button class="btn btn-primary" id="btnSave"><svg class="ic"><use href="#i-check"/></svg>保存</button>
+  </div>
+</div>
+
+<!-- 行程设置 -->
+<div class="sheet" id="sheetSettings">
+  <div class="sheet-grip"></div>
+  <h3><svg class="ic"><use href="#i-settings"/></svg>行程设置</h3>
+
+  <div class="field">
+    <label>行程名称</label>
+    <input type="text" id="sTitle" maxlength="30" placeholder="给旅程起个名字">
+  </div>
+
+  <div class="field">
+    <label>出发日期</label>
+    <input type="date" id="sStart">
+  </div>
+
+  <div class="settings-row">
+    <span>当前天数：<b id="sDayCount">3</b> 天</span>
+    <button class="link-danger" id="btnRemoveDay"><svg class="ic"><use href="#i-trash"/></svg>删除当前这一天</button>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn btn-muted" id="btnSettingsCancel">取消</button>
+    <button class="btn btn-primary" id="btnSettingsSave"><svg class="ic"><use href="#i-check"/></svg>保存</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 图标库（Lucide 风格线性图标） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></symbol>
+    <symbol id="i-plane" viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></symbol>
+    <symbol id="i-bed" viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></symbol>
+    <symbol id="i-food" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+    <symbol id="i-bus" viewBox="0 0 24 24"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  </defs>
+</svg>
+
+<script>
+(function () {
+  "use strict";
+
+  const CATS = {
+    flight:    { name: "航班",  icon: "i-plane",  color: "var(--c-flight)",    bg: "var(--c-flight-bg)" },
+    hotel:     { name: "住宿",  icon: "i-bed",    color: "var(--c-hotel)",     bg: "var(--c-hotel-bg)" },
+    food:      { name: "美食",  icon: "i-food",   color: "var(--c-food)",      bg: "var(--c-food-bg)" },
+    sight:     { name: "景点",  icon: "i-camera", color: "var(--c-sight)",     bg: "var(--c-sight-bg)" },
+    transport: { name: "交通",  icon: "i-bus",    color: "var(--c-transport)", bg: "var(--c-transport-bg)" },
+    shopping:  { name: "购物",  icon: "i-bag",    color: "var(--c-shopping)",  bg: "var(--c-shopping-bg)" },
+    other:     { name: "其他",  icon: "i-star",   color: "var(--c-other)",     bg: "var(--c-other-bg)" }
+  };
+  const WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  const STORE_KEY = "marxxx.itinerary.v1";
+
+  function demoTrip() {
+    return {
+      title: "我的旅程",
+      startDate: new Date().toISOString().slice(0, 10),
+      days: [
+        { activities: [
+          { id: uid(), time: "08:30", cat: "flight",    title: "出发 ✈ 前往目的地", loc: "机场 T1", note: "提早 2 小时到机场，记得带护照", cost: null },
+          { id: uid(), time: "13:00", cat: "food",      title: "抵达后吃第一餐",     loc: "", note: "", cost: 50 },
+          { id: uid(), time: "15:00", cat: "hotel",     title: "酒店办理入住",       loc: "", note: "", cost: null },
+          { id: uid(), time: "19:00", cat: "sight",     title: "附近走走看夜景",     loc: "", note: "", cost: null }
+        ]},
+        { activities: [
+          { id: uid(), time: "09:30", cat: "sight",     title: "上午景点打卡",       loc: "", note: "", cost: 30 },
+          { id: uid(), time: "12:30", cat: "food",      title: "午餐",               loc: "", note: "", cost: 40 },
+          { id: uid(), time: "15:00", cat: "shopping",  title: "逛街买手信",         loc: "", note: "", cost: null }
+        ]},
+        { activities: [
+          { id: uid(), time: "10:00", cat: "transport", title: "退房，前往机场",     loc: "", note: "", cost: null },
+          { id: uid(), time: "14:00", cat: "flight",    title: "回程航班",           loc: "", note: "", cost: null }
+        ]}
+      ]
+    };
+  }
+
+  function uid() { return "a" + Math.random().toString(36).slice(2, 10); }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d && Array.isArray(d.days) && d.days.length) return d;
+      }
+    } catch (e) { /* 数据损坏时回退到示例行程 */ }
+    return demoTrip();
+  }
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(trip)); } catch (e) { /* 隐私模式下忽略 */ }
+  }
+
+  let trip = load();
+  let currentDay = 0;
+  let editing = null;       // { dayIndex, activityId } 编辑中；null = 新增
+  let selectedCat = "sight";
+
+  const $ = (id) => document.getElementById(id);
+  const overlay = $("overlay");
+
+  function dateOfDay(i) {
+    const d = new Date(trip.startDate + "T00:00:00");
+    if (isNaN(d)) return null;
+    d.setDate(d.getDate() + i);
+    return d;
+  }
+  function fmtDate(d) { return d ? (d.getMonth() + 1) + "月" + d.getDate() + "日" : ""; }
+  function fmtMoney(n) {
+    return "RM " + (Math.round(n * 100) / 100).toLocaleString("en-MY");
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  /* ---------- 渲染 ---------- */
+  function render() {
+    if (currentDay >= trip.days.length) currentDay = trip.days.length - 1;
+
+    // Hero
+    $("tripTitle").textContent = trip.title || "我的旅程";
+    const first = dateOfDay(0), last = dateOfDay(trip.days.length - 1);
+    $("tripRange").textContent = first ? fmtDate(first) + " – " + fmtDate(last) : "未设置日期";
+    $("tripDays").textContent = trip.days.length + " 天";
+    const total = trip.days.flatMap(d => d.activities).reduce((s, a) => s + (a.cost || 0), 0);
+    $("tripBudget").textContent = fmtMoney(total);
+
+    // Day tabs
+    const strip = $("dayStrip");
+    strip.innerHTML = "";
+    trip.days.forEach((_, i) => {
+      const d = dateOfDay(i);
+      const el = document.createElement("div");
+      el.className = "day-tab" + (i === currentDay ? " active" : "");
+      el.innerHTML =
+        '<div class="d-label">DAY ' + (i + 1) + "</div>" +
+        '<div class="d-date">' + (d ? (d.getMonth() + 1) + "/" + d.getDate() : "—") + "</div>" +
+        '<div class="d-week">' + (d ? WEEK[d.getDay()] : "") + "</div>";
+      el.addEventListener("click", () => { currentDay = i; render(); });
+      strip.appendChild(el);
+    });
+    const addTab = document.createElement("div");
+    addTab.className = "day-tab add-day";
+    addTab.setAttribute("aria-label", "增加一天");
+    addTab.innerHTML = '<svg class="ic"><use href="#i-plus"/></svg>';
+    addTab.addEventListener("click", () => {
+      trip.days.push({ activities: [] });
+      currentDay = trip.days.length - 1;
+      save(); render(); toast("已增加第 " + trip.days.length + " 天");
+    });
+    strip.appendChild(addTab);
+
+    // Day head
+    const day = trip.days[currentDay];
+    const dd = dateOfDay(currentDay);
+    $("dayTitle").textContent = "第 " + (currentDay + 1) + " 天" + (dd ? " · " + fmtDate(dd) : "");
+    const dayCost = day.activities.reduce((s, a) => s + (a.cost || 0), 0);
+    $("dayStats").innerHTML =
+      "<span>" + day.activities.length + " 个安排</span>" +
+      (dayCost > 0 ? '<span class="dot"></span><span>' + fmtMoney(dayCost) + "</span>" : "");
+
+    // Timeline
+    const tl = $("timeline");
+    tl.innerHTML = "";
+    const acts = [...day.activities].sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+    if (!acts.length) {
+      tl.innerHTML =
+        '<div class="empty">' +
+          '<div class="art"><svg class="ic"><use href="#i-map"/></svg></div>' +
+          "<p><b>这一天还是空白的</b>点下面的「添加行程」，安排点什么吧</p>" +
+        "</div>";
+      return;
+    }
+    acts.forEach((a) => {
+      const cat = CATS[a.cat] || CATS.other;
+      const item = document.createElement("div");
+      item.className = "tl-item";
+      item.innerHTML =
+        '<div class="tl-rail">' +
+          '<div class="tl-icon" style="color:' + cat.color + ";background:" + cat.bg + '"><svg class="ic"><use href="#' + cat.icon + '"/></svg></div>' +
+          '<div class="tl-line"></div>' +
+        "</div>" +
+        '<div class="tl-card">' +
+          '<span class="tl-time"><svg class="ic"><use href="#i-clock"/></svg>' + esc(a.time || "--:--") + "</span>" +
+          '<div class="tl-title">' + esc(a.title) + "</div>" +
+          (a.loc ? '<div class="tl-loc"><svg class="ic"><use href="#i-pin"/></svg>' + esc(a.loc) + "</div>" : "") +
+          (a.note ? '<div class="tl-note">' + esc(a.note) + "</div>" : "") +
+          (a.cost ? '<span class="tl-cost"><svg class="ic"><use href="#i-wallet"/></svg>' + fmtMoney(a.cost) + "</span>" : "") +
+          '<div class="tl-actions">' +
+            '<button class="mini-btn" data-xhs><svg class="ic"><use href="#i-search"/></svg>小红书攻略</button>' +
+          "</div>" +
+        "</div>";
+      item.querySelector(".tl-card").addEventListener("click", () => openActivity(a.id));
+      item.querySelector("[data-xhs]").addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        openXhs(a);
+      });
+      tl.appendChild(item);
+    });
+  }
+
+  /* ---------- 小红书攻略 ---------- */
+  // 只取干净的景点名做关键词：优先用「地点」，并去掉「预约」「门票」这类
+  // 会污染小红书搜索结果的动作词，搜出来的才是景点本身的攻略。
+  const NOISE_WORDS = /预约|门票|取票|排队|打卡|办理入住|办理|入住|退房|出发|抵达|前往|集合|回程|自由活动/g;
+  function spotKeyword(a) {
+    const raw = (a.loc || a.title || "").trim();
+    const cleaned = raw
+      .replace(NOISE_WORDS, "")
+      .replace(/[✈🏨🍜📷🚌🛍️⭐]/g, "")
+      .replace(/[\s，。、！？：;；·~～\-–—()（）\[\]【】]+/g, " ")
+      .trim();
+    return cleaned || raw;
+  }
+  function openXhs(a) {
+    const kw = spotKeyword(a);
+    if (!kw) { toast("先填个地点或标题吧"); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(kw).catch(() => {});
+    }
+    toast("已复制「" + kw + "」，正在打开小红书");
+    window.open("https://www.xiaohongshu.com/search_result?keyword=" + encodeURIComponent(kw), "_blank");
+  }
+
+  /* ---------- 行程弹窗 ---------- */
+  function renderCatGrid() {
+    const grid = $("catGrid");
+    grid.innerHTML = "";
+    Object.entries(CATS).forEach(([key, c]) => {
+      const el = document.createElement("div");
+      el.className = "cat-opt" + (key === selectedCat ? " sel" : "");
+      el.style.color = c.color;
+      if (key === selectedCat) el.style.background = c.bg;
+      el.innerHTML = '<div class="co-ic"><svg class="ic"><use href="#' + c.icon + '"/></svg></div><div class="co-name">' + c.name + "</div>";
+      el.addEventListener("click", () => { selectedCat = key; renderCatGrid(); });
+      grid.appendChild(el);
+    });
+  }
+
+  function openSheet(id) { overlay.classList.add("show"); $(id).classList.add("show"); }
+  function closeSheets() {
+    overlay.classList.remove("show");
+    document.querySelectorAll(".sheet").forEach((s) => s.classList.remove("show"));
+  }
+
+  function openActivity(activityId) {
+    const day = trip.days[currentDay];
+    if (activityId) {
+      const a = day.activities.find((x) => x.id === activityId);
+      if (!a) return;
+      editing = { dayIndex: currentDay, activityId };
+      selectedCat = a.cat in CATS ? a.cat : "other";
+      $("sheetActivityTitle").textContent = "编辑行程";
+      $("fTime").value = a.time || "09:00";
+      $("fCost").value = a.cost != null ? a.cost : "";
+      $("fTitle").value = a.title || "";
+      $("fLoc").value = a.loc || "";
+      $("fNote").value = a.note || "";
+      $("btnDelete").style.display = "";
+    } else {
+      editing = null;
+      selectedCat = "sight";
+      $("sheetActivityTitle").textContent = "添加行程";
+      $("fTime").value = "09:00";
+      $("fCost").value = "";
+      $("fTitle").value = "";
+      $("fLoc").value = "";
+      $("fNote").value = "";
+      $("btnDelete").style.display = "none";
+    }
+    renderCatGrid();
+    openSheet("sheetActivity");
+  }
+
+  function saveActivity() {
+    const title = $("fTitle").value.trim();
+    if (!title) { toast("先写一下要做什么吧"); $("fTitle").focus(); return; }
+    const costRaw = $("fCost").value.trim();
+    const cost = costRaw === "" ? null : Math.max(0, parseFloat(costRaw) || 0);
+    const data = {
+      time: $("fTime").value || "",
+      cat: selectedCat,
+      title,
+      loc: $("fLoc").value.trim(),
+      note: $("fNote").value.trim(),
+      cost
+    };
+    if (editing) {
+      const day = trip.days[editing.dayIndex];
+      const a = day.activities.find((x) => x.id === editing.activityId);
+      if (a) Object.assign(a, data);
+      toast("已保存修改");
+    } else {
+      trip.days[currentDay].activities.push(Object.assign({ id: uid() }, data));
+      toast("已添加到第 " + (currentDay + 1) + " 天");
+    }
+    save(); closeSheets(); render();
+  }
+
+  function deleteActivity() {
+    if (!editing) return;
+    const day = trip.days[editing.dayIndex];
+    day.activities = day.activities.filter((x) => x.id !== editing.activityId);
+    save(); closeSheets(); render(); toast("已删除");
+  }
+
+  /* ---------- 设置弹窗 ---------- */
+  function openSettings() {
+    $("sTitle").value = trip.title || "";
+    $("sStart").value = trip.startDate || "";
+    $("sDayCount").textContent = trip.days.length;
+    openSheet("sheetSettings");
+  }
+  function saveSettings() {
+    trip.title = $("sTitle").value.trim() || "我的旅程";
+    if ($("sStart").value) trip.startDate = $("sStart").value;
+    save(); closeSheets(); render(); toast("已更新行程信息");
+  }
+  function removeCurrentDay() {
+    if (trip.days.length <= 1) { toast("至少要保留一天哦"); return; }
+    const n = trip.days[currentDay].activities.length;
+    if (n > 0 && !confirm("第 " + (currentDay + 1) + " 天还有 " + n + " 个安排，确定删除这一天？")) return;
+    trip.days.splice(currentDay, 1);
+    if (currentDay >= trip.days.length) currentDay = trip.days.length - 1;
+    save(); closeSheets(); render(); toast("已删除这一天");
+  }
+
+  /* ---------- 提示 ---------- */
+  let toastTimer = null;
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
+  }
+
+  /* ---------- 事件绑定 ---------- */
+  $("btnAdd").addEventListener("click", () => openActivity(null));
+  $("btnSave").addEventListener("click", saveActivity);
+  $("btnCancel").addEventListener("click", closeSheets);
+  $("btnDelete").addEventListener("click", deleteActivity);
+  $("btnSettings").addEventListener("click", openSettings);
+  $("btnSettingsSave").addEventListener("click", saveSettings);
+  $("btnSettingsCancel").addEventListener("click", closeSheets);
+  $("btnRemoveDay").addEventListener("click", removeCurrentDay);
+  overlay.addEventListener("click", closeSheets);
+
+  render();
+})();
+</script>
+</body>
+</html>
