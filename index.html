@@ -2284,7 +2284,7 @@ xhs:'乌江画廊 龚滩'}
   /* ⚠️ 两家酒店的名字写在这里，改这两行就能改全站。
      出发前请跟导游核对一次准确名称，避免高德搜到同名的别家分店。 */
   var HOTELS = {
-    jiefangbei: '重庆解放碑美居酒店',
+    jiefangbei: '重庆解放碑八一路美居酒店',
     wulong:     '武隆仙女山欧悦酒店'
   };
 
@@ -2416,7 +2416,7 @@ xhs:'乌江画廊 龚滩'}
     sheet.foot.innerHTML =
       '<a class="lnk primary" target="_blank" rel="noopener noreferrer" href="' + amap(h) + '">' + icon('nav') + '高德导航</a>' +
       '<button class="lnk" type="button" id="copyHotel">' + icon('copy') + '复制名称</button>' +
-      '<span class="foot-note">名字如果和实际入住的不一样，出发前跟导游核对一下，我再帮你改。</span>';
+      '<span class="foot-note">导航搜不到的话，把名字复制出来贴进打车软件同样可以。</span>';
     document.getElementById('copyHotel').addEventListener('click', function(){
       copyText(h).then(function(){ toast('已复制「' + h + '」'); });
     });
