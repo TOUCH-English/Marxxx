@@ -489,6 +489,18 @@ footer div+div{margin-top:6px}
   border-radius:15px;padding:16px 18px;text-align:center;
   user-select:all;-webkit-user-select:all;
 }
+
+/* 景点照片（放了才显示） */
+.poi-photo{
+  margin:0 0 14px;border-radius:16px;overflow:hidden;
+  background:var(--bg);line-height:0;
+  opacity:0;transition:opacity .3s;
+}
+.poi-photo.ready{opacity:1}
+.poi-photo img{
+  width:100%;height:auto;display:block;
+  aspect-ratio:16/10;object-fit:cover;
+}
 /* ===== 折叠区（其他资料）专用样式，全部限定在 .more-body 内 ===== */
 .more-body .standfirst{margin:0;max-width:62ch;color:var(--ink-2);font-size:clamp(15px,2.4vw,17px)}
 .more-body h2{
@@ -2194,6 +2206,22 @@ xhs:'乌江画廊 龚滩'}
     area.innerHTML = ic('pin') + '<span>' + d.a + '</span>';
 
     body.innerHTML = '';
+
+    /* 照片（可选）：把图片放进 photos/ 文件夹，文件名用景点的 key，
+       例如 photos/luohan.jpg。放了就自动显示，没放就当作没这回事，
+       页面完全不受影响。支持 .jpg，找不到会静默隐藏。 */
+    var fig = document.createElement('div');
+    fig.className = 'poi-photo';
+    var img = document.createElement('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = d.n;
+    img.onerror = function(){ fig.parentNode && fig.parentNode.removeChild(fig); };
+    img.onload  = function(){ fig.classList.add('ready'); };
+    img.src = 'photos/' + key + '.jpg';
+    fig.appendChild(img);
+    body.appendChild(fig);
+
     var hook = document.createElement('p');
     hook.className = 'hook'; hook.textContent = d.hook; body.appendChild(hook);
 
