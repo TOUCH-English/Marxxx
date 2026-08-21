@@ -2357,14 +2357,47 @@ xhs:'乌江画廊 龚滩'}
     card.appendChild(a);
   });
 
-  /* ---------- 2. 当前这一站的卡片底部：去下一站 ---------- */
-  function refreshNextStop(){
+  /* ---------- 2. 当前这一站的卡片底部 ----------
+     人已经站在这里了，最想知道的是「这里有什么好看的」，
+     所以优先给小红书攻略。导航右上角已经有了，不重复。
+     如果这一条不是景点（在酒店、在路上），才退回显示下一站导航。 */
+
+  function xhsScheme(kw){
+    return 'xhsdiscover://search/result?keyword=' + encodeURIComponent(kw);
+  }
+
+  function refreshNowAction(){
     var old = document.querySelector('.go-next');
     if (old) old.parentNode.removeChild(old);
 
     var now = document.querySelector('.ev.now');
     if (!now) return;
-    // 找同一天里的下一条；这一天走完了就找隔天第一条
+    var card = now.querySelector('.ev-card');
+    if (!card) return;
+
+    // 这一条里有没有景点？有就给小红书
+    var poiBtn = now.querySelector('.poi[data-p]');
+    var d = poiBtn && typeof POI !== 'undefined' ? POI[poiBtn.getAttribute('data-p')] : null;
+
+    if (d && d.xhs) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'go-next xhs';
+      b.innerHTML = icon('search') +
+        '<span class="gn-txt"><span class="gn-lbl">看看这里有什么</span>' +
+        '<span class="gn-dest">小红书搜「' + d.xhs + '」</span></span>' +
+        '<span class="gn-arrow">' + icon('chev') + '</span>';
+      b.addEventListener('click', function(){
+        copyText(d.xhs).then(function(){
+          toast('已复制「' + d.xhs + '」，正在打开小红书…');
+          setTimeout(function(){ window.location.href = xhsScheme(d.xhs); }, 350);
+        });
+      });
+      card.appendChild(b);
+      return;
+    }
+
+    // 不是景点：退回「下一站」导航
     var next = null, li = now.nextElementSibling;
     while (li && !next) { if (li.classList.contains('ev') && li.getAttribute('data-map')) next = li; li = li.nextElementSibling; }
     if (!next) {
@@ -2373,11 +2406,8 @@ xhs:'乌江画廊 龚滩'}
       if (nd) next = nd.querySelector('.ev[data-map]');
     }
     if (!next) return;
-
     var dest = destOf(next);
     if (!dest) return;
-    var label = next.querySelector('.ev-b');
-    var what = label ? label.textContent.replace(/\s+/g,' ').trim().slice(0, 14) : dest;
 
     var a = document.createElement('a');
     a.className = 'go-next';
@@ -2388,7 +2418,7 @@ xhs:'乌江画廊 龚滩'}
       '<span class="gn-txt"><span class="gn-lbl">下一站 · ' + next.getAttribute('data-time') + '</span>' +
       '<span class="gn-dest">' + dest + '</span></span>' +
       '<span class="gn-arrow">' + icon('chev') + '</span>';
-    now.querySelector('.ev-card').appendChild(a);
+    card.appendChild(a);
   }
 
   /* ---------- 3. 常驻的「回酒店」按钮 ---------- */
@@ -2456,13 +2486,13 @@ xhs:'乌江画廊 龚滩'}
   });
 
   // 时间推进 / 换天时，重算「下一站」按钮
-  refreshNextStop();
-  setInterval(refreshNextStop, 30000);
+  refreshNowAction();
+  setInterval(refreshNowAction, 30000);
   document.addEventListener('click', function(e){
-    if (e.target.closest && e.target.closest('.dtab')) setTimeout(refreshNextStop, 50);
+    if (e.target.closest && e.target.closest('.dtab')) setTimeout(refreshNowAction, 50);
   });
   document.addEventListener('visibilitychange', function(){
-    if (!document.hidden) setTimeout(refreshNextStop, 50);
+    if (!document.hidden) setTimeout(refreshNowAction, 50);
   });
 })();
 
