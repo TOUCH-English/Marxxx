@@ -288,6 +288,9 @@ footer div+div{margin-top:6px}
   display:flex;align-items:flex-end;justify-content:center;
   opacity:0;transition:opacity .24s;
 }
+/* 关键：display:flex 会盖过 hidden 属性，不写这一条的话
+   这层透明遮罩会一直挡在页面上，把所有点击都吃掉。 */
+.scrim[hidden]{display:none}
 .scrim.open{opacity:1}
 @media (min-width:600px){.scrim{align-items:center;padding:24px}}
 .sheet{
