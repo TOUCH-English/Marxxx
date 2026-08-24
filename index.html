@@ -575,6 +575,34 @@ footer div+div{margin-top:6px}
   background:var(--hero-grad);color:#fff;
   box-shadow:0 10px 26px -8px color-mix(in srgb, var(--accent) 70%, transparent), 0 2px 6px rgba(20,24,34,.25);
 }
+
+/* 自己存的小红书笔记 / 视频 */
+.saved-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:11px;padding:9px 12px;border-radius:13px;
+  text-decoration:none;transition:transform .12s,background .15s;
+  background:#FFF1F3;border:1px solid #FFD9DF;color:#D8203C;
+}
+.saved-link:active{transform:scale(.98)}
+.saved-link:hover{background:#FFE4E8}
+.saved-link:focus-visible{outline:2px solid #FF2442;outline-offset:2px}
+.saved-link svg.i{font-size:17px;flex:0 0 auto}
+.sl-txt{flex:1;min-width:0;font-size:13.5px;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sl-tag{
+  flex:0 0 auto;font-size:10.5px;font-weight:800;letter-spacing:.04em;
+  background:#FF2442;color:#fff;padding:2px 8px;border-radius:999px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .saved-link{
+    background:#3A1D24;border-color:#54262F;color:#FF8FA3;
+  }
+  :root:not([data-theme="light"]) .saved-link:hover{background:#48232C}
+}
+:root[data-theme="dark"] .saved-link{
+  background:#3A1D24;border-color:#54262F;color:#FF8FA3;
+}
+:root[data-theme="dark"] .saved-link:hover{background:#48232C}
 /* ===== 折叠区（其他资料）专用样式，全部限定在 .more-body 内 ===== */
 .more-body .standfirst{margin:0;max-width:62ch;color:var(--ink-2);font-size:clamp(15px,2.4vw,17px)}
 .more-body h2{
@@ -692,6 +720,7 @@ footer div+div{margin-top:6px}
 <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5.5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5v1"/></symbol>
 <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v5H6.5A2.5 2.5 0 0 1 4 19.5z"/></symbol>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.6 4H9.4L7.2 6.8H4.2A2.2 2.2 0 0 0 2 9v9.2a2.2 2.2 0 0 0 2.2 2.2h15.6a2.2 2.2 0 0 0 2.2-2.2V9a2.2 2.2 0 0 0-2.2-2.2h-3z"/><circle cx="12" cy="13.2" r="3.4"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="3.5"/><path d="M10.2 9.3v5.4l4.6-2.7z"/></symbol>
 </defs></svg>
 
 <div class="wrap">
@@ -871,7 +900,7 @@ footer div+div{margin-top:6px}
         <div class="ev-b"><button class="poi" data-p="hongyadong">洪崖洞</button>夜景<span class="sub">下船就在脚下。最好的机位在千厮门大桥上，走 5 分钟</span></div>
       </div>
     </li>
-    <li class="ev" data-time="22:00" data-map="@HOTEL">
+    <li class="ev" data-time="22:00" data-map="@HOTEL" data-link="http://xhslink.com/o/ABUuhleaClP" data-link-label="回解放碑的捷径">
       <div class="ev-rail">
         <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
         <span class="ev-line"></span>
@@ -2517,6 +2546,25 @@ xhs:'乌江画廊 龚滩'}
     a.addEventListener('click', function(){
       try { copyText(dest); } catch (e) {}
     });
+    card.appendChild(a);
+  });
+
+  /* ---------- 1b. 自己存的小红书帖子 ----------
+     挂在具体某一条上，一直显示（不是只有走到那一站才出现），
+     因为这种东西通常要提前看一眼心里有底。 */
+  Array.prototype.forEach.call(document.querySelectorAll('.ev[data-link]'), function(li){
+    var url = li.getAttribute('data-link');
+    var label = li.getAttribute('data-link-label') || '小红书笔记';
+    var card = li.querySelector('.ev-card');
+    if (!card || !url) return;
+    var a = document.createElement('a');
+    a.className = 'saved-link';
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.innerHTML = icon('play') +
+      '<span class="sl-txt">' + label + '</span>' +
+      '<span class="sl-tag">小红书</span>';
     card.appendChild(a);
   });
 
