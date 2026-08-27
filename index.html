@@ -603,6 +603,11 @@ footer div+div{margin-top:6px}
   background:#3A1D24;border-color:#54262F;color:#FF8FA3;
 }
 :root[data-theme="dark"] .saved-link:hover{background:#48232C}
+
+/* 交通方式 + 天气标签 */
+.chip.b-go{background:var(--c-go-bg);color:var(--c-go)}
+.chip.b-wx{background:var(--card);color:var(--ink-soft);border:1px solid var(--line);
+  font-variant-numeric:tabular-nums}
 /* ===== 折叠区（其他资料）专用样式，全部限定在 .more-body 内 ===== */
 .more-body .standfirst{margin:0;max-width:62ch;color:var(--ink-2);font-size:clamp(15px,2.4vw,17px)}
 .more-body h2{
@@ -721,6 +726,10 @@ footer div+div{margin-top:6px}
 <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v15H6.5A2.5 2.5 0 0 0 4 19.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v5H6.5A2.5 2.5 0 0 1 4 19.5z"/></symbol>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.6 4H9.4L7.2 6.8H4.2A2.2 2.2 0 0 0 2 9v9.2a2.2 2.2 0 0 0 2.2 2.2h15.6a2.2 2.2 0 0 0 2.2-2.2V9a2.2 2.2 0 0 0-2.2-2.2h-3z"/><circle cx="12" cy="13.2" r="3.4"/></symbol>
 <symbol id="i-play" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="3.5"/><path d="M10.2 9.3v5.4l4.6-2.7z"/></symbol>
+<symbol id="i-wx-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></symbol>
+<symbol id="i-wx-cloud" viewBox="0 0 24 24"><path d="M6.5 18.5a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.7-1.2A4.6 4.6 0 0 1 16.5 18.5z"/></symbol>
+<symbol id="i-wx-rain" viewBox="0 0 24 24"><path d="M6.5 14.5a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.7-1.2A4.6 4.6 0 0 1 16.5 14.5z"/><path d="M8 17.5l-1 3M12.5 17.5l-1 3M17 17.5l-1 3"/></symbol>
+<symbol id="i-wx-storm" viewBox="0 0 24 24"><path d="M6.5 13.5a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.7-1.2A4.6 4.6 0 0 1 16.5 13.5z"/><path d="M12.8 13.5 10 17.8h3l-1.8 3.7"/></symbol>
 </defs></svg>
 
 <div class="wrap">
@@ -747,7 +756,7 @@ footer div+div{margin-top:6px}
   <header class="dh">
     <div class="dh-when"><span class="dh-date">8/29</span><span class="dh-dow">周六</span></div>
     <h2 class="dh-title">飞抵重庆</h2>
-    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>江北机场</span></div>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>江北机场</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>旅行社接机</span><span class="chip b-wx" data-wx-day="0" hidden></span></div>
   </header>
   <ol class="rail">
     <li class="ev" data-time="20:05">
@@ -787,7 +796,7 @@ footer div+div{margin-top:6px}
   <header class="dh">
     <div class="dh-when"><span class="dh-date">8/30</span><span class="dh-dow">周日</span></div>
     <h2 class="dh-title">解放碑 · 朝天门 · 两江夜游</h2>
-    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>渝中·解放碑</span><span class="chip b-chg">调顺序</span></div>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>渝中·解放碑</span><span class="chip b-chg">调顺序</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>全天步行可达</span><span class="chip b-wx" data-wx-day="1" hidden></span></div>
   </header>
   <ol class="rail">
     <li class="ev free" data-time="">
@@ -921,7 +930,7 @@ footer div+div{margin-top:6px}
   <header class="dh">
     <div class="dh-when"><span class="dh-date">8/31</span><span class="dh-dow">周一</span></div>
     <h2 class="dh-title">重庆 → 武隆 · 仙女山</h2>
-    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>武隆</span><span class="chip b-keep">照原样</span></div>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>武隆</span><span class="chip b-keep">照原样</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>包车 + 导游</span><span class="chip b-wx" data-wx-day="2" hidden></span></div>
   </header>
   <ol class="rail">
     <li class="ev" data-time="08:30" data-map="@HOTEL">
@@ -1005,7 +1014,7 @@ footer div+div{margin-top:6px}
   <header class="dh">
     <div class="dh-when"><span class="dh-date">9/1</span><span class="dh-dow">周二</span></div>
     <h2 class="dh-title">天生三桥 + 龙水峡地缝</h2>
-    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>武隆</span><span class="chip b-keep">照原样</span></div>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>武隆</span><span class="chip b-keep">照原样</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>包车 + 导游</span><span class="chip b-wx" data-wx-day="3" hidden></span></div>
   </header>
   <ol class="rail">
     <li class="ev" data-time="08:00" data-map="@HOTEL">
@@ -1085,7 +1094,7 @@ footer div+div{margin-top:6px}
   <header class="dh">
     <div class="dh-when"><span class="dh-date">9/2</span><span class="dh-dow">周三</span></div>
     <h2 class="dh-title">九黎城 · 龚滩古镇 · 乌江画廊</h2>
-    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>彭水·酉阳</span><span class="chip b-keep">照原样</span></div>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>彭水·酉阳</span><span class="chip b-keep">照原样</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>包车 + 导游</span><span class="chip b-wx" data-wx-day="4" hidden></span></div>
   </header>
   <ol class="rail">
     <li class="ev" data-time="07:30" data-map="@HOTEL">
@@ -1179,7 +1188,7 @@ footer div+div{margin-top:6px}
   <header class="dh">
     <div class="dh-when"><span class="dh-date">9/3</span><span class="dh-dow">周四</span></div>
     <h2 class="dh-title">大熊猫 · 轻轨穿楼 · 鹅岭二厂</h2>
-    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>轨道 2 号线</span><span class="chip b-chg">重排</span></div>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>轨道 2 号线</span><span class="chip b-chg">重排</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>地铁为主 · 回程打车</span><span class="chip b-wx" data-wx-day="5" hidden></span></div>
   </header>
   <ol class="rail">
     <li class="ev" data-time="08:00" data-map="@HOTEL">
@@ -1283,7 +1292,7 @@ footer div+div{margin-top:6px}
   <header class="dh">
     <div class="dh-when"><span class="dh-date">9/4</span><span class="dh-dow">周五</span></div>
     <h2 class="dh-title">渣滓洞 · 白公馆 · 磁器口</h2>
-    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>轨道 1 号线</span><span class="chip b-chg">重排</span></div>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>轨道 1 号线</span><span class="chip b-chg">重排</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>地铁去 · 山上打车</span><span class="chip b-wx" data-wx-day="6" hidden></span></div>
   </header>
   <ol class="rail">
     <li class="ev" data-time="08:00" data-map="@HOTEL">
@@ -1387,7 +1396,7 @@ footer div+div{margin-top:6px}
   <header class="dh">
     <div class="dh-when"><span class="dh-date">9/5</span><span class="dh-dow">周六</span></div>
     <h2 class="dh-title">长江索道 · 老山城半日 → 无人机 → 机场</h2>
-    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>渝中 + 南岸</span><span class="chip b-chg">大改</span></div>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>渝中 + 南岸</span><span class="chip b-chg">大改</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>步行 + 索道 · 晚上打车</span><span class="chip b-wx" data-wx-day="7" hidden></span></div>
   </header>
   <ol class="rail">
     <li class="ev" data-time="08:00" data-map="@HOTEL">
@@ -1739,7 +1748,7 @@ footer div+div{margin-top:6px}
   <footer>
     <div>依据：旅行社《8.29-9.5 号马克确认件》· 重庆市人民政府「新韵重庆」8 月展演公告 · 长江索道 / 红岩博物馆 / 重庆动物园官方与本地宝信息。</div>
     <div>景区时间、票价和预约规则会变，出发前一周请让导游再核一次无人机场次和渣滓洞、白公馆的预约方式。</div>
-    <div>这一页不加载任何境外资源，在中国大陆可以正常打开；打开过一次之后离线也能看。手机上可以「添加到主屏幕」当 App 用。</div>
+    <div>页面本体不依赖任何境外资源，在中国大陆可以正常打开；打开过一次之后离线也能看，可「添加到主屏幕」当 App 用。天气数据来自 Open-Meteo，加载不到就自动隐藏，不影响其他功能。</div>
   </footer>
 
 </div>
@@ -2769,6 +2778,97 @@ xhs:'乌江画廊 龚滩'}
   document.addEventListener('visibilitychange', function(){
     if (!document.hidden) setTimeout(refreshNowAction, 50);
   });
+})();
+
+/* ==================== 天气：每天所在区域的当天预报 ====================
+   数据来自 Open-Meteo（免费、无需注册）。拉到了就填进日头部的天气标签，
+   拉不到（断网/被墙/超时）标签保持隐藏，页面其他功能完全不受影响。
+   结果缓存 30 分钟；缓存过期但拉取失败时，仍用旧缓存兜底。            */
+(function(){
+  'use strict';
+
+  // 每天人在哪个区域。坐标是区域级的，够天气用。
+  var LOCS = {
+    yuzhong:    {lat:29.557, lon:106.577},   // 渝中·解放碑
+    xiannvshan: {lat:29.025, lon:107.428},   // 武隆仙女山
+    gongtan:    {lat:28.970, lon:108.400}    // 酉阳龚滩一带
+  };
+  var DAY_LOC   = ['yuzhong','yuzhong','xiannvshan','xiannvshan','gongtan',
+                   'yuzhong','yuzhong','yuzhong'];
+  var DAY_DATE  = ['2026-08-29','2026-08-30','2026-08-31','2026-09-01',
+                   '2026-09-02','2026-09-03','2026-09-04','2026-09-05'];
+
+  // Open-Meteo 的 weather_code → 图标 + 一个字的描述
+  function wxKind(code){
+    if (code === 0) return {ic:'wx-sun', t:'晴'};
+    if (code <= 3) return {ic:'wx-cloud', t:'多云'};
+    if (code === 45 || code === 48) return {ic:'wx-cloud', t:'雾'};
+    if (code >= 95) return {ic:'wx-storm', t:'雷雨'};
+    if (code >= 51) return {ic:'wx-rain', t:'雨'};
+    return {ic:'wx-cloud', t:'多云'};
+  }
+
+  function fill(data){
+    DAY_DATE.forEach(function(date, di){
+      var loc = data[DAY_LOC[di]];
+      if (!loc) return;
+      var i = loc.time.indexOf(date);
+      if (i < 0) return;
+      var k = wxKind(loc.code[i]);
+      var hi = Math.round(loc.tmax[i]), lo = Math.round(loc.tmin[i]);
+      var rain = loc.rain && loc.rain[i] != null ? Math.round(loc.rain[i]) : null;
+      var chip = document.querySelector('[data-wx-day="' + di + '"]');
+      if (!chip) return;
+      chip.innerHTML = '<svg class="i" aria-hidden="true"><use href="#i-' + k.ic + '"/></svg>' +
+        k.t + ' ' + hi + '/' + lo + '°' +
+        (rain != null && rain >= 30 ? ' · 雨' + rain + '%' : '');
+      chip.hidden = false;
+    });
+  }
+
+  var CACHE_KEY = 'cq.wx.v1';
+  function readCache(){
+    try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch(e){ return null; }
+  }
+  function writeCache(data){
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({at: Date.now(), data: data})); } catch(e){}
+  }
+
+  function fetchLoc(key){
+    var c = LOCS[key];
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + c.lat +
+      '&longitude=' + c.lon +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
+      '&timezone=Asia%2FShanghai&start_date=2026-08-29&end_date=2026-09-06';
+    var ctrl = ('AbortController' in window) ? new AbortController() : null;
+    if (ctrl) setTimeout(function(){ ctrl.abort(); }, 7000);
+    return fetch(url, ctrl ? {signal: ctrl.signal} : {})
+      .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+      .then(function(j){
+        return [key, {time: j.daily.time, code: j.daily.weather_code,
+                      tmax: j.daily.temperature_2m_max, tmin: j.daily.temperature_2m_min,
+                      rain: j.daily.precipitation_probability_max}];
+      });
+  }
+
+  var cached = readCache();
+  if (cached && Date.now() - cached.at < 30 * 60 * 1000) {
+    fill(cached.data);           // 半小时内的缓存直接用，不重复请求
+    return;
+  }
+  if (!window.fetch) { if (cached) fill(cached.data); return; }
+
+  Promise.all(Object.keys(LOCS).map(function(k){ return fetchLoc(k); }))
+    .then(function(pairs){
+      var data = {};
+      pairs.forEach(function(p){ data[p[0]] = p[1]; });
+      writeCache(data);
+      fill(data);
+    })
+    .catch(function(){
+      // 拉不到：有旧缓存就用旧的，没有就什么都不显示
+      if (cached) fill(cached.data);
+    });
 })();
 
 </script>
