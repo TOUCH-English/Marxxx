@@ -207,7 +207,7 @@ svg.i{width:1em;height:1em;display:block;flex:0 0 auto;fill:none;stroke:currentC
 /* ═══════════ 时间轴 ═══════════ */
 .rail{list-style:none;margin:0;padding:0}
 .ev{display:flex;gap:13px;position:relative;padding-bottom:13px}
-.ev-rail{display:flex;flex-direction:column;align-items:center;width:44px;flex:0 0 44px}
+.ev-rail{display:flex;flex-direction:column;align-items:center;width:48px;flex:0 0 48px}
 .ev-node{
   --ic:var(--c-see); --ic-bg:var(--c-see-bg);
   width:44px;height:44px;border-radius:15px;flex:0 0 auto;
@@ -289,8 +289,29 @@ svg.i{width:1em;height:1em;display:block;flex:0 0 auto;fill:none;stroke:currentC
 /* 日期条上给「今天」加个进行中的点 */
 .dtab.is-now .n{color:var(--accent)}
 .dtab.is-now[aria-selected="true"] .n{color:#fff;opacity:1}
-.ev-line{flex:1;width:2px;border-radius:2px;background:var(--line);margin-top:7px;min-height:10px}
-.ev:last-child .ev-line{display:none}
+/* 轨道上的连接线。中间夹一个「到下一站怎么走」的小标：
+   上下各一段线，小标居中 —— 视觉上就是「这条线代表这段路」。   */
+.ev-link{flex:1;display:flex;flex-direction:column;align-items:center;
+  width:100%;margin-top:7px;min-height:10px}
+.ev-line{flex:1;width:2px;border-radius:2px;background:var(--line);min-height:6px}
+.ev:last-child .ev-link{display:none}
+
+.ev-leg{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  width:100%;margin:3px 0;padding:4px 1px 5px;
+  border-radius:11px;background:var(--bg);
+  font-size:9.5px;font-weight:800;line-height:1.15;text-align:center;
+  color:var(--ink-faint);white-space:nowrap;letter-spacing:-.01em;
+}
+.ev-leg svg.i{font-size:12px;opacity:.85}
+.ev-leg b{font-weight:800;font-variant-numeric:tabular-nums}
+.ev-leg em{font-style:normal;font-weight:700;font-size:8.5px;opacity:.72}
+/* 步行给绿色（自己走），坐车/地铁/索道给青色（要花钱、要等） */
+.ev-leg[data-m="walk"]{color:var(--c-see);background:var(--c-see-bg)}
+.ev-leg[data-m="car"],.ev-leg[data-m="metro"],.ev-leg[data-m="boat"],
+.ev-leg[data-m="cablecar"]{color:var(--c-go);background:var(--c-go-bg)}
+.ev-leg[data-m="plane"]{color:var(--c-fly);background:var(--c-fly-bg)}
+.ev.past .ev-leg{opacity:.4}
 
 .ev-card{
   flex:1;min-width:0;
@@ -305,16 +326,19 @@ svg.i{width:1em;height:1em;display:block;flex:0 0 auto;fill:none;stroke:currentC
 }
 .ev-t svg.i{font-size:12px;opacity:.7}
 .ev.free .ev-t{background:var(--accent-soft);color:var(--accent-2)}
+.ev-stay{
+  display:inline-flex;align-items:center;margin-left:6px;
+  margin-bottom:7px;vertical-align:middle;white-space:nowrap;line-height:1.6;
+  padding:3px 9px;border-radius:999px;
+  font-size:11.5px;font-weight:700;
+  background:var(--c-see-bg);color:var(--c-see);
+}
+.ev.past .ev-stay{opacity:.5}
 .ev-b{font-size:15px;line-height:1.62}
 .ev-b b{font-weight:700}
 .ev-b em{font-style:normal;color:var(--accent);font-weight:700}
 .sub{display:block;margin-top:6px;padding-top:7px;border-top:1px dashed var(--line);
   font-size:12.5px;line-height:1.62;color:var(--ink-soft)}
-.walk{
-  display:inline-flex;align-items:center;gap:4px;margin-left:6px;
-  padding:1px 8px;border-radius:999px;background:var(--bg);
-  font-size:11px;font-weight:700;color:var(--ink-faint);white-space:nowrap;
-}
 
 /* 可点开的地名 */
 .poi{
@@ -635,7 +659,7 @@ footer div+div{margin-top:6px}
   font-size:11.5px;font-weight:700;line-height:1.6;
   font-variant-numeric:tabular-nums;white-space:nowrap;
   background:var(--bg);color:var(--ink-faint);
-  vertical-align:middle;
+  vertical-align:middle;margin-bottom:7px;
 }
 /* 偏凉：换成冷色，一眼看得出要带外套 */
 .ev-wx.cool{background:var(--c-go-bg);color:var(--c-go)}
@@ -829,7 +853,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="20:05">
       <div class="ev-rail">
         <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="plane" title="到下一站：飞约 5小时"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg><b>5小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:05</span>
@@ -839,7 +863,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="01:15" data-map="江北国际机场">
       <div class="ev-rail">
         <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 40分（接机）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>40分</b><em>接机</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>01:15</span>
@@ -849,7 +873,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="02:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>≈02:30</span>
@@ -869,7 +893,7 @@ footer div+div{margin-top:6px}
     <li class="ev free" data-time="">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t">睡饱</span>
@@ -879,7 +903,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="10:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 8分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>8分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:30</span>
@@ -889,27 +913,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="11:00" data-map="罗汉寺">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 对面"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>对面</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:00</span>
-        <div class="ev-b"><button class="poi" data-p="luohan">罗汉寺</button>（门票 ¥20）<span class="sub">五百罗汉堂，按年龄数罗汉。约 40 分钟<span class="walk">酒店步行 8 分钟</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:00</span><span class="ev-stay">停留 约 40 分</span>
+        <div class="ev-b"><button class="poi" data-p="luohan">罗汉寺</button>（门票 ¥20）<span class="sub">五百罗汉堂，按年龄数罗汉</span></div>
       </div>
     </li>
     <li class="ev" data-time="11:45" data-map="小什字">
       <div class="ev-rail">
         <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:45</span>
-        <div class="ev-b"><button class="poi" data-p="xiaoshizi">小什字小商品批发市场</button><span class="sub">就在罗汉寺正对面，两个点连着逛。孩子淘小东西 30–45 分钟；不感兴趣可整段跳过<span class="walk">正对面 · 0 分钟</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:45</span><span class="ev-stay">停留 30–45 分</span>
+        <div class="ev-b"><button class="poi" data-p="xiaoshizi">小什字小商品批发市场</button><span class="sub">就在罗汉寺正对面，两个点连着逛。孩子淘小东西，不感兴趣可整段跳过</span></div>
       </div>
     </li>
     <li class="ev" data-time="12:30" data-map="八一路好吃街">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span>
@@ -919,27 +943,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="14:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 20分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span><span class="ev-stay">停留 午休 2.5 小时</span>
         <div class="ev-b"><b>回酒店午休</b><span class="sub"><em>这一觉别省。</em>晚上要撑到 22:00</span></div>
       </div>
     </li>
     <li class="ev" data-time="16:30" data-map="来福士广场">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 15分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>15分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:30</span>
-        <div class="ev-b"><button class="poi" data-p="chaotianmen">朝天门 · 来福士</button><span class="sub">看长江嘉陵江交汇。水晶连廊 ¥128/人属于可选，广场上免费就看得到分色<span class="walk">解放碑步行 20 分钟</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:30</span><span class="ev-stay">停留 约 1.5 小时</span>
+        <div class="ev-b"><button class="poi" data-p="chaotianmen">朝天门 · 来福士</button><span class="sub">看长江嘉陵江交汇。水晶连廊 ¥128/人属于可选，广场上免费就看得到分色</span></div>
       </div>
     </li>
     <li class="ev" data-time="18:00" data-map="八一路好吃街" data-food="解放碑八一路">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span>
@@ -949,7 +973,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="19:15" data-map="洪崖洞">
       <div class="ev-rail">
         <span class="ev-node" data-ic="boat"><svg class="i" aria-hidden="true"><use href="#i-boat"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>19:15</span>
@@ -959,31 +983,31 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="20:00" data-map="朝天门码头">
       <div class="ev-rail">
         <span class="ev-node" data-ic="boat"><svg class="i" aria-hidden="true"><use href="#i-boat"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 即到"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>即到</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:00</span><span class="ev-stay">停留 船上 50 分</span>
         <div class="ev-b"><button class="poi" data-p="liangjiangyou">两江夜游</button>（已含团费 ¥148/人）<span class="sub">轮流发班，游览约 50 分钟。上船直接去上层甲板</span></div>
       </div>
     </li>
     <li class="ev" data-time="21:10" data-map="洪崖洞">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 15分（上坡）"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>15分</b><em>上坡</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>21:10</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>21:10</span><span class="ev-stay">停留 约 50 分</span>
         <div class="ev-b"><button class="poi" data-p="hongyadong">洪崖洞</button>夜景<span class="sub">下船就在脚下。最好的机位在千厮门大桥上，走 5 分钟</span></div>
       </div>
     </li>
     <li class="ev" data-time="22:00" data-map="@HOTEL" data-link="http://xhslink.com/o/ABUuhleaClP" data-link-label="回解放碑的捷径">
       <div class="ev-rail">
         <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>22:00</span>
-        <div class="ev-b">步行回酒店<span class="sub">散场时段这一带基本打不到车，别在路边干等<span class="walk">上坡 15 分钟</span></span></div>
+        <div class="ev-b">步行回酒店<span class="sub">散场时段这一带基本打不到车，别在路边干等</span></div>
       </div>
     </li>
   </ol>
@@ -1003,7 +1027,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span>
@@ -1013,7 +1037,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="09:00" data-map="仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 约3小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>约3小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span>
@@ -1023,7 +1047,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="12:30" data-map="仙女山镇" data-food="武隆仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span>
@@ -1033,27 +1057,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="13:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 20分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span><span class="ev-stay">停留 休息 1 小时</span>
         <div class="ev-b">欧悦酒店办入住，休息一小时</div>
       </div>
     </li>
     <li class="ev" data-time="14:30" data-map="仙女山">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 20分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span><span class="ev-stay">停留 3.5 小时</span>
         <div class="ev-b"><button class="poi" data-p="xiannvshan">仙女山</button>（含门票 ¥50 + 小火车 ¥25），游览 3.5 小时<span class="sub">高山草原，骑马、滑草，是整趟对孩子最放松的半天</span></div>
       </div>
     </li>
     <li class="ev" data-time="18:00" data-map="仙女山镇" data-food="武隆仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span>
@@ -1063,7 +1087,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="20:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:00</span>
@@ -1087,7 +1111,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 30分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>30分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:00</span>
@@ -1097,17 +1121,17 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="09:00" data-map="天生三桥">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 25分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>25分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span><span class="ev-stay">停留 3 小时</span>
         <div class="ev-b"><button class="poi" data-p="tianshengsanqiao">天生三桥</button>（门票 + 换乘车 + 电梯 + 电瓶车全部已含），游览 3 小时<span class="sub">《变形金刚 4》和《满城尽带黄金甲》取景地。穿防滑鞋</span></div>
       </div>
     </li>
     <li class="ev" data-time="12:00" data-map="仙女山镇" data-food="武隆仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 20分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:00</span>
@@ -1117,27 +1141,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="13:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 25分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>25分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span><span class="ev-stay">停留 休息 1 小时</span>
         <div class="ev-b">回酒店休息一小时</div>
       </div>
     </li>
     <li class="ev" data-time="14:30" data-map="龙水峡地缝">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span><span class="ev-stay">停留 约 3 小时</span>
         <div class="ev-b"><button class="poi" data-p="longshuixia">龙水峡地缝</button>（全部已含）<span class="sub">缝底常年十几度、湿滑有水雾，<em>薄外套第二次派上用场</em></span></div>
       </div>
     </li>
     <li class="ev" data-time="17:30">
       <div class="ev-rail">
         <span class="ev-node" data-ic="free"><svg class="i" aria-hidden="true"><use href="#i-free"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 25分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>25分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:30</span>
@@ -1147,7 +1171,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="18:00" data-map="@HOTEL" data-food="武隆仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span>
@@ -1167,7 +1191,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="07:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>07:30</span>
@@ -1177,7 +1201,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:00" data-map="蚩尤九黎城">
       <div class="ev-rail">
         <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 2小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>2小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:00</span>
@@ -1187,27 +1211,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="10:00" data-map="蚩尤九黎城">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分（景区内）"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b><em>景区内</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span><span class="ev-stay">停留 约 1 小时</span>
         <div class="ev-b"><button class="poi" data-p="jiulicheng">蚩尤九黎城</button>（含门票 ¥80）<span class="sub">台阶多，建议直接上到高处再往下走</span></div>
       </div>
     </li>
     <li class="ev" data-time="11:00" data-map="蚩尤九黎城" data-food="彭水苗家长桌宴">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:00</span><span class="ev-stay">停留 约 1.5 小时</span>
         <div class="ev-b">长桌宴<span class="sub"><em>费用表里只看到门票、没看到餐费——这一条要问清楚</em></span></div>
       </div>
     </li>
     <li class="ev" data-time="12:30" data-map="龚滩古镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 1.5小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>1.5小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span>
@@ -1217,17 +1241,17 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="14:00" data-map="龚滩古镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="boat"><svg class="i" aria-hidden="true"><use href="#i-boat"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span><span class="ev-stay">停留 约 3.5 小时</span>
         <div class="ev-b"><button class="poi" data-p="wujiang">乌江画廊游船</button>（含 ¥128）+ <button class="poi" data-p="gongtan">龚滩古镇</button><span class="sub">挂在崖壁上的吊脚楼古镇，游客比磁器口少很多</span></div>
       </div>
     </li>
     <li class="ev" data-time="17:30" data-map="@HOTEL" data-food="龚滩古镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 3小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>3小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:30</span>
@@ -1237,7 +1261,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="21:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>21:00</span>
@@ -1261,7 +1285,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:00</span>
@@ -1271,27 +1295,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:30" data-map="动物园站">
       <div class="ev-rail">
         <span class="ev-node" data-ic="metro"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：地铁约 40分（换2号线）"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>40分</b><em>换2号线</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span>
-        <div class="ev-b">出发：1 号线小什字 → 较场口换 2 号线 → 动物园站<span class="sub"><span class="walk">全程约 40 分钟 · 1 号出口</span></span></div>
+        <div class="ev-b">出发：1 号线小什字 → 较场口换 2 号线 → 动物园站<span class="sub">较场口换 2 号线，动物园站走 <b>1 号出口</b></span></div>
       </div>
     </li>
     <li class="ev" data-time="09:00" data-map="重庆动物园">
       <div class="ev-rail">
         <span class="ev-node" data-ic="panda"><svg class="i" aria-hidden="true"><use href="#i-panda"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：地铁约 10分"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span><span class="ev-stay">停留 约 3 小时</span>
         <div class="ev-b"><button class="poi" data-p="dongwuyuan">重庆动物园</button>（成人 ¥25 / 儿童 ¥12.5）<span class="sub"><em>一进门直奔熊猫馆。</em>23 只大熊猫，上午 9 点和下午 3 点前后才活动，中午全在睡</span></div>
       </div>
     </li>
     <li class="ev" data-time="12:00" data-map="杨家坪" data-food="杨家坪">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:00</span>
@@ -1301,37 +1325,37 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="13:30" data-map="李子坝站">
       <div class="ev-rail">
         <span class="ev-node" data-ic="metro"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：地铁约 15分"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>15分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span>
-        <div class="ev-b">2 号线 动物园 → 李子坝<span class="sub"><span class="walk">约 15 分钟</span></span></div>
+        <div class="ev-b">2 号线 动物园 → 李子坝</div>
       </div>
     </li>
     <li class="ev" data-time="14:00" data-map="李子坝">
       <div class="ev-rail">
         <span class="ev-node" data-ic="metro"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 8分（回头路）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>8分</b><em>回头路</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span><span class="ev-stay">停留 约 1.5 小时</span>
         <div class="ev-b"><button class="poi" data-p="liziba">李子坝轻轨穿楼</button>（免费）<span class="sub">先在观景平台看两趟，再上车从楼里穿出去一次</span></div>
       </div>
     </li>
     <li class="ev" data-time="15:30" data-map="鹅岭二厂">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:30</span>
-        <div class="ev-b"><button class="poi" data-p="erchang">鹅岭二厂</button><span class="sub">天台看整个渝中半岛，日落前后最好<span class="walk">打车 8 分钟 · 全天唯一回头路</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:30</span><span class="ev-stay">停留 约 2 小时</span>
+        <div class="ev-b"><button class="poi" data-p="erchang">鹅岭二厂</button><span class="sub">天台看整个渝中半岛，日落前后最好。这是<em>全天唯一一段回头路</em></span></div>
       </div>
     </li>
     <li class="ev" data-time="17:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:30</span>
@@ -1341,7 +1365,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="18:30" data-map="八一路好吃街" data-food="解放碑八一路">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span>
@@ -1365,7 +1389,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:00</span>
@@ -1375,47 +1399,47 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:30" data-map="磁器口站">
       <div class="ev-rail">
         <span class="ev-node" data-ic="metro"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：地铁约 30分（不换乘）"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>30分</b><em>不换乘</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span>
-        <div class="ev-b">1 号线 小什字 → 磁器口<span class="sub"><span class="walk">约 30 分钟 · 直达不换乘</span></span></div>
+        <div class="ev-b">1 号线 小什字 → 磁器口<span class="sub">直达不换乘，坐到底</span></div>
       </div>
     </li>
     <li class="ev" data-time="09:15" data-map="渣滓洞">
       <div class="ev-rail">
         <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分（约5公里）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b><em>约5公里</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:15</span>
-        <div class="ev-b">磁器口打车上歌乐山<span class="sub"><span class="walk">约 5 公里 · 10 分钟 · ¥15</span></span></div>
+        <div class="ev-b">磁器口打车上歌乐山<span class="sub">车费约 ¥15，山路弯，别让孩子空腹坐</span></div>
       </div>
     </li>
     <li class="ev" data-time="09:30" data-map="渣滓洞">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分（2.5公里）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b><em>2.5公里</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span><span class="ev-stay">停留 约 1 小时</span>
         <div class="ev-b"><button class="poi" data-p="zhazidong">渣滓洞</button>（免费，需提前 1 天预约），约 1 小时</div>
       </div>
     </li>
     <li class="ev" data-time="10:45" data-map="白公馆">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分（下山）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b><em>下山</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:45</span>
-        <div class="ev-b"><button class="poi" data-p="baigongguan">白公馆</button>（同样预约），约 1 小时<span class="sub">两馆之间有免费接驳车<span class="walk">约 2.5 公里</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:45</span><span class="ev-stay">停留 约 1 小时</span>
+        <div class="ev-b"><button class="poi" data-p="baigongguan">白公馆</button>（同样预约），约 1 小时<span class="sub">两馆之间有免费接驳车</span></div>
       </div>
     </li>
     <li class="ev" data-time="12:15" data-map="磁器口古镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:15</span>
@@ -1425,17 +1449,17 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="13:30" data-map="磁器口古镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="boat"><svg class="i" aria-hidden="true"><use href="#i-boat"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：地铁约 30分"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>30分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span><span class="ev-stay">停留 约 2 小时</span>
         <div class="ev-b">磁器口 + 嘉陵江边码头<span class="sub">往江边下去的那几条小巷人少很多，比主街值得走</span></div>
       </div>
     </li>
     <li class="ev" data-time="15:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="metro"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 25分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>25分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:30</span>
@@ -1445,7 +1469,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="18:30" data-map="观音桥">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span>
@@ -1469,7 +1493,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span>
@@ -1479,17 +1503,17 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="09:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span><span class="ev-stay">停留 1.5 小时</span>
         <div class="ev-b"><b>在房间把行李整理好</b><span class="sub"><em>这是最后能用房间的两小时，别浪费。</em>洗澡、换上登机那身衣服、行李摊开重新装、湿衣服打包好</span></div>
       </div>
     </li>
     <li class="ev" data-time="11:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 20分（下坡台阶）"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>20分</b><em>下坡台阶</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:00</span>
@@ -1499,17 +1523,17 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="11:15" data-map="十八梯">
       <div class="ev-rail">
         <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:15</span>
-        <div class="ev-b">步行前往<button class="poi" data-p="shibati">十八梯</button>（免费）<span class="sub">一路下坡台阶<span class="walk">约 20 分钟</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:15</span><span class="ev-stay">停留 约 1 小时</span>
+        <div class="ev-b">步行前往<button class="poi" data-p="shibati">十八梯</button>（免费）<span class="sub">一路下坡台阶</span></div>
       </div>
     </li>
     <li class="ev" data-time="12:15" data-map="较场口" data-food="较场口">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 15分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>15分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:15</span>
@@ -1519,57 +1543,57 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="13:30" data-map="白象居">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 6分（400米）"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>6分</b><em>400米</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span>
-        <div class="ev-b">走去<button class="poi" data-p="baixiangju">白象居</button><span class="sub">长江边的老居民楼，穿楼而过的那种<span class="walk">较场口过来约 15 分钟</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span><span class="ev-stay">停留 约 45 分</span>
+        <div class="ev-b">走去<button class="poi" data-p="baixiangju">白象居</button><span class="sub">长江边的老居民楼，穿楼而过的那种</span></div>
       </div>
     </li>
     <li class="ev" data-time="14:15" data-map="长江索道">
       <div class="ev-rail">
         <span class="ev-node" data-ic="cablecar"><svg class="i" aria-hidden="true"><use href="#i-cablecar"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="cablecar" title="到下一站：索道约 5分（过江）"><svg class="i" aria-hidden="true"><use href="#i-cablecar"/></svg><b>5分</b><em>过江</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:15</span>
-        <div class="ev-b"><button class="poi" data-p="suodao">长江索道</button>，单程 ¥30/人<span class="sub"><em>只买单程，不买往返。</em>白象居离索道北站只有 400 米。<em>队伍超过 45 分钟就直接放弃，改打车过江</em>——今天时间不紧，但排两小时不值<span class="walk">白象居步行 400 米</span></span></div>
+        <div class="ev-b"><button class="poi" data-p="suodao">长江索道</button>，单程 ¥30/人<span class="sub"><em>只买单程，不买往返。</em>白象居离索道北站只有 400 米。<em>队伍超过 45 分钟就直接放弃，改打车过江</em>——今天时间不紧，但排两小时不值</span></div>
       </div>
     </li>
     <li class="ev" data-time="14:45" data-map="龙门浩老街">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:45</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:45</span><span class="ev-stay">停留 约 1 小时</span>
         <div class="ev-b"><button class="poi" data-p="longmenhao">龙门浩老街</button>（免费）<span class="sub">索道南站下来就是。从南岸回看渝中天际线，是全重庆最好的机位之一</span></div>
       </div>
     </li>
     <li class="ev" data-time="16:00" data-map="龙门浩老街">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分（南滨路）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b><em>南滨路</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span><span class="ev-stay">停留 歇脚 1 小时</span>
         <div class="ev-b"><b>找家咖啡馆坐下来歇脚</b><span class="sub"><em>退房之后没有房间可回，下午这段一定要有空调和座位。</em>龙门浩老街一带就有，孩子也能安静一会儿</span></div>
       </div>
     </li>
     <li class="ev" data-time="17:15" data-map="弹子石老街">
       <div class="ev-rail">
         <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:15</span>
-        <div class="ev-b">打车去<button class="poi" data-p="danzishi">弹子石老街</button><span class="sub">同在南滨路上，不用跨江<span class="walk">约 10 分钟</span></span></div>
+        <div class="ev-b">打车去<button class="poi" data-p="danzishi">弹子石老街</button><span class="sub">同在南滨路上，不用跨江</span></div>
       </div>
     </li>
     <li class="ev" data-time="17:30" data-map="弹子石老街" data-food="弹子石老街">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:30</span>
@@ -1579,37 +1603,37 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="18:30" data-map="南滨路">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span><span class="ev-stay">停留 占位 2 小时</span>
         <div class="ev-b">南滨路占位<span class="sub">老街旁边就是江边，早点到能挑机位</span></div>
       </div>
     </li>
     <li class="ev" data-time="20:30" data-map="南滨路">
       <div class="ev-rail">
         <span class="ev-node" data-ic="drone"><svg class="i" aria-hidden="true"><use href="#i-drone"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:30</span><span class="ev-stay">停留 约 20 分</span>
         <div class="ev-b"><button class="poi" data-p="wurenji">「新韵重庆」无人机灯光秀</button>，约 20 分钟</div>
       </div>
     </li>
     <li class="ev" data-time="20:50" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 20分（回解放碑）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>20分</b><em>回解放碑</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:50</span>
-        <div class="ev-b">散场，<b>往内陆走两个路口再打车</b>回酒店<span class="sub"><em>别在江边路口叫车。</em>散场时管制区里几乎叫不到，往里走一两个路口、找个酒店门口这类好认的地标再下单<span class="walk">回解放碑约 20 分钟</span></span></div>
+        <div class="ev-b">散场，<b>往内陆走两个路口再打车</b>回酒店<span class="sub"><em>别在江边路口叫车。</em>散场时管制区里几乎叫不到，往里走一两个路口、找个酒店门口这类好认的地标再下单</span></div>
       </div>
     </li>
     <li class="ev" data-time="22:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>22:00</span>
@@ -1619,17 +1643,17 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="22:30" data-map="江北国际机场">
       <div class="ev-rail">
         <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 40分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>40分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>22:30</span>
-        <div class="ev-b"><b>司机到酒店接</b>，出发江北机场 T3<span class="sub"><em>司机几点到酒店，出发前必须跟导游敲定。</em>确认件里只写了「安排司机送机场」，没有写时间<span class="walk">约 40 分钟</span></span></div>
+        <div class="ev-b"><b>司机到酒店接</b>，出发江北机场 T3<span class="sub"><em>司机几点到酒店，出发前必须跟导游敲定。</em>确认件里只写了「安排司机送机场」，没有写时间</span></div>
       </div>
     </li>
     <li class="ev" data-time="23:15" data-map="江北国际机场">
       <div class="ev-rail">
         <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>23:15</span>
@@ -1639,7 +1663,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="02:35">
       <div class="ev-rail">
         <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>02:35</span>
@@ -1665,7 +1689,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="20:05">
       <div class="ev-rail">
         <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="plane" title="到下一站：飞约 5小时"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg><b>5小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:05</span>
@@ -1675,7 +1699,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="01:15" data-map="江北国际机场">
       <div class="ev-rail">
         <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 40分（接机）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>40分</b><em>接机</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>01:15</span>
@@ -1685,7 +1709,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="02:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>≈02:30</span>
@@ -1705,7 +1729,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 20分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span>
@@ -1715,17 +1739,17 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="10:00" data-map="小什字">
       <div class="ev-rail">
         <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span>
-        <div class="ev-b">步行前往<button class="poi" data-p="xiaoshizi">小什字小商品批发市场</button><span class="sub">每层楼的商品都不一样，可以淘一些自己喜欢的小物件<span class="walk">步行约 20 分钟</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span><span class="ev-stay">停留 约 2 小时</span>
+        <div class="ev-b">步行前往<button class="poi" data-p="xiaoshizi">小什字小商品批发市场</button><span class="sub">每层楼的商品都不一样，可以淘一些自己喜欢的小物件</span></div>
       </div>
     </li>
     <li class="ev" data-time="12:30" data-map="八一路好吃街" data-food="解放碑八一路">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span>
@@ -1735,27 +1759,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="14:30" data-map="罗汉寺">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 15分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>15分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span><span class="ev-stay">停留 约 40 分</span>
         <div class="ev-b"><button class="poi" data-p="luohan">罗汉寺</button>（门票 ¥20）<span class="sub">就在小商品市场正对面，感兴趣可以进去逛逛</span></div>
       </div>
     </li>
     <li class="ev" data-time="15:30" data-map="来福士广场">
       <div class="ev-rail">
         <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 20分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:30</span>
-        <div class="ev-b">步行前往<button class="poi" data-p="chaotianmen">来福士</button>打卡拍照、逛商场<span class="sub">回程打车起步价约 ¥10<span class="walk">步行约 15 分钟</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:30</span><span class="ev-stay">停留 约 2 小时</span>
+        <div class="ev-b">步行前往<button class="poi" data-p="chaotianmen">来福士</button>打卡拍照、逛商场<span class="sub">回程打车起步价约 ¥10</span></div>
       </div>
     </li>
     <li class="ev" data-time="18:00" data-map="八一路好吃街" data-food="解放碑八一路">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 20分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span>
@@ -1765,21 +1789,21 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="19:30" data-map="洪崖洞">
       <div class="ev-rail">
         <span class="ev-node" data-ic="boat"><svg class="i" aria-hidden="true"><use href="#i-boat"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>19:30</span>
-        <div class="ev-b">步行前往洪崖洞码头，排队乘<button class="poi" data-p="liangjiangyou">两江游船</button><span class="sub">游轮轮流发班，游览约 50 分钟<span class="walk">步行约 20 分钟</span></span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>19:30</span><span class="ev-stay">停留 船上 50 分</span>
+        <div class="ev-b">步行前往洪崖洞码头，排队乘<button class="poi" data-p="liangjiangyou">两江游船</button><span class="sub">游轮轮流发班，游览约 50 分钟</span></div>
       </div>
     </li>
     <li class="ev" data-time="21:40" data-map="@HOTEL" data-link="http://xhslink.com/o/ABUuhleaClP" data-link-label="回解放碑的捷径">
       <div class="ev-rail">
         <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>21:40</span>
-        <div class="ev-b">下船打卡<button class="poi" data-p="hongyadong">洪崖洞</button>，原路步行返回酒店<span class="sub">这个时段人太多打不到车，直接走回去（不需要安排用车）</span></div>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>21:40</span><span class="ev-stay">停留 约 30 分</span>
+        <div class="ev-b">下船打卡<button class="poi" data-p="hongyadong">洪崖洞</button>，原路步行返回酒店<span class="sub">这个时段人太多打不到车，直接走回去，上坡约 15 分钟（不需要安排用车）</span></div>
       </div>
     </li>
   </ol>
@@ -1795,7 +1819,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span>
@@ -1805,7 +1829,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="09:00" data-map="仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 3.5小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>3.5小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span>
@@ -1815,7 +1839,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="12:30" data-map="仙女山镇" data-food="武隆仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span>
@@ -1825,27 +1849,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="13:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 20分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span><span class="ev-stay">停留 休息 1 小时</span>
         <div class="ev-b">回酒店办理入住，休息一个小时</div>
       </div>
     </li>
     <li class="ev" data-time="14:30" data-map="仙女山">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 20分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span><span class="ev-stay">停留 3.5 小时</span>
         <div class="ev-b"><button class="poi" data-p="xiannvshan">仙女山</button>景区游览 3.5 小时</div>
       </div>
     </li>
     <li class="ev" data-time="18:00" data-map="仙女山镇" data-food="武隆仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span>
@@ -1855,7 +1879,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="20:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:00</span>
@@ -1875,7 +1899,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 30分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>30分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:00</span>
@@ -1885,17 +1909,17 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="09:00" data-map="天生三桥">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 25分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>25分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span><span class="ev-stay">停留 3 小时</span>
         <div class="ev-b">游览<button class="poi" data-p="tianshengsanqiao">天生三桥</button>景区</div>
       </div>
     </li>
     <li class="ev" data-time="12:00" data-map="仙女山镇" data-food="武隆仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 20分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:00</span>
@@ -1905,27 +1929,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="13:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 25分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>25分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span><span class="ev-stay">停留 休息 1 小时</span>
         <div class="ev-b">回酒店休息</div>
       </div>
     </li>
     <li class="ev" data-time="14:30" data-map="龙水峡地缝">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span><span class="ev-stay">停留 约 3 小时</span>
         <div class="ev-b">游览<button class="poi" data-p="longshuixia">龙水峡地缝</button>景区</div>
       </div>
     </li>
     <li class="ev" data-time="17:30">
       <div class="ev-rail">
         <span class="ev-node" data-ic="free"><svg class="i" aria-hidden="true"><use href="#i-free"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 25分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>25分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:30</span>
@@ -1935,7 +1959,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="18:00" data-map="@HOTEL" data-food="武隆仙女山镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span>
@@ -1955,7 +1979,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="07:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 2小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>2小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>07:30</span>
@@ -1965,27 +1989,27 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:00" data-map="蚩尤九黎城">
       <div class="ev-rail">
         <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:00</span><span class="ev-stay">停留 约 1 小时</span>
         <div class="ev-b">乘车 2 小时抵达<button class="poi" data-p="jiulicheng">九黎城</button>，景区游览一小时<span class="sub">可以在景区里体验长桌宴</span></div>
       </div>
     </li>
     <li class="ev" data-time="12:30" data-map="龚滩古镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="boat"><svg class="i" aria-hidden="true"><use href="#i-boat"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 1.5小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>1.5小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span><span class="ev-stay">停留 约 3.5 小时</span>
         <div class="ev-b">乘车 1.5 小时，游览<button class="poi" data-p="gongtan">龚滩古镇</button>、<button class="poi" data-p="wujiang">乌江画廊游船</button></div>
       </div>
     </li>
     <li class="ev" data-time="17:30" data-map="@HOTEL" data-food="龚滩古镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 3小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>3小时</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:30</span>
@@ -1995,7 +2019,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="21:00" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>21:00</span>
@@ -2015,7 +2039,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span>
@@ -2025,57 +2049,57 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="09:00" data-map="长江索道">
       <div class="ev-rail">
         <span class="ev-node" data-ic="cablecar"><svg class="i" aria-hidden="true"><use href="#i-cablecar"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 40分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>40分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span><span class="ev-stay">停留 过江 5 分</span>
         <div class="ev-b">出发乘坐<button class="poi" data-p="suodao">长江索道</button></div>
       </div>
     </li>
     <li class="ev" data-time="10:00" data-map="渣滓洞">
       <div class="ev-rail">
         <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分（下山）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b><em>下山</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span><span class="ev-stay">停留 约 2 小时</span>
         <div class="ev-b">前往<button class="poi" data-p="zhazidong">渣滓洞</button>、<button class="poi" data-p="baigongguan">白公馆</button>游览</div>
       </div>
     </li>
     <li class="ev" data-time="12:00" data-map="磁器口古镇">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 25分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>25分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:00</span><span class="ev-stay">停留 约 2 小时</span>
         <div class="ev-b">游览<button class="poi" data-p="ciqikou">磁器口古镇</button>，顺便用中餐</div>
       </div>
     </li>
     <li class="ev" data-time="14:00" data-map="三峡博物馆">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span><span class="ev-stay">停留 约 2 小时</span>
         <div class="ev-b"><button class="poi" data-p="sanxia">三峡博物馆</button>、人民大礼堂（外观）</div>
       </div>
     </li>
     <li class="ev" data-time="16:00" data-map="李子坝">
       <div class="ev-rail">
         <span class="ev-node" data-ic="metro"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：地铁约 20分"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>20分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span><span class="ev-stay">停留 约 1 小时</span>
         <div class="ev-b">打卡<button class="poi" data-p="liziba">李子坝轻轨穿楼</button>，体验轻轨穿楼<span class="sub">之后乘地铁约 20 分钟回酒店</span></div>
       </div>
     </li>
     <li class="ev" data-time="18:00" data-map="@HOTEL" data-food="解放碑八一路">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span>
@@ -2095,7 +2119,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span>
@@ -2105,7 +2129,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="09:00" data-map="弹子石老街">
       <div class="ev-rail">
         <span class="ev-node" data-ic="free"><svg class="i" aria-hidden="true"><use href="#i-free"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span>
@@ -2125,7 +2149,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="08:30" data-map="@HOTEL">
       <div class="ev-rail">
         <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span>
@@ -2135,7 +2159,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="09:00" data-map="鹅岭二厂">
       <div class="ev-rail">
         <span class="ev-node" data-ic="free"><svg class="i" aria-hidden="true"><use href="#i-free"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span>
@@ -2145,17 +2169,17 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="20:30" data-map="南滨路">
       <div class="ev-rail">
         <span class="ev-node" data-ic="drone"><svg class="i" aria-hidden="true"><use href="#i-drone"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 30分（回酒店）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>30分</b><em>回酒店</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
-        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:30</span>
+        <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:30</span><span class="ev-stay">停留 约 20 分</span>
         <div class="ev-b"><button class="poi" data-p="wurenji">南滨路无人机表演</button></div>
       </div>
     </li>
     <li class="ev" data-time="22:30" data-map="江北国际机场">
       <div class="ev-rail">
         <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 40分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>40分</b></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>22:30</span>
@@ -2165,7 +2189,7 @@ footer div+div{margin-top:6px}
     <li class="ev" data-time="02:35">
       <div class="ev-rail">
         <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
-        <span class="ev-line"></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>02:35</span>
@@ -2324,6 +2348,7 @@ footer div+div{margin-top:6px}
   <section>
     <h2><span class="n">08</span>到了之后用得上的几条</h2>
     <div class="tips">
+      <div class="tip"><div class="tk">时间怎么看</div><div>左边轨道上的小标是<b>这一站到下一站怎么走、要多久</b>（绿色＝自己走，青色＝坐车/地铁/索道）；卡片上的绿色标是<b>在这一站大概待多久</b>。写着「游览 3.5 小时」「车程 2 小时」的是原行程里就有的，其余按行程排的时间差往粗了估。<b>要真的出发时，点卡片右上角的导航，以高德的实时时间为准。</b></div></div>
       <div class="tip"><div class="tk">步行</div><div>重庆的"步行 15 分钟"经常含爬坡、楼梯、过街天桥和地下通道。你们孩子很能走，但<b>导航上的距离要打七折信</b>——同样的 1 公里，在这里可能是 30 层楼的高差。</div></div>
       <div class="tip"><div class="tk">地铁</div><div>这趟的主力是 <b>1 号线</b>（小什字 ↔ 磁器口）和 <b>2 号线</b>（较场口 ↔ 李子坝 ↔ 动物园）。直接用支付宝或微信的乘车码扫闸机，不用买票。</div></div>
       <div class="tip"><div class="tk">打车</div><div>市区起步价约 ¥10，短途很便宜。<b>累了就打，不用硬撑</b>——省下的体力比省下的十几块值钱。</div></div>
