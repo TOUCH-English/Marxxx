@@ -779,6 +779,87 @@ footer div+div{margin-top:6px}
 .more-body .tip b{color:var(--ink)}
 .more-body section{margin-top:26px}
 .more-body section:first-of-type{margin-top:8px}
+
+/* ==================== 要提前办的入场手续 ==================== */
+
+/* 每天顶部的提醒条。need = 还没办，done = 办完了（退成很淡的一条） */
+.pre-note{
+  display:flex;align-items:flex-start;gap:11px;
+  margin:0 0 16px;padding:13px 14px;
+  border-radius:17px;border:1px solid var(--line);
+  background:var(--card);box-shadow:var(--shadow-sm);
+}
+.pre-note.need{
+  border-color:color-mix(in srgb,var(--warn) 34%,var(--line));
+  background:var(--warn-soft);
+}
+.pre-note.done{background:var(--card-2);box-shadow:none;opacity:.72}
+.pn-ic{
+  flex:0 0 auto;width:30px;height:30px;border-radius:10px;
+  display:grid;place-items:center;font-size:15px;
+  background:var(--card);color:var(--ink-faint);
+}
+.pre-note.need .pn-ic{background:var(--warn);color:#fff}
+.pn-b{flex:1;min-width:0}
+.pn-lbl{
+  font-size:10.5px;font-weight:800;letter-spacing:.07em;
+  color:var(--ink-faint);margin-bottom:3px;
+}
+.pre-note.need .pn-lbl{color:var(--warn)}
+.pn-t{font-size:13px;line-height:1.65;color:var(--ink-soft)}
+.pn-t b{color:var(--ink);font-weight:700}
+.pn-go{
+  flex:0 0 auto;align-self:center;
+  display:inline-flex;align-items:center;gap:2px;
+  font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;
+  padding:6px 8px 6px 11px;border-radius:999px;
+  background:var(--card);border:1px solid var(--line);color:var(--ink-soft);
+}
+.pre-note.need .pn-go{background:var(--warn);border-color:var(--warn);color:#fff}
+.pn-go svg.i{font-size:13px}
+
+/* 行程卡片上的小标 */
+.bk-chip{
+  display:flex;align-items:center;gap:7px;width:100%;
+  margin-top:11px;padding:8px 10px 8px 12px;
+  border-radius:13px;cursor:pointer;font:inherit;
+  font-size:12.5px;font-weight:700;text-align:left;
+  background:var(--card-2);border:1px solid var(--line);color:var(--ink-soft);
+}
+.bk-chip span{flex:1;min-width:0}
+.bk-chip svg.i{font-size:14px;flex:0 0 auto}
+.bk-chip svg.i:last-child{font-size:13px;opacity:.5}
+.bk-chip.need{
+  background:var(--warn-soft);color:var(--warn);
+  border-color:color-mix(in srgb,var(--warn) 30%,var(--line));
+}
+
+/* 弹窗里的步骤 */
+.bk-steps{margin:4px 0 14px}
+.bk-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px;
+  font-size:14px;line-height:1.7;color:var(--ink-soft)}
+.bk-step b{color:var(--ink);font-weight:700}
+.bk-n{
+  flex:0 0 auto;width:21px;height:21px;margin-top:3px;border-radius:7px;
+  display:grid;place-items:center;
+  font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;
+  background:var(--accent-soft);color:var(--accent-2);
+}
+.bk-warn{
+  display:flex;align-items:flex-start;gap:9px;
+  padding:11px 13px;border-radius:13px;margin-bottom:14px;
+  background:var(--warn-soft);color:var(--ink-soft);
+  font-size:13.5px;line-height:1.7;
+}
+.bk-warn b{color:var(--warn);font-weight:700}
+.bk-warn svg.i{flex:0 0 auto;font-size:15px;color:var(--warn);margin-top:3px}
+.bk-done{
+  display:flex;align-items:center;gap:9px;cursor:pointer;
+  padding:11px 13px;border-radius:13px;
+  background:var(--card-2);border:1px solid var(--line);
+  font-size:13.5px;font-weight:700;color:var(--ink-soft);
+}
+.bk-done input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
 </style>
 </head>
 <body>
@@ -849,6 +930,7 @@ footer div+div{margin-top:6px}
     <h2 class="dh-title">飞抵重庆</h2>
     <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>江北机场</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>旅行社接机</span><span class="chip b-wx" data-wx-day="0" hidden></span></div>
   </header>
+    <div class="pre-note" data-book="hongyadong" data-when="before" hidden></div>
   <ol class="rail">
     <li class="ev" data-time="20:05">
       <div class="ev-rail">
@@ -889,6 +971,7 @@ footer div+div{margin-top:6px}
     <h2 class="dh-title">解放碑 · 朝天门 · 两江夜游</h2>
     <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>渝中·解放碑</span><span class="chip b-chg">调顺序</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>全天步行可达</span><span class="chip b-wx" data-wx-day="1" hidden></span></div>
   </header>
+    <div class="pre-note" data-book="hongyadong" data-when="day" hidden></div>
   <ol class="rail">
     <li class="ev free" data-time="">
       <div class="ev-rail">
@@ -990,14 +1073,14 @@ footer div+div{margin-top:6px}
         <div class="ev-b"><button class="poi" data-p="liangjiangyou">两江夜游</button>（已含团费 ¥148/人）<span class="sub">轮流发班，游览约 50 分钟。上船直接去上层甲板</span></div>
       </div>
     </li>
-    <li class="ev" data-time="21:10" data-map="洪崖洞">
+    <li class="ev" data-time="21:10" data-map="洪崖洞" data-book="hongyadong">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
         <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 15分（上坡）"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>15分</b><em>上坡</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>21:10</span><span class="ev-stay">停留 约 50 分</span>
-        <div class="ev-b"><button class="poi" data-p="hongyadong">洪崖洞</button>夜景<span class="sub">下船就在脚下。最好的机位在千厮门大桥上，走 5 分钟</span></div>
+        <div class="ev-b"><button class="poi" data-p="hongyadong">洪崖洞</button>夜景<span class="sub"><em>8/30 是周日，进洪崖洞要先在微信小程序「洪崖洞」免费预约 18–23 点那个时段</em>，周末没有现场临时票。只在千厮门大桥上远看不用预约——最好的机位本来就在桥上，走 5 分钟</span></div>
       </div>
     </li>
     <li class="ev" data-time="22:00" data-map="@HOTEL" data-link="http://xhslink.com/o/ABUuhleaClP" data-link-label="回解放碑的捷径">
@@ -1011,6 +1094,10 @@ footer div+div{margin-top:6px}
       </div>
     </li>
   </ol>
+  <aside class="note risk">
+    <div class="note-lbl"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>今天出门前先办掉</div>
+    <div class="note-body"><p><b>8/30 是周日，洪崖洞周末要预约。</b>微信搜小程序「洪崖洞」→ 领免费票 → 选 <b>18:00–23:00</b> 时段，八个人都要各领一张。周末没有现场临时票，到了才发现就只能在桥上远看。可提前 3 天约，<b>今天白天随时能办，别拖到晚上</b>。</p><p>拿护照的话小程序未必填得进去，填不了就现场找人工窗口——洪崖洞本身免费，预约只是控人流。</p></div>
+  </aside>
   <aside class="note">
     <div class="note-lbl"><svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>跟导游确认</div>
     <div class="note-body"><p>两江夜游是哪一家船公司、几点的班次、要不要提前换纸质票。旺季周末排队会长，最好让导游把票和班次时间提前发给你。</p></div>
@@ -1281,6 +1368,7 @@ footer div+div{margin-top:6px}
     <h2 class="dh-title">大熊猫 · 轻轨穿楼 · 鹅岭二厂</h2>
     <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>轨道 2 号线</span><span class="chip b-chg">重排</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>地铁为主 · 回程打车</span><span class="chip b-wx" data-wx-day="5" hidden></span></div>
   </header>
+    <div class="pre-note" data-book="hongyan" data-when="before" hidden></div>
   <ol class="rail">
     <li class="ev" data-time="08:00" data-map="@HOTEL">
       <div class="ev-rail">
@@ -1385,6 +1473,7 @@ footer div+div{margin-top:6px}
     <h2 class="dh-title">渣滓洞 · 白公馆 · 磁器口</h2>
     <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>轨道 1 号线</span><span class="chip b-chg">重排</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>地铁去 · 山上打车</span><span class="chip b-wx" data-wx-day="6" hidden></span></div>
   </header>
+    <div class="pre-note" data-book="hongyan" data-when="day" hidden></div>
   <ol class="rail">
     <li class="ev" data-time="08:00" data-map="@HOTEL">
       <div class="ev-rail">
@@ -1416,24 +1505,24 @@ footer div+div{margin-top:6px}
         <div class="ev-b">磁器口打车上歌乐山<span class="sub">车费约 ¥15，山路弯，别让孩子空腹坐</span></div>
       </div>
     </li>
-    <li class="ev" data-time="09:30" data-map="渣滓洞">
+    <li class="ev" data-time="09:30" data-map="渣滓洞" data-book="hongyan">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
         <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分（2.5公里）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b><em>2.5公里</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span><span class="ev-stay">停留 约 1 小时</span>
-        <div class="ev-b"><button class="poi" data-p="zhazidong">渣滓洞</button>（免费，需提前 1 天预约），约 1 小时</div>
+        <div class="ev-b"><button class="poi" data-p="zhazidong">渣滓洞</button>（免费，<b>已取消预约</b>），约 1 小时<span class="sub">2025 年 10 月起刷证件直接进，不用再提前登记。<em>但闸机认的是身份证，你们拿护照大概率要走人工窗口</em></span></div>
       </div>
     </li>
-    <li class="ev" data-time="10:45" data-map="白公馆">
+    <li class="ev" data-time="10:45" data-map="白公馆" data-book="hongyan">
       <div class="ev-rail">
         <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
         <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分（下山）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b><em>下山</em></span><span class="ev-line"></span></span>
       </div>
       <div class="ev-card">
         <span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:45</span><span class="ev-stay">停留 约 1 小时</span>
-        <div class="ev-b"><button class="poi" data-p="baigongguan">白公馆</button>（同样预约），约 1 小时<span class="sub">两馆之间有免费接驳车</span></div>
+        <div class="ev-b"><button class="poi" data-p="baigongguan">白公馆</button>（同样免费、免预约），约 1 小时<span class="sub">两馆之间有免费接驳车</span></div>
       </div>
     </li>
     <li class="ev" data-time="12:15" data-map="磁器口古镇">
@@ -1478,8 +1567,8 @@ footer div+div{margin-top:6px}
     </li>
   </ol>
   <aside class="note risk">
-    <div class="note-lbl"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>必须提前办</div>
-    <div class="note-body"><p><b>渣滓洞和白公馆免费，但要提前 1 天实名预约</b>：微信搜「红岩博物馆」公众号 → 右下角"景区登记" → 个人登记。开放 9:00–17:00，16:30 停止入园，全周无休。</p><p>你们持护照，登记系统未必能直接填证件号。<b>最稳的做法是让导游帮忙预约</b>，或到现场走人工窗口——出发前就问导游这一句，别到了门口才发现。</p></div>
+    <div class="note-lbl"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>预约取消了，但护照还是个坎</div>
+    <div class="note-body"><p><b>好消息：2025 年 10 月 1 日起，红岩博物馆下辖景区（含渣滓洞、白公馆）全年龄段取消预约</b>，凭本人有效证件在入口闸机扫描直接进。网上很多攻略还写着"要提前一天预约"，那是旧规矩。开放 9:00–17:00，16:30 停止入内，周一不闭馆。</p><p><b>真正的问题是闸机认身份证。</b>你们八个人拿护照，多半刷不开，要走人工窗口。这不难，但要知道有这一步——<b>到了门口先找工作人员，别在闸机前排队</b>。出发前也顺口问导游一句，让他跟景区确认境外证件怎么走。</p></div>
   </aside>
 </article>
 
@@ -1685,6 +1774,7 @@ footer div+div{margin-top:6px}
     <h2 class="dh-title">飞抵重庆</h2>
     <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>江北机场</span><span class="chip b-keep">导游原版</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>旅行社接机</span><span class="chip b-wx" data-wx-day="0" hidden></span></div>
   </header>
+    <div class="pre-note" data-book="hongyadong" data-when="before" hidden></div>
   <ol class="rail">
     <li class="ev" data-time="20:05">
       <div class="ev-rail">
@@ -1725,6 +1815,7 @@ footer div+div{margin-top:6px}
     <h2 class="dh-title">小什字 · 来福士 · 两江游船</h2>
     <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>渝中·解放碑</span><span class="chip b-keep">导游原版</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>全天步行 · 不需用车</span><span class="chip b-wx" data-wx-day="1" hidden></span></div>
   </header>
+    <div class="pre-note" data-book="hongyadong" data-when="day" hidden></div>
   <ol class="rail">
     <li class="ev" data-time="08:30" data-map="@HOTEL">
       <div class="ev-rail">
@@ -1796,7 +1887,7 @@ footer div+div{margin-top:6px}
         <div class="ev-b">步行前往洪崖洞码头，排队乘<button class="poi" data-p="liangjiangyou">两江游船</button><span class="sub">游轮轮流发班，游览约 50 分钟</span></div>
       </div>
     </li>
-    <li class="ev" data-time="21:40" data-map="@HOTEL" data-link="http://xhslink.com/o/ABUuhleaClP" data-link-label="回解放碑的捷径">
+    <li class="ev" data-time="21:40" data-map="@HOTEL" data-book="hongyadong" data-link="http://xhslink.com/o/ABUuhleaClP" data-link-label="回解放碑的捷径">
       <div class="ev-rail">
         <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
         <span class="ev-link"><span class="ev-line"></span></span>
@@ -1975,6 +2066,7 @@ footer div+div{margin-top:6px}
     <h2 class="dh-title">九黎城 · 龚滩古镇 · 乌江画廊</h2>
     <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>彭水·酉阳</span><span class="chip b-keep">导游原版</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>包车 + 导游</span><span class="chip b-wx" data-wx-day="4" hidden></span></div>
   </header>
+    <div class="pre-note" data-book="hongyan" data-when="before" hidden></div>
   <ol class="rail">
     <li class="ev" data-time="07:30" data-map="@HOTEL">
       <div class="ev-rail">
@@ -2035,6 +2127,7 @@ footer div+div{margin-top:6px}
     <h2 class="dh-title">索道 · 渣滓洞 · 磁器口 · 博物馆 · 李子坝</h2>
     <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>沙坪坝+渝中</span><span class="chip b-keep">导游原版</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-nav"/></svg>索道 · 打车串点 · 地铁回</span><span class="chip b-wx" data-wx-day="5" hidden></span></div>
   </header>
+    <div class="pre-note" data-book="hongyan" data-when="day" hidden></div>
   <ol class="rail">
     <li class="ev" data-time="08:30" data-map="@HOTEL">
       <div class="ev-rail">
@@ -2056,7 +2149,7 @@ footer div+div{margin-top:6px}
         <div class="ev-b">出发乘坐<button class="poi" data-p="suodao">长江索道</button></div>
       </div>
     </li>
-    <li class="ev" data-time="10:00" data-map="渣滓洞">
+    <li class="ev" data-time="10:00" data-map="渣滓洞" data-book="hongyan">
       <div class="ev-rail">
         <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
         <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分（下山）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b><em>下山</em></span><span class="ev-line"></span></span>
@@ -2308,7 +2401,8 @@ footer div+div{margin-top:6px}
       <div class="check"><div class="k"></div><div><div class="q">保险 ¥30/人 是旅行社责任险还是旅游意外险？保额多少？</div><div class="why">两者保的完全不是一回事。你们是境外客人，顺便确认孩子是否同样覆盖、理赔会不会受影响。</div></div></div>
       <div class="check"><div class="k"></div><div><div class="q">9/5 送机：司机几点到酒店？</div><div class="why">我们看完无人机自己打车回酒店取行李，所以司机直接在酒店接。确认件只写了「安排司机送机场」，没有时间。按 02:35 起飞、23:15 到机场值机倒推，22:30 从酒店出发比较稳。顺带问一句：司机能不能来南滨路接散场那一趟？可以的话比自己叫车稳。</div></div></div>
       <div class="check"><div class="k"></div><div><div class="q">9/5 的无人机秀，出发前一周请发官方 9 月公告确认。</div><div class="why">确认件直接写死了"晚上 20:30 南滨路有无人机表演"。大概率有，但要有一张官方截图，才好安排当天下午的节奏。</div></div></div>
-      <div class="check"><div class="k"></div><div><div class="q">渣滓洞、白公馆能不能帮我们用护照预约？</div><div class="why">需要提前 1 天实名登记，境外证件在小程序里未必填得进去。让他代办，或者告诉你现场人工窗口怎么走。</div></div></div>
+      <div class="check"><div class="k"></div><div><div class="q">渣滓洞、白公馆拿护照怎么进闸机？</div><div class="why">2025 年 10 月起已经<b>取消预约</b>，改成刷证件进闸机——但闸机认身份证，八个人拿护照多半要走人工窗口。让他跟景区确认一句境外证件的走法。</div></div></div>
+      <div class="check"><div class="k"></div><div><div class="q">8/30 是周日，洪崖洞的预约谁来领？</div><div class="why">周末进洪崖洞要在微信小程序「洪崖洞」免费分时段预约，八个人各一张，<b>周末没有现场临时票</b>。护照未必填得进小程序，问他能不能代领，或者现场人工窗口怎么走。</div></div></div>
       <div class="check"><div class="k"></div><div><div class="q">尾款 ¥11,266 接团当天付——现金还是转账？能开收据吗？</div><div class="why">已付 ¥8,000，余款接团当天付清。付款方式和凭证提前讲好。</div></div></div>
     </div>
   </section>
@@ -2457,10 +2551,11 @@ body:[
 '依着崖壁建的仿古吊脚楼群，一共十一层，最妙的是<b>它的一楼和十一楼都是「地面层」</b>——从沧白路进去是顶层，从滨江路进去是底层，中间靠电梯连。这种「一栋楼有好几个地面」的事情在重庆很常见，但洪崖洞是最夸张的一个。',
 '很多人说它像《千与千寻》，宫崎骏本人没这么讲过，但夜里那一片暖黄灯亮起来的时候，确实是那个氛围。<b>它真正好看只有晚上</b>，白天去等于白去。',
 '最好的机位不在里面，是在<b>千厮门大桥上</b>——从桥上侧看整栋楼，能拍到全景。你们两江夜游下船后正好在脚下，往桥上走五分钟就到。',
-'里面的餐饮基本是游客价，不推荐在里面吃饭。'
+'里面的餐饮基本是游客价，不推荐在里面吃饭。',
+'<b>周末和节假日进洪崖洞要预约</b>（免费、分时段）：微信搜小程序「洪崖洞」→ 领免费票 → 选时段，可提前 3 天。平日现场扫码就行。<b>你们去的 8/30 正好是周日，而且周末没有现场临时票</b>，出门前一定先领掉。只在千厮门大桥上远看不用预约。'
 ],
 kid:'人非常多，进去前先约好走散了在哪一层等（建议约在一楼滨江路出口，最好找）。',
-info:['免费','夜景最佳 20:00–22:00','约 1 小时','游船下船即到'],
+info:['免费，周末需预约','夜景最佳 20:00–22:00','约 1 小时','游船下船即到'],
 xhs:'重庆洪崖洞'},
 
 suodao:{n:'长江索道',a:'渝中·新华路151号',
@@ -2586,15 +2681,15 @@ info:['免费','全天，店铺约 9:00–21:00','约 2.5 小时','轨道 1 号�
 xhs:'重庆磁器口 必吃'},
 
 zhazidong:{n:'渣滓洞',a:'沙坪坝·歌乐山',
-hook:'1940 年代的秘密监狱旧址。免费，但要提前一天预约。基调沉重。',
+hook:'1940 年代的秘密监狱旧址。免费，2025 年 10 月起已取消预约。基调沉重。',
 body:[
 '原本是一个小煤窑，1943 年被改成监狱，因为三面环山、一面临沟，只有一条小路进出。<b>关押的主要是中共党员和进步人士</b>，1949 年 11 月 27 日国民党撤退前在这里进行了集中屠杀，两百多人遇难。',
 '现存的是复原的牢房、审讯室和刑具陈列，院子里的放风坝、岗楼都还在原位。展陈方式比较直白——<b>有刑具，有遇难者名单和照片</b>。',
 '小说《红岩》写的就是这里和白公馆，江姐（江竹筠）就关押在渣滓洞女牢。中国把这一类景点叫「<b>红色旅游</b>」。',
-'<b>要提前 1 天实名预约</b>：微信搜「红岩博物馆」公众号 → 右下角「景区登记」→ 个人登记。你们持护照，系统未必填得进去，<b>最稳的做法是让导游代办</b>，或者提前问清楚现场人工窗口怎么走。'
+'<b>不用预约了。</b>红岩博物馆下辖景区自 2025 年 10 月 1 日起全年龄段取消预约，凭本人有效证件在入口闸机扫描直接进——网上写「要提前一天预约」的攻略都是旧的。<b>但闸机认的是身份证</b>，你们拿护照多半刷不开，到门口先找工作人员走人工窗口，别在闸机前排队。'
 ],
 kid:'8–11 岁看得懂，但<b>建议大人先花两三分钟讲背景再进去</b>，别让孩子自己对着展板看。里面提到的「小萝卜头」是一个在狱中长大、8 岁遇难的男孩，和你家孩子年纪相仿，这一段冲击不小。觉得压抑随时可以提前出来。',
-info:['免费，需提前 1 天预约','9:00–17:00，16:30 停止入园','约 1 小时','磁器口打车 10 分钟'],
+info:['免费，免预约（2025/10 起）','9:00–17:00，16:30 停止入内','约 1 小时','磁器口打车 10 分钟'],
 xhs:'重庆渣滓洞 攻略'},
 
 baigongguan:{n:'白公馆',a:'沙坪坝·歌乐山',
@@ -2606,7 +2701,7 @@ body:[
 '从磁器口上山的方向来说，先渣滓洞后白公馆是顺路的；如果想按历史顺序先看白公馆也行，车程一样，随你。'
 ],
 kid:'比渣滓洞温和。院子开阔，孩子可以在外面缓一缓再进下一个展厅。',
-info:['免费，需提前 1 天预约','9:00–17:00，16:30 停止入园','约 1 小时','渣滓洞有免费接驳车'],
+info:['免费，免预约（2025/10 起）','9:00–17:00，16:30 停止入内','约 1 小时','渣滓洞有免费接驳车'],
 xhs:'重庆白公馆 攻略'},
 
 /* ─────────── 九龙坡 · 江北 ─────────── */
@@ -3704,6 +3799,214 @@ xhs:'乌江画廊 龚滩'}
 
   // 切换版本 / 换天之后，新出现的卡片也要补上温度
   document.addEventListener('cq:ver', function(){ if (DATA) fillEventTemps(DATA); });
+})();
+
+/* ==================== 要提前办的入场手续 ====================
+   两件事，2026-08-29 查证过（原稿两条都不对）：
+
+     · 洪崖洞   周末 / 节假日要在微信小程序「洪崖洞」免费分时段预约，
+                平日才是现场扫码。**8/30 是周日**，而且周末没有现场临时票。
+     · 渣滓洞 / 白公馆
+                2025-10-01 起红岩博物馆下辖景区**取消预约**，刷证件进闸机。
+                原稿写的「提前 1 天预约」是旧规矩。现在的坎是闸机认身份证，
+                八个人拿护照多半要走人工窗口。
+
+   预约本身在微信小程序里，没有可以直接点开的网页入口 —— 所以这里做的是
+   「复制名称 → 跳微信 → 粘贴搜索」，再附一个网页搜索兜底。不编造深链接。   */
+(function(){
+  'use strict';
+
+  var INFO = {
+    hongyadong: {
+      kind:  'book',
+      name:  '洪崖洞',
+      use:   '8/30 周日 21:10',
+      chip:  '周末要预约',
+      head:  '洪崖洞 · 周末要预约',
+      sub:   '免费 · 分时段 · 可提前 3 天',
+      why:   '<b>8/30 是周日。</b>洪崖洞平日现场扫码就能进，但周末和节假日要提前在微信小程序里领免费票，' +
+             '而且<b>周末没有现场临时票</b>——没领就只能在千厮门大桥上远看（说实话桥上机位本来更好，但里面就进不去了）。',
+      steps: ['微信搜小程序「<b>洪崖洞</b>」（公众号里也有入口）',
+              '点「预约取票」→ 选 <b>8月30日</b>',
+              '时段选 <b>18:00–23:00</b>（你们 21:10 到）',
+              '<b>八个人各领一张</b>，一次领不完就分几次',
+              '入园出示二维码'],
+      warn:  '拿护照的话小程序未必填得进去。填不了就现场找人工窗口——洪崖洞本身免费，预约只是控人流，' +
+             '不是买票。也可以出发前请导游代领。',
+      wechat:'洪崖洞',
+      search:'洪崖洞 预约 小程序 时段',
+      site:  null
+    },
+    hongyan: {
+      kind:  'id',
+      name:  '渣滓洞 · 白公馆',
+      use:   '9/4 周五 09:30',
+      chip:  '免预约 · 护照走人工',
+      head:  '渣滓洞 · 白公馆',
+      sub:   '免费 · 已取消预约 · 9:00–17:00',
+      why:   '<b>不用预约了。</b>红岩博物馆下辖景区自 <b>2025 年 10 月 1 日</b>起全年龄段取消预约，' +
+             '凭本人有效证件在入口闸机扫描直接进。网上写「要提前一天预约」的攻略都是旧的，别再照着办。',
+      steps: ['不用提前登记，直接去',
+              '开放 <b>9:00–17:00</b>，16:30 停止入内，<b>周一不闭馆</b>',
+              '渣滓洞、白公馆是两个入口，各自进各自的',
+              '两馆之间有免费接驳车'],
+      warn:  '<b>闸机认的是身份证，你们八个人拿护照多半刷不开。</b>到门口先找工作人员走人工窗口，' +
+             '别在闸机前排队。出发前顺口问导游一句，让他跟景区确认境外证件怎么走。',
+      wechat:'红岩博物馆',
+      search:'渣滓洞 白公馆 取消预约 护照 人工窗口',
+      site:  'https://www.hongyanmuseum.cn/'
+    }
+  };
+
+  var DONE_KEY = 'cq.book.done';
+  function doneSet(){
+    try { return JSON.parse(localStorage.getItem(DONE_KEY) || '{}') || {}; } catch(e){ return {}; }
+  }
+  function markDone(k, v){
+    var d = doneSet(); if (v) d[k] = 1; else delete d[k];
+    try { localStorage.setItem(DONE_KEY, JSON.stringify(d)); } catch(e){}
+    paint();
+  }
+  function isDone(k){ return !!doneSet()[k]; }
+
+  function icon(n){ return '<svg class="i" aria-hidden="true"><use href="#i-' + n + '"/></svg>'; }
+  function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+  /* 微信小程序没有可以直接点开的网页地址，网页搜索当兜底 */
+  function webSearch(q){ return 'https://www.baidu.com/s?wd=' + encodeURIComponent(q); }
+
+  var scrim = document.getElementById('scrim');
+  var sheet = {
+    title: document.getElementById('sheetTitle'),
+    area:  document.getElementById('sheetArea'),
+    body:  document.getElementById('sheetBody'),
+    foot:  document.getElementById('sheetFoot')
+  };
+  function toast(msg){
+    var t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t.__h); t.__h = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+  }
+  function copyText(t){
+    try { if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t); } catch(e){}
+    return new Promise(function(res){
+      var ta = document.createElement('textarea');
+      ta.value = t; ta.setAttribute('readonly','');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, 99999);
+      try { document.execCommand('copy'); } catch(e){}
+      document.body.removeChild(ta); res();
+    });
+  }
+
+  function openSheet(k){
+    var d = INFO[k];
+    if (!d || !scrim) return;
+    sheet.title.textContent = d.head;
+    sheet.area.innerHTML = icon(d.kind === 'book' ? 'alert' : 'book') + '<span>' + d.sub + '</span>';
+
+    var html = '<p class="para">' + d.why + '</p>' +
+      '<div class="bk-steps">' +
+        d.steps.map(function(s, i){
+          return '<div class="bk-step"><span class="bk-n">' + (i + 1) + '</span><div>' + s + '</div></div>';
+        }).join('') +
+      '</div>' +
+      '<div class="bk-warn">' + icon('alert') + '<div>' + d.warn + '</div></div>' +
+      '<label class="bk-done"><input type="checkbox" id="bkDone"' + (isDone(k) ? ' checked' : '') + '>' +
+        '<span>' + (d.kind === 'book' ? '已经约好了，别再提醒我' : '知道了，别再提醒我') + '</span></label>';
+    sheet.body.innerHTML = html;
+
+    var foot = '';
+    if (d.kind === 'book') {
+      foot += '<button class="lnk primary" type="button" id="bkGo">' + icon('copy') + '复制「' + d.wechat + '」并打开微信</button>';
+    } else {
+      foot += '<button class="lnk" type="button" id="bkCopy">' + icon('copy') + '复制「' + d.wechat + '」</button>';
+    }
+    if (d.site) {
+      foot += '<a class="lnk" target="_blank" rel="noopener noreferrer" href="' + esc(d.site) + '">' + icon('map') + '官网</a>';
+    }
+    foot += '<a class="lnk" target="_blank" rel="noopener noreferrer" href="' + esc(webSearch(d.search)) + '">' + icon('search') + '网页搜一下</a>' +
+            '<span class="foot-note">预约在微信小程序里办，没有可以直接点开的网页入口——所以这里是复制名字、跳进微信再粘贴搜索。</span>';
+    sheet.foot.innerHTML = foot;
+
+    var go = document.getElementById('bkGo');
+    if (go) go.addEventListener('click', function(){
+      copyText(d.wechat).then(function(){
+        toast('已复制「' + d.wechat + '」，正在打开微信…');
+        setTimeout(function(){ window.location.href = 'weixin://'; }, 400);
+      });
+    });
+    var cp = document.getElementById('bkCopy');
+    if (cp) cp.addEventListener('click', function(){
+      copyText(d.wechat).then(function(){ toast('已复制「' + d.wechat + '」'); });
+    });
+    var cb = document.getElementById('bkDone');
+    if (cb) cb.addEventListener('change', function(){ markDone(k, cb.checked); });
+
+    scrim.hidden = false;
+    requestAnimationFrame(function(){ scrim.classList.add('open'); });
+    document.body.style.overflow = 'hidden';
+    sheet.body.scrollTop = 0;
+    var x = document.getElementById('closeBtn');
+    if (x) x.focus();
+  }
+
+  /* ---------- 1. 卡片上的小标 ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll('.ev[data-book]'), function(li){
+    var k = li.getAttribute('data-book');
+    var d = INFO[k];
+    var card = li.querySelector('.ev-card');
+    if (!d || !card || card.querySelector('.bk-chip')) return;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'bk-chip' + (d.kind === 'book' ? ' need' : '');
+    b.setAttribute('data-book-chip', k);
+    b.innerHTML = icon(d.kind === 'book' ? 'alert' : 'book') +
+                  '<span>' + d.chip + '</span>' + icon('chev');
+    b.addEventListener('click', function(e){ e.stopPropagation(); openSheet(k); });
+    card.appendChild(b);
+  });
+
+  /* ---------- 2. 每天顶部的提醒条 ----------
+     「前一天」的措辞是催办，「当天」的措辞是提醒别忘了带/别排错队。
+     办完了勾一下，之后就只剩一条很淡的已办提示。                     */
+  function paint(){
+    Array.prototype.forEach.call(document.querySelectorAll('.pre-note[data-book]'), function(el){
+      var k = el.getAttribute('data-book');
+      var d = INFO[k];
+      if (!d) { el.hidden = true; return; }
+      var day = el.getAttribute('data-when') === 'day';
+      var done = isDone(k);
+
+      var lbl, txt;
+      if (d.kind === 'book') {
+        lbl = done ? '已经约好了' : (day ? '今天要用 · 还没约' : '提前办掉');
+        txt = done
+          ? '<b>' + d.name + '</b> 的预约你标了已办。' + d.use + ' 要用。'
+          : (day
+              ? '<b>今天晚上就要用了：' + d.name + ' 要先在微信小程序领免费票</b>，周末没有现场临时票。现在还来得及。'
+              : '<b>' + d.name + '</b> 要提前在微信小程序领免费票（免费、分时段）。' + d.use +
+                ' 要用，<b>周末没有现场临时票</b>，别拖到当天晚上。');
+      } else {
+        lbl = done ? '知道了' : (day ? '今天用得上' : '明天用得上');
+        txt = done
+          ? '<b>' + d.name + '</b> 免预约，护照走人工窗口——你标了已知。'
+          : '<b>' + d.name + ' 不用预约了</b>（2025 年 10 月起取消）。但闸机认身份证，' +
+            '<b>你们拿护照要走人工窗口</b>，到门口先找工作人员。';
+      }
+
+      el.className = 'pre-note' + (done ? ' done' : (d.kind === 'book' ? ' need' : ''));
+      el.innerHTML =
+        '<div class="pn-ic">' + icon(done ? 'book' : 'alert') + '</div>' +
+        '<div class="pn-b"><div class="pn-lbl">' + lbl + '</div><div class="pn-t">' + txt + '</div></div>' +
+        '<button class="pn-go" type="button">' + (done ? '看一下' : '怎么办') + icon('chev') + '</button>';
+      el.querySelector('.pn-go').addEventListener('click', function(){ openSheet(k); });
+      el.hidden = false;
+    });
+  }
+  paint();
+  document.addEventListener('cq:ver', paint);
 })();
 
 </script>
