@@ -627,6 +627,54 @@ footer div+div{margin-top:6px}
 }
 .ver-btn.on{background:var(--ink);color:#fff}
 .ver-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ═══════════ 每条行程的时段温度 ═══════════ */
+.ev-wx{
+  display:inline-flex;align-items:center;
+  margin-left:6px;padding:3px 9px;border-radius:999px;
+  font-size:11.5px;font-weight:700;line-height:1.6;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+  background:var(--bg);color:var(--ink-faint);
+  vertical-align:middle;
+}
+/* 偏凉：换成冷色，一眼看得出要带外套 */
+.ev-wx.cool{background:var(--c-go-bg);color:var(--c-go)}
+.ev.past .ev-wx{opacity:.5}
+
+/* 天气标签可点 */
+.chip.b-wx.tappable{cursor:pointer;border-color:var(--line)}
+.chip.b-wx .wx-more{display:inline-flex;margin-left:1px;opacity:.5}
+.chip.b-wx .wx-more svg.i{font-size:11px}
+.chip.b-wx.tappable:active{transform:scale(.96)}
+
+/* ═══════════ 当天逐时预报弹窗 ═══════════ */
+.wx-sum{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px;border-radius:15px;margin-bottom:10px;
+  background:var(--accent-soft);color:var(--accent-2);
+}
+.wx-sum svg.i{font-size:26px}
+.wx-sum-t{font-size:17px;font-weight:800}
+.wx-sum-r{margin-left:auto;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.wx-sun{
+  display:flex;align-items:center;gap:7px;margin-bottom:14px;
+  font-size:12.5px;font-weight:600;color:var(--ink-soft);
+}
+.wx-sun svg.i{font-size:15px;color:var(--c-eat)}
+.wx-hours{display:flex;flex-direction:column;gap:3px;margin-bottom:14px}
+.wx-h{display:flex;align-items:center;gap:9px;font-size:12.5px}
+.wx-h-t{flex:0 0 42px;color:var(--ink-faint);font-variant-numeric:tabular-nums;font-weight:600}
+.wx-h-bar{flex:1;height:7px;border-radius:4px;background:var(--bg);overflow:hidden}
+.wx-h-bar i{display:block;height:100%;border-radius:4px;background:var(--c-eat)}
+.wx-h.cool .wx-h-bar i{background:var(--c-go)}
+.wx-h-d{flex:0 0 auto;min-width:66px;text-align:right;
+  font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+.wx-h.cool .wx-h-d{color:var(--c-go)}
+.wx-h-d em{font-style:normal;font-size:11px;font-weight:600;color:var(--c-go)}
+.wx-note{
+  font-size:12px;line-height:1.65;color:var(--ink-faint);
+  background:var(--card-2);border-radius:12px;padding:11px 13px;margin:0 0 4px;
+}
 /* ===== 折叠区（其他资料）专用样式，全部限定在 .more-body 内 ===== */
 .more-body .standfirst{margin:0;max-width:62ch;color:var(--ink-2);font-size:clamp(15px,2.4vw,17px)}
 .more-body h2{
@@ -2736,6 +2784,14 @@ xhs:'乌江画廊 龚滩'}
         prevMin = mins;
         var t = new Date(YEAR, info.m - 1, info.day + dayOffset,
                          parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
+        // 把算好的时间戳写回元素，天气模块直接拿来用，不用再算一遍跨午夜。
+        // 用「年-月-日T时」而不是毫秒数：和 Open-Meteo 返回的本地时间串同格式，
+        // 且与设备时区无关（8/29 的 01:15 已经被上面的 dayOffset 归到 8/30）。
+        li.setAttribute('data-hour',
+          t.getFullYear() + '-' +
+          ('0' + (t.getMonth() + 1)).slice(-2) + '-' +
+          ('0' + t.getDate()).slice(-2) + 'T' +
+          ('0' + t.getHours()).slice(-2) + ':00');
         SCHEDULES[ver].push({at:t, el:li, dayIndex:di});
       });
     });
@@ -3384,12 +3440,22 @@ xhs:'乌江画廊 龚滩'}
   });
 })();
 
-/* ==================== 天气：每天所在区域的当天预报 ====================
-   数据来自 Open-Meteo（免费、无需注册）。拉到了就填进日头部的天气标签，
-   拉不到（断网/被墙/超时）标签保持隐藏，页面其他功能完全不受影响。
-   结果缓存 30 分钟；缓存过期但拉取失败时，仍用旧缓存兜底。            */
+/* ==================== 天气 ====================
+   数据来自 Open-Meteo（免费、无需注册）。做三件事：
+     1. 每天标题旁的当天概况标签
+     2. 每条行程上「那个时刻」的温度 —— 回答「这一站要不要带外套」
+     3. 点天气标签展开当天逐时预报
+   拉不到（断网 / 被墙 / 超时）就全部安静隐藏，页面其他功能完全不受影响。
+
+   ⚠️ 这是区域预报，测不到微气候：地缝底部、索道上、江边风大的地方
+      实际体感会更低。行程里那几条人工提示（「地缝底常年十几度」
+      「仙女山海拔 1900 米入夜后凉」）比预报准，一律以它们为准。      */
 (function(){
   'use strict';
+
+  /* 低于这个温度就标「凉」。按新加坡人的体感定 —— 常年 26–32°C，
+     22° 已经明显偏凉。觉得不准改这一个数字即可。 */
+  var COOL_AT = 22;
 
   // 每天人在哪个区域。坐标是区域级的，够天气用。
   var LOCS = {
@@ -3399,6 +3465,8 @@ xhs:'乌江画廊 龚滩'}
   };
   var DAY_LOC   = ['yuzhong','yuzhong','xiannvshan','xiannvshan','gongtan',
                    'yuzhong','yuzhong','yuzhong'];
+  var DAY_NAME  = ['渝中','渝中','武隆仙女山','武隆仙女山','酉阳龚滩',
+                   '渝中','渝中','渝中'];
   var DAY_DATE  = ['2026-08-29','2026-08-30','2026-08-31','2026-09-01',
                    '2026-09-02','2026-09-03','2026-09-04','2026-09-05'];
 
@@ -3411,8 +3479,12 @@ xhs:'乌江画廊 龚滩'}
     if (code >= 51) return {ic:'wx-rain', t:'雨'};
     return {ic:'wx-cloud', t:'多云'};
   }
+  function ic(n){ return '<svg class="i" aria-hidden="true"><use href="#i-' + n + '"/></svg>'; }
 
-  function fill(data){
+  var DATA = null;   // 拿到的数据，供弹窗用
+
+  /* ---------- 1. 每天标题旁的概况标签 ---------- */
+  function fillDayChips(data){
     DAY_DATE.forEach(function(date, di){
       var loc = data[DAY_LOC[di]];
       if (!loc) return;
@@ -3423,15 +3495,129 @@ xhs:'乌江画廊 龚滩'}
       var rain = loc.rain && loc.rain[i] != null ? Math.round(loc.rain[i]) : null;
       Array.prototype.forEach.call(
         document.querySelectorAll('[data-wx-day="' + di + '"]'), function(chip){
-        chip.innerHTML = '<svg class="i" aria-hidden="true"><use href="#i-' + k.ic + '"/></svg>' +
-          k.t + ' ' + hi + '/' + lo + '°' +
-          (rain != null && rain >= 30 ? ' · 雨' + rain + '%' : '');
+        chip.innerHTML = ic(k.ic) + k.t + ' ' + hi + '/' + lo + '°' +
+          (rain != null && rain >= 30 ? ' · 雨' + rain + '%' : '') +
+          '<span class="wx-more">' + ic('chev') + '</span>';
         chip.hidden = false;
+        chip.classList.add('tappable');
+        if (!chip.__wired) {
+          chip.__wired = true;
+          chip.addEventListener('click', function(){ openDaySheet(di); });
+        }
       });
     });
   }
 
-  var CACHE_KEY = 'cq.wx.v1';
+  /* ---------- 2. 每条行程「那个时刻」的温度 ----------
+     元素上的 data-hour 是 part-g 算好的（已处理跨午夜），
+     格式和 Open-Meteo 返回的本地时间串一致，直接查表。        */
+  function fillEventTemps(data){
+    Array.prototype.forEach.call(document.querySelectorAll('.ev[data-hour]'), function(li){
+      var art = li.closest('.day');
+      if (!art) return;
+      var di = parseInt(art.getAttribute('data-day'), 10);
+      var loc = data[DAY_LOC[di]];
+      if (!loc || !loc.hTime) return;
+
+      var i = loc.hTime.indexOf(li.getAttribute('data-hour'));
+      if (i < 0) return;                       // 那一小时不在预报范围内就不显示
+
+      var t = Math.round(loc.hTemp[i]);
+      var rain = loc.hRain && loc.hRain[i] != null ? Math.round(loc.hRain[i]) : null;
+      var cool = t <= COOL_AT;
+
+      var old = li.querySelector('.ev-wx');
+      if (old) old.parentNode.removeChild(old);
+
+      var el = document.createElement('span');
+      el.className = 'ev-wx' + (cool ? ' cool' : '');
+      el.innerHTML = t + '°' +
+        (cool ? ' 凉' : '') +
+        (rain != null && rain >= 50 ? ' · 雨' + rain + '%' : '');
+      el.title = (cool ? '这个时段偏凉，建议带件外套' : '') +
+                 (rain != null && rain >= 50 ? ' 降雨概率 ' + rain + '%' : '');
+      var timePill = li.querySelector('.ev-t');
+      if (timePill && timePill.parentNode) {
+        timePill.parentNode.insertBefore(el, timePill.nextSibling);
+      }
+    });
+  }
+
+  /* ---------- 3. 当天逐时预报弹窗 ---------- */
+  function openDaySheet(di){
+    if (!DATA) return;
+    var loc = DATA[DAY_LOC[di]];
+    if (!loc) return;
+    var date = DAY_DATE[di];
+    var d = loc.time.indexOf(date);
+    if (d < 0) return;
+
+    var scrim = document.getElementById('scrim');
+    var title = document.getElementById('sheetTitle');
+    var area  = document.getElementById('sheetArea');
+    var body  = document.getElementById('sheetBody');
+    var foot  = document.getElementById('sheetFoot');
+    if (!scrim) return;
+
+    var k = wxKind(loc.code[d]);
+    title.textContent = date.slice(5).replace('-', '月') + '日 天气';
+    area.innerHTML = ic('pin') + '<span>' + DAY_NAME[di] + '</span>';
+
+    // 当天 07:00–23:00 的逐时
+    var rows = [], lo = 99, hi = -99;
+    for (var h = 7; h <= 23; h++) {
+      var key = date + 'T' + ('0' + h).slice(-2) + ':00';
+      var i = loc.hTime.indexOf(key);
+      if (i < 0) continue;
+      var t = Math.round(loc.hTemp[i]);
+      rows.push({h:h, t:t, r:(loc.hRain && loc.hRain[i] != null) ? Math.round(loc.hRain[i]) : null});
+      if (t < lo) lo = t;
+      if (t > hi) hi = t;
+    }
+    var span = Math.max(1, hi - lo);
+
+    var html = '<div class="wx-sum">' + ic(k.ic) +
+      '<span class="wx-sum-t">' + k.t + '</span>' +
+      '<span class="wx-sum-r">' + Math.round(loc.tmax[d]) + '° / ' + Math.round(loc.tmin[d]) + '°</span>' +
+      '</div>';
+
+    if (loc.sunrise && loc.sunset && loc.sunrise[d] && loc.sunset[d]) {
+      html += '<div class="wx-sun">' + ic('wx-sun') +
+        '日出 ' + loc.sunrise[d].slice(11) + ' · 日落 ' + loc.sunset[d].slice(11) + '</div>';
+    }
+
+    html += '<div class="wx-hours">';
+    rows.forEach(function(r){
+      var pct = 12 + Math.round((r.t - lo) / span * 76);
+      html += '<div class="wx-h' + (r.t <= COOL_AT ? ' cool' : '') + '">' +
+        '<span class="wx-h-t">' + ('0' + r.h).slice(-2) + ':00</span>' +
+        '<span class="wx-h-bar"><i style="width:' + pct + '%"></i></span>' +
+        '<span class="wx-h-d">' + r.t + '°' +
+          (r.r != null && r.r >= 30 ? ' <em>雨' + r.r + '%</em>' : '') + '</span>' +
+        '</div>';
+    });
+    html += '</div>';
+    html += '<p class="wx-note">山上、地缝底、江边风大的地方，实际体感会比这个低。' +
+            '行程里写的「薄外套」「地缝底常年十几度」那几条更准，以它们为准。</p>';
+
+    body.innerHTML = html;
+    foot.innerHTML = '';
+    scrim.hidden = false;
+    requestAnimationFrame(function(){ scrim.classList.add('open'); });
+    document.body.style.overflow = 'hidden';
+    body.scrollTop = 0;
+    var cb = document.getElementById('closeBtn');
+    if (cb) cb.focus();
+  }
+
+  function apply(data){
+    DATA = data;
+    fillDayChips(data);
+    fillEventTemps(data);
+  }
+
+  /* ---------- 取数 ---------- */
+  var CACHE_KEY = 'cq.wx.v2';     // v1 是只有日概况的旧格式，换 key 避免读到
   function readCache(){
     try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch(e){ return null; }
   }
@@ -3443,37 +3629,46 @@ xhs:'乌江画廊 龚滩'}
     var c = LOCS[key];
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + c.lat +
       '&longitude=' + c.lon +
-      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset' +
+      '&hourly=temperature_2m,precipitation_probability' +
       '&timezone=Asia%2FShanghai&start_date=2026-08-29&end_date=2026-09-06';
     var ctrl = ('AbortController' in window) ? new AbortController() : null;
     if (ctrl) setTimeout(function(){ ctrl.abort(); }, 7000);
     return fetch(url, ctrl ? {signal: ctrl.signal} : {})
       .then(function(r){ if (!r.ok) throw 0; return r.json(); })
       .then(function(j){
-        return [key, {time: j.daily.time, code: j.daily.weather_code,
-                      tmax: j.daily.temperature_2m_max, tmin: j.daily.temperature_2m_min,
-                      rain: j.daily.precipitation_probability_max}];
+        return [key, {
+          time: j.daily.time, code: j.daily.weather_code,
+          tmax: j.daily.temperature_2m_max, tmin: j.daily.temperature_2m_min,
+          rain: j.daily.precipitation_probability_max,
+          sunrise: j.daily.sunrise, sunset: j.daily.sunset,
+          hTime: j.hourly.time, hTemp: j.hourly.temperature_2m,
+          hRain: j.hourly.precipitation_probability
+        }];
       });
   }
 
   var cached = readCache();
   if (cached && Date.now() - cached.at < 30 * 60 * 1000) {
-    fill(cached.data);           // 半小时内的缓存直接用，不重复请求
+    apply(cached.data);          // 半小时内的缓存直接用，不重复请求
     return;
   }
-  if (!window.fetch) { if (cached) fill(cached.data); return; }
+  if (!window.fetch) { if (cached) apply(cached.data); return; }
 
   Promise.all(Object.keys(LOCS).map(function(k){ return fetchLoc(k); }))
     .then(function(pairs){
       var data = {};
       pairs.forEach(function(p){ data[p[0]] = p[1]; });
       writeCache(data);
-      fill(data);
+      apply(data);
     })
     .catch(function(){
       // 拉不到：有旧缓存就用旧的，没有就什么都不显示
-      if (cached) fill(cached.data);
+      if (cached) apply(cached.data);
     });
+
+  // 切换版本 / 换天之后，新出现的卡片也要补上温度
+  document.addEventListener('cq:ver', function(){ if (DATA) fillEventTemps(DATA); });
 })();
 
 </script>
