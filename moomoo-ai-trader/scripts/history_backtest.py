@@ -85,9 +85,9 @@ def cmd_check(_args) -> int:
                                                 end_date=(today + timedelta(days=6)).isoformat())
             rows = df.to_dict("records") if ret == m.RET_OK else []
             out["earnings_calendar"] = {
-                "ok": ret == m.RET_OK, "rows": len(rows), "distinct_symbols": len({str(r.get("code")) for r in rows}),
+                "ok": ret == m.RET_OK, "rows": len(rows), "distinct_symbols": len({str(r.get("security")) for r in rows}),
                 "columns": list(df.columns) if ret == m.RET_OK else [],
-                "sample": [{k: str(r.get(k)) for k in ("code", "earnings_date", "pub_type")} for r in rows[:3]],
+                "sample": [{k: str(r.get(k)) for k in ("security", "earnings_date", "pub_type")} for r in rows[:3]],
                 "note": "行数如果正好是 100/200/500 之类的整数，可能被截断，请回报",
                 "error": None if ret == m.RET_OK else str(df)[:200]}
         except Exception as e:  # 旧版 SDK 可能没有这个接口
