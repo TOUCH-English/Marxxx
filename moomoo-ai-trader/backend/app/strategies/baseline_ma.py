@@ -133,7 +133,8 @@ def _ai_overlay(rt, ts: TickState, sym: str) -> tuple[bool, str]:
     from ..db.types import D
 
     v = parse_and_validate(res.text, ValidationContext(
-        as_of=rt.now(), strategy_version=payload["strategy_version"], candidate_symbols={sym}, held_symbols=set(),
+        as_of=datetime.fromisoformat(payload["as_of_utc"]),  # 与发给模型的时点一致
+        strategy_version=payload["strategy_version"], candidate_symbols={sym}, held_symbols=set(),
         evidence_ids={k: set(x) for k, x in meta["evidence"].items()},
         last_prices={k: D(x) for k, x in meta["last_prices"].items() if x is not None},
         max_target_position_pct=D(meta["max_target_position_pct"]), max_holding_days=meta["max_holding_days"],

@@ -54,14 +54,14 @@ def _cross_series():
     return [50.0] * 70 + [55.0]
 
 
-def _baseline_with_overlay(env, ai, overlay):
+def _baseline_with_overlay(env, ai, overlay, clock=None):
     prov = StaticProvider()
     prov.add("US.X", _cross_series(), "55.10")
     pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.X"], strategy_key="BASELINE_MA")
     with write_session("sim") as s:
         sv = s.execute(select(StrategyVersion).where(StrategyVersion.key == "BASELINE_MA")).scalar_one()
         sv.params = dict(sv.params) | {"ai_overlay": overlay}
-    eng, fb = make_engine("sim", prov, ManualClock(US_OPEN), ai=ai)
+    eng, fb = make_engine("sim", prov, clock or ManualClock(US_OPEN), ai=ai)
     for _ in range(2):
         eng.tick()
     with read_session("sim") as s:
@@ -74,6 +74,15 @@ def test_ai_veto_can_only_block(env):
 
 def test_ai_veto_agreeing_keeps_rule_trade(env):
     ints = _baseline_with_overlay(env, ScriptedAI(lambda p: _buy(p, stop_loss_price="52.00")), "veto")
+    assert len(ints) == 1 and ints[0].reason == "ENTRY"
+
+
+def test_ai_veto_overlay_works_with_a_real_moving_clock(env):
+    """回归：基准策略的 AI 复核同样不能因为两次读取时钟而判为「数据时点不符」。"""
+    from integration.test_ai_safety import _TickingClock
+
+    ints = _baseline_with_overlay(env, ScriptedAI(lambda p: _buy(p, stop_loss_price="52.00")), "veto",
+                                  clock=_TickingClock(US_OPEN))
     assert len(ints) == 1 and ints[0].reason == "ENTRY"
 
 
