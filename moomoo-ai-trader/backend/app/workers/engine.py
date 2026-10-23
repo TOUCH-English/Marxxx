@@ -136,9 +136,16 @@ class TradingEngine:
             return ReplayProvider(get_settings().data_dir / "imports", self.calendar, name="HISTORICAL_REPLAY",
                                   prefix="import")
         if p.data_source == "MOOMOO_REALTIME":
+            from ..db.models import Instrument
+            from ..market_data.base import InstrumentInfo
             from ..market_data.moomoo_quotes import MoomooQuoteProvider
 
-            return MoomooQuoteProvider.shared()
+            prov = MoomooQuoteProvider.shared()
+            with read_session(self.ns) as s:
+                for i in s.execute(select(Instrument)).scalars():
+                    prov.register(InstrumentInfo(i.symbol, i.market, i.name, i.sec_type, i.currency, i.lot_size,
+                                                 is_leveraged=i.is_leveraged))
+            return prov
         raise RuntimeError(f"未知数据源 {p.data_source}")
 
     def _make_adapter(self, p: Portfolio, binding: AccountBinding | None, fees: dict):

@@ -169,6 +169,12 @@ def start_sim_run(*, mode: str = "DEMO", data_source: str = "DEMO_FIXTURE", capi
             from ..market_data.fixtures import DEMO_REPLAY_START
 
             sim_start = datetime.fromisoformat(DEMO_REPLAY_START)
+        if data_source == "DEMO_FIXTURE":
+            from ..db.models import FxRate
+
+            if not s.execute(select(FxRate.id).where(FxRate.source.like("演示%"))).first():
+                s.add(FxRate(pair="USDMYR", rate=D("4.20"), source="演示固定汇率（非真实，仅用于折算展示）",
+                             as_of=sim_start or utcnow()))
         p = Portfolio(mode=mode, account_binding_id=binding.id, name=f"{mode} 运行", data_source=data_source,
                       sim_clock=sim_start, running=True)
         s.add(p)

@@ -100,15 +100,45 @@ def run(rt, ts: TickState, wall_now: datetime) -> None:
                                 **base)
             overlay = p.get("ai_overlay", "none")
             if overlay in ("explain", "veto"):
-                d.model_judgment = {"overlay": overlay, "note": "AI 叠加实验：AI 只能否决，不能批准规则外交易"}
-                if overlay == "veto" and _ai_veto(rt, sym, sig):
-                    d.outcome, d.outcome_reason = DecisionOutcome.NO_ACTION, "AI 否决了本次新开仓（实验模式）"
+                agrees, why = _ai_overlay(rt, ts, sym)
+                d.model_judgment = {"overlay": overlay, "ai_agrees": agrees, "rationale": why,
+                                    "note": "AI 叠加实验：AI 只能解释或否决规则已产生的信号，不能批准规则外的交易"}
+                if overlay == "veto" and not agrees:
+                    d.outcome, d.outcome_reason = DecisionOutcome.NO_ACTION, f"AI 否决了本次新开仓（实验模式）：{why[:120]}"
                     continue
             d.outcome, d.outcome_reason = execute_buy(
                 s, rt, ts, wall_now, d, stop=stop, take_profit=None, max_hold_days=int(p["max_hold_days"]),
                 target_pct=None, max_price=None, intent_key=f"BASE:{sv}:{sym}:{sig['signal_day']}:BUY")
 
 
-def _ai_veto(rt, sym: str, sig: dict) -> bool:
-    """AI 否决实验：固定测试响应下从不否决；真实模型在此处可接入，同样只能否决。"""
-    return False
+def _ai_overlay(rt, ts: TickState, sym: str) -> tuple[bool, str]:
+    """把规则信号的证券单独交给 AI 判断。AI 不同意（或无效/超时）→ 视为否决；AI 永远不能产生规则外的买单。"""
+    from ..ai.validate import ValidationContext, parse_and_validate
+    from . import ai_autonomous as aa
+
+    p = aa._params(ts)
+    ts1 = TickState(portfolio=ts.portfolio, auth=ts.auth, auth_ok=ts.auth_ok, auth_reason=ts.auth_reason,
+                    params=ts.params, risk_policy_version=ts.risk_policy_version, strategy=ts.strategy, scope={sym},
+                    risk_policy_version_id=ts.risk_policy_version_id)
+    inst = rt.provider.instrument(sym)
+    payload, meta = aa.build_payload(rt, ts1, inst.market, p | {"max_candidates": 1})
+    if sym not in meta["candidates"]:
+        return False, "AI 输入中没有该证券（数据不足）"
+    try:
+        res = rt.ai_provider.complete(payload)
+    except Exception as e:
+        return False, f"AI 调用异常：{e}"
+    if res.status != "OK":
+        return False, f"AI 未给出结果（{res.status}）"
+    from ..db.types import D
+
+    v = parse_and_validate(res.text, ValidationContext(
+        as_of=rt.now(), strategy_version=payload["strategy_version"], candidate_symbols={sym}, held_symbols=set(),
+        evidence_ids={k: set(x) for k, x in meta["evidence"].items()},
+        last_prices={k: D(x) for k, x in meta["last_prices"].items() if x is not None},
+        max_target_position_pct=D(meta["max_target_position_pct"]), max_holding_days=meta["max_holding_days"],
+        max_valid_minutes=meta["max_valid_minutes"], now=rt.now()))
+    d = next((x for x in v.decisions if x.raw.symbol == sym), None)
+    if not v.ok or d is None:
+        return False, "AI 输出无效"
+    return d.raw.action == "BUY_PROPOSAL", d.raw.rationale

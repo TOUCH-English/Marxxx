@@ -311,7 +311,13 @@ def add_watch(ns: str, body: WatchBody, sess=Mutator):
         p = current_portfolio(s, ns)
     prov = _provider(ns, p.data_source if p else None)
     inst = prov.instrument(sym)
-    if inst is None and ns == "sim":
+    if inst is None and prov.name == "MOOMOO_REALTIME":
+        try:  # 用一次只读快照核对名称与交易单位
+            prov.quote(sym, utcnow())
+            inst = prov.instrument(sym)
+        except Exception:
+            inst = None
+    if inst is None and ns == "sim" and prov.name != "MOOMOO_REALTIME":
         raise HTTPException(400, "当前数据源中没有这只证券")
     with write_session(ns) as s:
         w = s.execute(select(Watchlist).where(Watchlist.symbol == sym)).scalar_one_or_none()

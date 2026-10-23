@@ -34,6 +34,7 @@ DEFAULT_AI_PARAMS: dict[str, Any] = {
     "max_valid_minutes": 60,
     "bars_lookback": 260,
     "news_lookback_days": 3,
+    "event_move_pct": "0.03",
     "fixture_params": {
         "entry_min_score": 1.5, "stop_atr_mult": "2.0", "take_profit_atr_mult": "4.0", "max_holding_days": 10,
         "target_position_pct": "0.08", "reduce_gain_atr": "1.5", "reduce_fraction": "0.5",
@@ -75,16 +76,42 @@ def run(rt, ts: TickState, wall_now: datetime) -> None:
     now = rt.now()
     markets = sorted({rt.provider.instrument(sym).market for sym in ts.scope if rt.provider.instrument(sym)}
                      | {pos.market for pos in _positions(rt, ts)})
+    held = _positions(rt, ts)
     for m in markets:
         if not rt.calendar.is_open(m, now):
             continue
         if any(j.market == m for j in rt.ai_jobs):
             continue
         last = rt.last_ai_batch.get(m)
-        if last is not None and now - last < timedelta(minutes=int(p["interval_minutes"])):
+        due = last is None or now - last >= timedelta(minutes=int(p["interval_minutes"]))
+        if not due and _important_event(rt, m, held, p, now, last):
+            due = True
+            with write_session(rt.ns) as s:
+                note(s, rt, ts, f"{m} 持仓价格大幅变动，触发一次额外 AI 复核（距上次 ≥ {get_settings().min_ai_interval_minutes} 分钟）",
+                     action="AI_EVENT_REVIEW")
+        if not due:
             continue
         rt.last_ai_batch[m] = now
+        rt.last_ai_prices[m] = {x.symbol: rt.price_of(x.symbol) for x in held if x.market == m}
         start_batch(rt, ts, wall_now, m, p)
+
+
+def _important_event(rt, market: str, held, p: dict, now, last) -> bool:
+    """重要事件：持仓价格相对上次复核变动超过阈值。限频：距上次复核至少 min_ai_interval_minutes。"""
+    base = rt.last_ai_prices.setdefault(market, {})
+    for x in held:  # 上次复核之后才建立的持仓：以首次看到的价格为基准
+        if x.market == market and base.get(x.symbol) is None:
+            base[x.symbol] = rt.price_of(x.symbol)
+    if last is None or now - last < timedelta(minutes=get_settings().min_ai_interval_minutes):
+        return False
+    thr = Decimal(str(p.get("event_move_pct", "0.03")))
+    for x in held:
+        if x.market != market or base.get(x.symbol) is None:
+            continue
+        cur = rt.price_of(x.symbol)
+        if cur is not None and abs(cur / base[x.symbol] - 1) >= thr:
+            return True
+    return False
 
 
 def _positions(rt, ts: TickState):

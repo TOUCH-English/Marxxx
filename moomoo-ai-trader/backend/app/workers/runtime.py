@@ -38,6 +38,7 @@ class Runtime:
     executor: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(max_workers=1, thread_name_prefix="ai"))
     last_reconcile_wall: datetime | None = None
     last_ai_batch: dict[str, datetime] = field(default_factory=dict)
+    last_ai_prices: dict[str, dict] = field(default_factory=dict)
     ai_jobs: list[PendingAIJob] = field(default_factory=list)
     quotes: dict[str, Quote | None] = field(default_factory=dict)
     last_quote_store: datetime | None = None
