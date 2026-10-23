@@ -130,7 +130,15 @@ def start() -> int:
     if "worker_live" not in running and str(cfg.get("LIVE_TRADING_ENABLED", "false")).lower() == "true":
         _spawn("worker_live", [str(VENV_PY), "-m", "app.workers.main", "--ns", "live"])
     url = f"http://127.0.0.1:{port}/"
-    time.sleep(2.5)
+    time.sleep(4)
+    for name, alive in status().items():
+        if not alive:
+            say(f"⚠ {name} 没有成功运行。日志最后几行：")
+            logf = ROOT / "data" / f"{name}.log"
+            if logf.exists():
+                for line in logf.read_text(encoding="utf-8", errors="replace").splitlines()[-8:]:
+                    print("    " + line)
+            say("请把上面的文字发给技术支持；也可以先运行停止脚本，等 1 分钟后再启动。")
     say(f"打开 {url}（首次需设置本机密码）")
     try:
         webbrowser.open(url)

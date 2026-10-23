@@ -42,6 +42,15 @@ def acquire_lease(ns: str, owner: str) -> bool:
     return True
 
 
+def release_lease(ns: str, owner: str) -> None:
+    """正常退出时释放租约，使停止后立刻重启的新进程无需等待过期。"""
+    with write_session(ns) as s:
+        hb = s.get(WorkerHeartbeat, ns)
+        if hb is not None and hb.owner == owner:
+            hb.heartbeat_at = hb.heartbeat_at - LEASE_TTL * 2
+            hb.owner = f"released:{owner}"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--ns", choices=["sim", "live"], default="sim")
@@ -60,10 +69,15 @@ def main(argv: list[str] | None = None) -> int:
         log.error("已有 %s 工作进程在运行（文件锁被占用），本进程退出", args.ns)
         return 2
     owner = f"{socket.gethostname()}:{os.getpid()}"
-    if not acquire_lease(args.ns, owner):
-        log.error("数据库租约显示已有其他工作进程在运行，本进程退出")
-        lock.release()
-        return 3
+    # 已拿到文件锁 = 本机没有其他工作进程；租约可能是上一个被强制结束的进程留下的，等待其过期后接管
+    deadline = time.monotonic() + LEASE_TTL.total_seconds() + 5
+    while not acquire_lease(args.ns, owner):
+        if time.monotonic() > deadline:
+            log.error("数据库租约显示已有其他工作进程在运行，本进程退出")
+            lock.release()
+            return 3
+        log.info("等待上一个工作进程的租约过期…")
+        time.sleep(2)
     stop = {"flag": False}
 
     def _sig(*_):
@@ -87,7 +101,10 @@ def main(argv: list[str] | None = None) -> int:
                 break
             time.sleep(max(0.05, st.worker_tick_seconds - (time.monotonic() - t0)))
     finally:
-        lock.release()
+        try:
+            release_lease(args.ns, owner)
+        finally:
+            lock.release()
         log.info("%s 工作进程退出", args.ns)
     return 0
 
