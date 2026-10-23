@@ -88,6 +88,16 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
   实盘仍按交易币种要求「现金」与「可提现现金」都有值、取二者较小者，从不使用购买力。
   修复后需在 Mac 上重新运行一次只读诊断，确认 `US 现金与融资区分（USD）` 为 PASS。
 
+### 修复版 `0bc7b1a` 在 Mac 上的复验（同日，Codex 执行并回报）
+
+- 完整 ZIP 与 `SHA256SUMS.txt` 一致；覆盖源码时保留了 `.env`、`data/` 和网页密码；没有改动真实交易开关。
+- 本机 `pytest tests/unit/test_diagnostics.py` → **6 passed**。
+- 通过真实 OpenD 复查用户指定的美股券商模拟账户：美股行情 **PASS**、`cash_fields_US` **PASS**、不再出现 `cash_fields_MY`、
+  限价单只读探测 **PASS**、原生止损限价单 **UNSUPPORTED**（预期）。
+- 网页端：重新登录 → 重新获取账户列表 → 对同一 SIMULATE 账户 + `US.AAPL` 运行诊断，页面显示
+  「US 现金与融资区分（USD）通过」「US 限价单通过」「US 止损限价单不支持」，诊断完成。
+- 没有绑定账户、没有解锁交易、没有下单、没有调用付费 AI。
+
 ## 可复现示例
 
 `python scripts/demo_e2e.py --ticks 900` → `data/examples/demo_run/`（已提交）：
