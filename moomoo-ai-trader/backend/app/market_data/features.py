@@ -72,7 +72,9 @@ def momentum_score(f: dict[str, Any]) -> float:
     """确定性的候选排序分（不是盈利预测），用于在调用 AI 前缩小候选范围。"""
     r20 = f.get("ret_20d") or 0.0
     r60 = f.get("ret_60d") or 0.0
-    vol = f.get("vol_20d") or 0.02
+    vol = f.get("vol_20d")
+    if vol is None:
+        vol = 0.02
     return (0.6 * r20 + 0.4 * r60) / max(vol, 0.005)
 
 

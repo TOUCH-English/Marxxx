@@ -16,11 +16,8 @@ DIST = PROJECT_ROOT / "frontend" / "dist"
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Moomoo AI 自动交易工作台", docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
-
-    @app.on_event("startup")
-    def _startup():
-        for ns in ("sim", "live"):
-            ensure_seed(ns)
+    for ns in ("sim", "live"):
+        ensure_seed(ns)  # 迁移数据库并写入种子（幂等）
 
     @app.middleware("http")
     async def guard(request: Request, call_next):

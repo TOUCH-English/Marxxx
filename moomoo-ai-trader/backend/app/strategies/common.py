@@ -29,6 +29,7 @@ class TickState:
     strategy: StrategyVersion | None
     scope: set[str]
     health_blocks: list[str] = field(default_factory=list)
+    risk_policy_version_id: int = 0
     broker_cash: dict[str, Any] = field(default_factory=dict)
 
 
@@ -38,6 +39,7 @@ def risk_ctx(rt, ts: TickState, wall_now: datetime) -> RiskContext:
         risk_policy_version=ts.risk_policy_version, now=rt.now(), wall_now=wall_now, calendar=rt.calendar,
         is_replay=rt.is_replay, fee_schedules=rt.fee_schedules, scope_symbols=ts.scope, account_id=rt.account_id,
         broker_cash=ts.broker_cash, health_blocks=ts.health_blocks, price_of=rt.price_of,
+        risk_policy_version_id=ts.risk_policy_version_id,
     )
 
 

@@ -221,7 +221,7 @@ def weekly_review(s: Session, rt, pid: int, week_key: str, period: tuple[datetim
              f"{len([e for e in exps if e.kind == 'EXECUTION_FAILURE'])}）。"]
     cands = []
     if len(trades) < WEEKLY_MIN_TRADES or sv is None:
-        lines.append(f"证据不足（已平仓交易 {len(trades)} 笔 < {WEEKLY_MIN_TRADES}），保持当前版本。不会为凑样本而交易。")
+        lines.append(f"证据不足，保持当前版本（已平仓交易 {len(trades)} 笔 < {WEEKLY_MIN_TRADES}）。不会为凑样本而交易。")
         rr.status = "INSUFFICIENT_EVIDENCE"
     else:
         cls = Counter(e.outcome_class for e in trades)

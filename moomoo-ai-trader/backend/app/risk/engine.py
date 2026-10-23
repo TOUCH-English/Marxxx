@@ -46,6 +46,7 @@ class RiskContext:
     broker_cash: dict[str, Any] = field(default_factory=dict)  # 实盘：券商现金信息
     health_blocks: list[str] = field(default_factory=list)
     price_of: Any = None  # symbol -> Decimal | None
+    risk_policy_version_id: int = 0
 
 
 @dataclass
@@ -161,7 +162,8 @@ def evaluate_entry(s: Session, ctx: RiskContext, req: EntryRequest) -> EntryResu
         add("买入权限", bool(ctx.auth.permissions.get("buy")), "授权允许买入" if ctx.auth.permissions.get("buy") else "授权未允许买入")
         add("策略版本", req.strategy_version_id in (ctx.auth.strategy_version_ids or []),
             f"策略版本 {req.strategy_version}")
-        add("风控版本", ctx.auth.risk_policy_version_id == ctx.risk_policy_version, f"风控版本 v{ctx.risk_policy_version}")
+        add("风控版本", ctx.auth.risk_policy_version_id == ctx.risk_policy_version_id,
+            f"风控版本 v{ctx.risk_policy_version}（运行授权批准的版本）")
     # 3. 暂停/紧急停止/锁定/健康
     add("暂停新开仓", not ctx.portfolio.pause_new_entries, "已暂停新开仓" if ctx.portfolio.pause_new_entries else "未暂停")
     add("紧急停止", not ctx.portfolio.emergency_stop, "已紧急停止新交易" if ctx.portfolio.emergency_stop else "正常")

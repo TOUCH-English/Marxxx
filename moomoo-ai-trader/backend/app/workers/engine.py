@@ -312,7 +312,8 @@ class TradingEngine:
                 s.expunge(auth)
                 auth_copy = auth
             ts = TickState(portfolio=p_copy, auth=auth_copy, auth_ok=ok, auth_reason=why, params=params,
-                           risk_policy_version=rpv, strategy=strategy, scope=scope)
+                           risk_policy_version=rpv, strategy=strategy, scope=scope,
+                           risk_policy_version_id=auth.risk_policy_version_id if auth else 0)
             if strategy is not None:
                 s.expunge(strategy)
                 if auth_copy is not None and strategy.id not in (auth_copy.strategy_version_ids or []):
