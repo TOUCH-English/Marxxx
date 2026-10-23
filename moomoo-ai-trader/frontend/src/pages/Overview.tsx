@@ -11,16 +11,63 @@ import { Alert, App, Button, Card, Checkbox, Col, Collapse, Descriptions, Empty,
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import type { CommandRow, CurrencyView, OverviewPosition } from '../api/types';
+import type { CommandRow, CurrencyView, Gate, OverviewPosition, Scorecard } from '../api/types';
 import { Money, PageTitle, Explain, DownloadLink } from '../components/common';
 import { useDrawers } from '../components/Drawers';
 import { useAppState } from '../state/app';
-import { useAction } from '../state/hooks';
+import { useAction, useApi } from '../state/hooks';
 import { fmtMoney, fmtPct, fmtPrice, sumDecimals } from '../utils/decimal';
 import { fmtMyt } from '../utils/format';
 import { ACTION_LABELS, AUDIT_CATEGORY_LABELS, LOCK_KIND_LABELS, NS_LABEL } from '../utils/labels';
 
 const { Text, Paragraph } = Typography;
+
+const GATE_COLOR: Record<string, string> = { PASS: 'green', FAIL: 'red', INSUFFICIENT: 'default' };
+
+function GateTable({ title, gate }: { title: string; gate: Gate }) {
+  return (
+    <Card size="small" type="inner" title={<Space>{title}<Tag color={GATE_COLOR[gate.status]}>{gate.status_cn}</Tag></Space>} className="card-fill">
+      <Table
+        size="small"
+        rowKey="name"
+        pagination={false}
+        dataSource={gate.items}
+        scroll={{ x: true }}
+        columns={[
+          { title: '项目', dataIndex: 'name' },
+          { title: '现在', dataIndex: 'value' },
+          { title: '标准', dataIndex: 'target' },
+          { title: '结果', dataIndex: 'status', render: (v: string, r) => <Tag color={GATE_COLOR[v]}>{r.status_cn}</Tag> },
+        ]}
+      />
+    </Card>
+  );
+}
+
+function ScorecardCard({ ns }: { ns: string }) {
+  const sc = useApi<Scorecard>(`/api/${ns}/scorecard`, { live: false });
+  if (!sc.data) return null;
+  const n = sc.data.numbers;
+  return (
+    <Card size="small" title="成绩单：和大盘比，够不够格" style={{ marginTop: 12 }} data-testid="scorecard-card">
+      <Alert type={sc.data.gate_b.status === 'FAIL' ? 'warning' : 'info'} showIcon message={sc.data.verdict} style={{ marginBottom: 12 }} />
+      <Row gutter={[12, 12]}>
+        <Col xs={12} md={6}><Statistic title="扣除 AI 费用后的收益" value={String(n.net_return_pct ?? '—')} /></Col>
+        <Col xs={12} md={6}><Statistic title="同期大盘（SPY）" value={String(n.spy_return_pct ?? '—')} /></Col>
+        <Col xs={12} md={6}><Statistic title="资金占用匹配的大盘" value={String(n.spy_matched_return_pct ?? '—')} /></Col>
+        <Col xs={12} md={6}><Statistic title="已平仓交易" value={Number(n.closed_trades ?? 0)} suffix="笔" /></Col>
+      </Row>
+      <Paragraph type="secondary" style={{ marginTop: 8 }}>
+        {sc.data.benchmark_note}。AI 费用 {n.ai_cost_usd} 美元，手续费 {n.fees_usd} 美元，最大回撤 {n.max_drawdown_pct}。
+        交易太少时结果可能只是运气，所以至少 30 笔才判断「有没有优势」。
+      </Paragraph>
+      <Row gutter={[12, 12]}>
+        <Col xs={24} lg={12}><GateTable title="关卡 A：系统运作是否可靠" gate={sc.data.gate_a} /></Col>
+        <Col xs={24} lg={12}><GateTable title="关卡 B：有没有优势（用真钱前必须通过）" gate={sc.data.gate_b} /></Col>
+      </Row>
+    </Card>
+  );
+}
 
 function CurrencyCard({ c }: { c: CurrencyView }) {
   const rows: { label: string; node: React.ReactNode; hint?: string }[] = [
@@ -487,6 +534,8 @@ export function OverviewPage() {
           </Card>
         </Col>
       </Row>
+
+      {o.portfolio ? <ScorecardCard ns={ns} /> : null}
 
       <Card size="small" title="资金：三者分开显示，不能混为一谈" style={{ marginTop: 12 }}>
         <Row gutter={[12, 12]}>

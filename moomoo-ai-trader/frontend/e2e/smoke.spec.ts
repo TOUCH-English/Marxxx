@@ -82,6 +82,9 @@ test('冒烟：设置密码 → 登录 → 向导启动 DEMO → 浏览全部页
     )
     .toBe(true);
   await shot(page, '04-overview-running');
+  // 成绩单：关卡 A/B 与大盘比较（演示没有 SPY 数据，应显示「样本不足」而不是通过）
+  await expect(page.getByTestId('scorecard-card')).toBeVisible();
+  await expect(page.getByTestId('scorecard-card')).toContainText('关卡 B');
 
   // 5. 浏览全部页面
   const pages: [string, string, string][] = [

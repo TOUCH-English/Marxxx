@@ -30,7 +30,7 @@ from ..db.session import read_session, write_session
 from ..services.runs import change_scope, current_portfolio, revoke
 from . import security
 from .deps import Mutator, Viewer, j, ns_of, row
-from .views import decision_view, intent_view, overview
+from .views import active_auth, decision_view, intent_view, overview
 
 router = APIRouter(prefix="/api/{ns}")
 
@@ -143,6 +143,35 @@ def stop_run(ns: str, sess=Mutator):
         p = _portfolio(s, ns)
     n = revoke(ns, p.id, "user")
     return {"ok": True, "revoked": n, "note": "已停止新开仓；已有持仓继续按批准的保护规则管理"}
+
+
+@router.get("/scorecard")
+def get_scorecard(ns: str, sess=Viewer):
+    """成绩单：与同期 SPY 比较，并按关卡 A / B 自动判断（只读）。"""
+    ns_of(ns)
+    from ..learning import scorecard
+    from .views import latest_quote
+
+    with read_session(ns) as s:
+        p = _portfolio(s, ns)
+        provider = None
+        if p.data_source == "MOOMOO_REALTIME":
+            from ..broker.moomoo_adapter import tcp_probe
+            from ..config import get_settings
+            from ..market_data.moomoo_quotes import MoomooQuoteProvider
+
+            st = get_settings()
+            if tcp_probe(st.moomoo_opend_host, st.moomoo_opend_port, timeout=0.5):
+                provider = MoomooQuoteProvider.shared()
+
+        def price_of(sym: str):
+            q = latest_quote(s, sym)
+            return q.last if q is not None and q.last is not None else None
+
+        a = active_auth(s, p.id)
+        caps = list((a.capital or {}).keys()) if a else []
+        ccy = "USD" if "USD" in caps or not caps else caps[0]
+        return j(scorecard.build(s, p.id, price_of=price_of, provider=provider, ccy=ccy))
 
 
 class ScopeBody(BaseModel):

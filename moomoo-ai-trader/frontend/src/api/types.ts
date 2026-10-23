@@ -859,3 +859,30 @@ export interface CommandRow {
 export interface Items<T> {
   items: T[];
 }
+
+export interface GateItem {
+  name: string;
+  value: string;
+  target: string;
+  status: 'PASS' | 'FAIL' | 'INSUFFICIENT';
+  status_cn: string;
+  note: string;
+}
+
+export interface Gate {
+  status: 'PASS' | 'FAIL' | 'INSUFFICIENT';
+  status_cn: string;
+  items: GateItem[];
+}
+
+export interface Scorecard {
+  currency: string;
+  period_start: string;
+  as_of: string;
+  sessions: number;
+  numbers: Record<string, string | number | null>;
+  benchmark_note: string;
+  gate_a: Gate;
+  gate_b: Gate;
+  verdict: string;
+}
