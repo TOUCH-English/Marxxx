@@ -211,3 +211,19 @@ export const RISK_PARAM_HELP: Record<string, string> = {
   max_spread_bps: '买卖价差过大时不开仓（1 基点 = 0.01%）。',
   default_max_hold_days: '默认最长持有天数，到期由程序自动卖出。',
 };
+
+const FEATURE_RATIO_KEYS = new Set(['ret_5d', 'ret_20d', 'ret_60d', 'vol_20d', 'atr_pct', 'dist_from_252d_high', 'chg_today']);
+
+/** 技术特征的显示：收益/波动类显示为百分比，成交额加千分位。 */
+export function fmtFeature(key: string, v: unknown): string {
+  if (v === null || v === undefined || v === '') return '数据不足';
+  if (FEATURE_RATIO_KEYS.has(key) && (typeof v === 'number' || typeof v === 'string')) {
+    const n = Number(v);
+    if (Number.isFinite(n)) return `${(n * 100).toFixed(2)}%`;
+  }
+  if (key === 'avg_turnover_20d' && (typeof v === 'number' || typeof v === 'string')) {
+    const n = Number(v);
+    if (Number.isFinite(n)) return Math.round(n).toLocaleString('en-US');
+  }
+  return String(v);
+}

@@ -304,18 +304,21 @@ function BacktestSection() {
 function ReportsSection() {
   const { ns } = useAppState();
   const reports = useApi<Items<ReviewRun>>(`/api/${ns}/reviews?kind=DAILY`);
-  const items = reports.data?.items ?? [];
+  const all = reports.data?.items ?? [];
+  const [shown, setShown] = useState(10);
+  const items = all.slice(0, shown);
   return (
-    <Card size="small" title={`每日复盘（${items.length}）`} data-testid="daily-reports">
+    <Card size="small" title={`每日复盘（${all.length}）`} data-testid="daily-reports">
       <Paragraph type="secondary">每个马来西亚交易日结束后自动生成；未平仓的浮动盈亏不计入已实现盈利；模拟、回放与实盘分开统计。</Paragraph>
       <ErrorAlert error={reports.error} />
       {items.length ? (
         <Collapse
+          defaultActiveKey={all[0] ? [all[0].id] : []}
           items={items.map((r) => ({
             key: r.id,
             label: (
               <Space wrap>
-                <Text strong>{fmtMytDate(r.period_end)}</Text>
+                <Text strong>{fmtMytDate(r.period_start)}</Text>
                 <Tag>{DATA_SOURCE_LABELS[r.data_source] ?? r.data_source}</Tag>
                 <Tag color={r.status === 'DONE' ? 'green' : 'default'}>{r.status === 'DONE' ? '已完成' : r.status}</Tag>
               </Space>
@@ -327,6 +330,11 @@ function ReportsSection() {
       ) : (
         <Empty description="暂无日报" />
       )}
+      {all.length > shown ? (
+        <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <Button onClick={() => setShown(shown + 20)}>显示更早的日报（还有 {all.length - shown} 份）</Button>
+        </div>
+      ) : null}
     </Card>
   );
 }

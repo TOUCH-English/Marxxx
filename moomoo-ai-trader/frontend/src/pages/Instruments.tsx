@@ -10,7 +10,7 @@ import { useAppState } from '../state/app';
 import { useAction, useApi } from '../state/hooks';
 import { chartNumber, fmtMoney, fmtPrice } from '../utils/decimal';
 import { fmtAge, fmtMyt } from '../utils/format';
-import { DATA_SOURCE_LABELS, FEATURE_LABELS, MARKET_LABELS, SEC_TYPE_LABELS } from '../utils/labels';
+import { DATA_SOURCE_LABELS, FEATURE_LABELS, MARKET_LABELS, SEC_TYPE_LABELS, fmtFeature } from '../utils/labels';
 
 const { Text, Paragraph } = Typography;
 
@@ -268,7 +268,7 @@ export function InstrumentDetailPage() {
                 {qt.suspended ? <Alert type="error" showIcon message="停牌" style={{ marginBottom: 8 }} /> : null}
                 <Descriptions
                   size="small"
-                  column={{ xs: 1, sm: 2 }}
+                  column={{ xs: 1, sm: 2, md: 2, lg: 2, xl: 2, xxl: 3 }}
                   items={[
                     { key: 'last', label: '最新价', children: <Text strong style={{ fontSize: 18 }}>{fmtPrice(qt.last)}</Text> },
                     { key: 'prev', label: '昨收', children: fmtPrice(qt.prev_close) },
@@ -317,7 +317,7 @@ export function InstrumentDetailPage() {
         <Text type="secondary" style={{ fontSize: 12 }}>截至业务时间 {fmtMyt(d.data?.as_of)}，共 {d.data?.bars.length ?? 0} 根已收盘日K。</Text>
       </Card>
       <Card size="small" title="技术特征（程序计算，AI 决策时可见）" style={{ marginTop: 12 }}>
-        <KV data={d.data?.features} labels={FEATURE_LABELS} column={3} />
+        <KV data={d.data?.features} labels={FEATURE_LABELS} column={3} format={fmtFeature} />
       </Card>
       {d.data?.last_snapshot ? (
         <Card size="small" title="系统最近保存的报价快照" style={{ marginTop: 12 }}>

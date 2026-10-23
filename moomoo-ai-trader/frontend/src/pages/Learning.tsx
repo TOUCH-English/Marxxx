@@ -5,7 +5,7 @@ import type { Candidate, LearningInfo } from '../api/types';
 import { DownloadLink, ErrorAlert, Explain, KV, PageTitle } from '../components/common';
 import { useAppState } from '../state/app';
 import { useAction, useApi } from '../state/hooks';
-import { fmtMyt, fmtMytDate, fmtValue } from '../utils/format';
+import { fmtMyt, fmtMytDate, fmtMytDateEnd, fmtValue } from '../utils/format';
 import { CANDIDATE_STATUS, DATA_SOURCE_LABELS, EXPERIENCE_KIND_LABELS, MODE_LABELS } from '../utils/labels';
 import { DeploymentsTable } from './Risk';
 
@@ -218,7 +218,7 @@ export function LearningPage() {
               <Collapse
                 items={d.weekly.map((w) => ({
                   key: w.id,
-                  label: `${fmtMytDate(w.period_start)} ~ ${fmtMytDate(w.period_end)}`,
+                  label: `${fmtMytDate(w.period_start)} ~ ${fmtMytDateEnd(w.period_end)}`,
                   extra: <DownloadLink href={`/api/${ns}/reviews/${w.id}.txt`}>.txt</DownloadLink>,
                   children: <pre className="report-text">{w.summary}</pre>,
                 }))}

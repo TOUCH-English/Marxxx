@@ -10,6 +10,7 @@ import {
   CANCELLABLE_STATUSES,
   DECISION_SOURCE_LABELS,
   FEATURE_LABELS,
+  fmtFeature,
   INTENT_REASON_LABELS,
   MODE_LABELS,
   ORDER_STATUS_LABELS,
@@ -163,7 +164,7 @@ export function DecisionDetail({ id }: { id: string }) {
             ]} />
             {d.facts.features ? (
               <div style={{ marginTop: 8 }}>
-                <KV data={d.facts.features as Record<string, unknown>} labels={FEATURE_LABELS} />
+                <KV data={d.facts.features as Record<string, unknown>} labels={FEATURE_LABELS} format={fmtFeature} />
               </div>
             ) : null}
           </>

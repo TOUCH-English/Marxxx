@@ -22,6 +22,14 @@ export function fmtMytDate(iso: string | null | undefined): string {
   return d.utcOffset(MYT_OFFSET_MIN).format('YYYY-MM-DD');
 }
 
+/** 区间结束时间为「不含」（如次日 00:00），显示为前一天。 */
+export function fmtMytDateEnd(iso: string | null | undefined): string {
+  if (!iso) return '暂无数据';
+  const d = dayjs(iso);
+  if (!d.isValid()) return String(iso);
+  return d.subtract(1, 'second').utcOffset(MYT_OFFSET_MIN).format('YYYY-MM-DD');
+}
+
 export function nowMytClock(): string {
   return dayjs().utcOffset(MYT_OFFSET_MIN).format('HH:mm:ss');
 }

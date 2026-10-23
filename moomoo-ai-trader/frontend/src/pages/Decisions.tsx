@@ -54,7 +54,7 @@ function CalcSummary({ d }: { d: Decision }) {
         {
           key: 'f',
           label: '预估费用',
-          children: rc?.est_fee_buy || rc?.est_fee_sell ? `${d.action === 'BUY_PROPOSAL' ? '买 ' + fmtMoney(rc?.est_fee_buy) : '卖 ' + fmtMoney(rc?.est_fee_sell ?? rc?.est_fee_buy)} ${d.currency}` : '—',
+          children: rc?.ok !== false && (rc?.est_fee_buy || rc?.est_fee_sell) ? `${d.action === 'BUY_PROPOSAL' ? '买 ' + fmtMoney(rc?.est_fee_buy) : '卖 ' + fmtMoney(rc?.est_fee_sell ?? rc?.est_fee_buy)} ${d.currency}` : '—',
         },
         {
           key: 'r',

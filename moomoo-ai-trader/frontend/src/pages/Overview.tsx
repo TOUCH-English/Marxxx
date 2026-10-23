@@ -39,7 +39,7 @@ function CurrencyCard({ c }: { c: CurrencyView }) {
   ];
   return (
     <Card size="small" title={<Space><Tag color={c.currency === 'MYR' ? 'blue' : 'purple'}>{c.currency}</Tag>{c.currency === 'MYR' ? '马股账本（令吉）' : '美股账本（美元）'}</Space>} className="card-fill">
-      <Descriptions size="small" column={{ xs: 1, sm: 2, md: 2, lg: 2, xl: 3 }} items={rows.map((r) => ({ key: r.label, label: r.label, children: r.node }))} />
+      <Descriptions size="small" layout="vertical" colon={false} column={{ xs: 2, sm: 3, md: 4, lg: 4, xl: 3, xxl: 4 }} items={rows.map((r) => ({ key: r.label, label: r.label, children: r.node }))} />
       {c.missing_prices?.length ? (
         <Alert type="warning" showIcon style={{ marginTop: 8 }} message={`以下持仓暂无最新价，市值未计入：${c.missing_prices.join('、')}`} />
       ) : null}
