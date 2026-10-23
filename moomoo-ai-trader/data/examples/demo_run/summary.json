@@ -1,0 +1,119 @@
+{
+ "label": "【模拟·演示数据（虚构证券）·固定测试响应（非真实 AI）】",
+ "ticks": 900,
+ "business_time_end": "2026-07-22T19:30:00+00:00",
+ "milestones": {
+  "首次自动买入": {
+   "tick": 2,
+   "business_time": "2026-06-01T13:30:00+00:00",
+   "symbol": "US.DMOA",
+   "side": "BUY",
+   "qty": 5,
+   "status": "FILLED"
+  },
+  "首次 AI 自动卖出/减仓": {
+   "tick": 112,
+   "business_time": "2026-06-05T18:30:00+00:00",
+   "symbol": "US.DMOA",
+   "side": "SELL",
+   "qty": 2,
+   "status": "FILLED"
+  },
+  "首次持有期限退出": {
+   "tick": 203,
+   "business_time": "2026-06-11T14:00:00+00:00",
+   "symbol": "US.DMOA",
+   "side": "SELL",
+   "qty": 3,
+   "status": "FILLED"
+  },
+  "首次自动止损": {
+   "tick": 373,
+   "business_time": "2026-06-23T07:00:00+00:00",
+   "symbol": "MY.D003",
+   "side": "SELL",
+   "qty": 700,
+   "status": "FILLED"
+  }
+ },
+ "currencies": [
+  {
+   "currency": "MYR",
+   "allocation": "20000",
+   "cash": "19330.54",
+   "reserved": "0",
+   "available": "19330.54",
+   "market_value": "529",
+   "equity": "19859.54",
+   "realized_pnl": "-129.7603",
+   "unrealized_pnl": "-10.7",
+   "fees": "60.46",
+   "max_drawdown_pct": "0.86",
+   "day_pnl": "0",
+   "total_pnl": "-140.46",
+   "missing_prices": []
+  },
+  {
+   "currency": "USD",
+   "allocation": "5000",
+   "cash": "4760.23",
+   "reserved": "0",
+   "available": "4760.23",
+   "market_value": "214.16",
+   "equity": "4974.39",
+   "realized_pnl": "-23.900004",
+   "unrealized_pnl": "-1.71",
+   "fees": "38.27",
+   "max_drawdown_pct": "0.77",
+   "day_pnl": "-0.96",
+   "total_pnl": "-25.61",
+   "missing_prices": []
+  }
+ ],
+ "open_positions": [
+  {
+   "id": 17,
+   "symbol": "US.DMOC",
+   "name": "Demo Gamma ETF（虚构）",
+   "market": "US",
+   "currency": "USD",
+   "qty": 2,
+   "avg_cost": "107.935",
+   "last": "107.08",
+   "market_value": "214.16",
+   "unrealized": "-1.71",
+   "unrealized_pct": "-0.79",
+   "stop_price": "104.5186",
+   "take_profit_price": "112.3528",
+   "max_hold_until": "2026-07-30T17:00:00+00:00",
+   "opened_at": "2026-07-20T17:00:00+00:00",
+   "strategy_version": "AI_AUTONOMOUS:v1",
+   "reconcile_locked": false,
+   "quote_source": "DEMO_FIXTURE",
+   "quote_ts": "2026-07-22T19:00:00+00:00"
+  },
+  {
+   "id": 18,
+   "symbol": "MY.D002",
+   "name": "演示银行（虚构）",
+   "market": "MY",
+   "currency": "MYR",
+   "qty": 100,
+   "avg_cost": "5.397",
+   "last": "5.29",
+   "market_value": "529",
+   "unrealized": "-10.7",
+   "unrealized_pct": "-1.98",
+   "stop_price": "5.1586",
+   "take_profit_price": "5.6728",
+   "max_hold_until": "2026-08-01T07:30:00+00:00",
+   "opened_at": "2026-07-22T07:30:00+00:00",
+   "strategy_version": "AI_AUTONOMOUS:v1",
+   "reconcile_locked": false,
+   "quote_source": "DEMO_FIXTURE",
+   "quote_ts": "2026-07-22T08:45:00+00:00"
+  }
+ ],
+ "orders_needing_confirmation": false,
+ "note": "固定测试响应只验证自动流程，不代表 AI 投资表现；演示证券为虚构，不构成投资推荐。"
+}

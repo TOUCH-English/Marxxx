@@ -250,8 +250,16 @@ def _log_call(s, job, status: str, error: str, result) -> AICallLog:
                     error=error, latency_ms=getattr(result, "latency_ms", 0) or 0,
                     input_tokens=getattr(result, "input_tokens", 0) or 0,
                     output_tokens=getattr(result, "output_tokens", 0) or 0, as_of=job.as_of)
+    prev = s.execute(select(AICallLog.model).where(AICallLog.provider == prov.name, AICallLog.status == "OK")
+                     .order_by(AICallLog.id.desc()).limit(1)).scalar()
     s.add(log)
     s.flush()
+    if prev and log.model and status == "OK" and prev != log.model:
+        from ..core.audit import audit, notify
+
+        audit(s, "AI", "MODEL_CHANGED", f"模型供应商返回的模型版本变化：{prev} → {log.model}（已记录，需评估）", actor="worker")
+        notify(s, "warning", "AI 模型版本发生变化", f"{prev} → {log.model}。请关注复盘结果，必要时暂停。",
+               dedupe_key=f"model-change:{prev}->{log.model}")
     return log
 
 

@@ -1,0 +1,42 @@
+{
+ "label": "【模拟回测｜基准均线策略｜演示数据】",
+ "assumptions": [
+  "信号只使用信号日（含）之前已收盘的日 K；委托最早在下一个交易日成交。",
+  "买入限价 = 下一交易日开盘价 ×(1+入场溢价)；开盘价不高于限价时按开盘价+滑点成交，否则最低价触及限价时按限价成交（乐观假设：触及即全部成交）。",
+  "只有 OHLC 数据，无法得知同一根 K 线内止损与止盈的先后，保守假设先触发止损。",
+  "跳空穿过止损时按开盘价减滑点成交，实际亏损可能大于计划。",
+  "费用按费用表计算（测试费用表并非官方费率），不含汇率与税务影响。",
+  "指标用复权价，成交用原始价；拆股调整数量/止损价，现金股息入账。",
+  "样本来自演示或导入数据，存在选择偏差；短样本或几十笔交易不能证明策略有效。"
+ ],
+ "per_currency": {
+  "MYR": {
+   "initial": "20000",
+   "final_equity": "19743.24",
+   "net_return_pct": "-1.28",
+   "max_drawdown_pct": "1.47",
+   "benchmark_buy_hold_equal_weight_pct": "15.80",
+   "benchmark_cash_pct": "0.00"
+  },
+  "USD": {
+   "initial": "5000",
+   "final_equity": "4991.44",
+   "net_return_pct": "-0.17",
+   "max_drawdown_pct": "0.79",
+   "benchmark_buy_hold_equal_weight_pct": "17.94",
+   "benchmark_cash_pct": "0.00"
+  }
+ },
+ "round_trips": 21,
+ "buys": 21,
+ "net_pnl": "-265.32",
+ "win_rate_pct": "28.6",
+ "payoff_ratio": "1.02",
+ "profit_factor": "0.41",
+ "avg_holding_days": "23.6",
+ "total_fees": "149.79",
+ "fee_share_of_gross_pct": "23.7",
+ "sample_days": 257,
+ "open_positions_at_end": 0,
+ "sample_warning": "样本量过小，结果不具统计意义"
+}
