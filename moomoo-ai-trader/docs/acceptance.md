@@ -99,6 +99,13 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
   「US 现金与融资区分（USD）通过」「US 限价单通过」「US 止损限价单不支持」，诊断完成。
 - 没有绑定账户、没有解锁交易、没有下单、没有调用付费 AI。
 
+### 行情修复版 `6015058` 与免费模型检查（同日，Codex 在 Mac 上执行并回报）
+
+- `6015058` 已安装，校验值一致；`test_moomoo_quotes.py` 与 `test_risk.py` 共 **12 passed**。
+- 真实 OpenD：`US.AAPL` 类型核实为 STOCK；连续 10 次读取报价只发出 **1 次**快照请求；历史日 K 线 **251 根**（AI 至少需要 30 根）。
+- 经用户明确批准的免费模型检查：`models.retrieve` 返回 `claude-opus-5-5`；`count_tokens` 成功，测试输入（系统提示 + 空数据）**1012 tokens**。
+- 没有调用付费生成，没有启动交易，实盘关闭。
+
 ## 可复现示例
 
 `python scripts/demo_e2e.py --ticks 900` → `data/examples/demo_run/`（已提交）：
@@ -116,7 +123,7 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
 | 券商模拟账户（BROKER_PAPER）下单 | 同上 | 诊断通过并选择 SIMULATE 账户后用向导启动 |
 | 真实下单、撤单、成交推送、对账（LIVE_REVIEW / LIVE_AUTO） | 交付时实盘关闭；仅伪券商故障注入验证 | 完成 README 第三节 C 的全部条件后，小额启用 |
 | 马股实时行情 | 用户 Mac 实测 `MY.1155` 为 NEEDS_PERMISSION（当前账户无马股行情权限） | 开通权限后在诊断页重测；否则马股只用历史回放 |
-| 真实 AI 模型表现与结构化输出兼容性 | 无密钥 | `.env` 填密钥后运行演示或 `scripts/demo_e2e.py --ai anthropic` |
+| 真实 AI 模型表现与结构化输出兼容性 | 模型可用性与 token 计数已免费验证；尚未发出付费生成请求 | `.env` 填密钥后运行演示或 `scripts/demo_e2e.py --ai anthropic` |
 | 费用、马股价格档位、节假日数据 | 测试值/第三方日历 | 按官方资料核对并在设置中更新 |
 | 实盘股票池的全市场筛选 | 首版从已核对的自选/证券表中按规则筛选；未接入 `get_stock_filter` | — |
 | 真实模型的候选改进自动评估 | 需前向影子模拟（首版未自动实现） | 见 `docs/learning-loop.md` |

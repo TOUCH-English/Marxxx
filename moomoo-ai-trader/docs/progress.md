@@ -28,8 +28,9 @@
 - 美股券商模拟账户只读诊断：行情、美股交易权限、限价单探测 PASS；止损限价单在模拟环境 UNSUPPORTED（系统止损本来就是程序盯盘）；
   现金字段因诊断同时要求马币字段而误判 FAIL，已改为按市场/币种检查并列出缺失字段（实际下单风控不变）。
   修复版 `0bc7b1a` 已在 Mac 复验：`cash_fields_US` PASS（命令行与网页两种方式一致）。
-- LOCAL_PAPER 启动前准备清单见 `docs/runbook.md`「LOCAL_PAPER 启动前准备」。清单 A 的三项代码问题（快照限频、证券类型、演示证券）已修复并测试，待 Mac 复验；尚未启动。
-- 用户已同意 Codex 运行免费的模型可用性检查（Models API + count_tokens，不产生费用）。
+- LOCAL_PAPER 启动前准备清单见 `docs/runbook.md`「LOCAL_PAPER 启动前准备」。清单 A 的三项代码问题（快照限频、证券类型、演示证券）已修复并在 Mac 复验通过；尚未启动。
+- `6015058` 已在 Mac 复验：AAPL 类型 STOCK、10 次读取 1 次快照请求、日 K 251 根；免费模型检查通过（claude-opus-5-5 可用，测试输入 1012 tokens）。
+- LOCAL_PAPER 建议配置见 `docs/runbook.md`「LOCAL_PAPER 建议配置（待用户确认）」；未启动，没有付费请求。
 - 下一步建议（待用户批准，未启动）：先 LOCAL_PAPER（只做美股，真实行情 + 真实 Claude + 本机模拟成交），再短期 BROKER_PAPER 验证下单链路。
 - **当前停在这里**。纸上自动交易、实盘、权限变更、部署都等用户决定，在 Mac 上协助操作。
 
