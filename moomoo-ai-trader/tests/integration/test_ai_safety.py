@@ -38,7 +38,7 @@ def _buy(payload, **over):
     c = payload["candidates"][0] if payload["candidates"] else {"symbol": "US.UPA", "evidence_ids": []}
     d = {"symbol": c["symbol"], "action": "BUY_PROPOSAL", "rationale": "测试", "evidence_ids": c["evidence_ids"][:1],
          "risk_flags": [], "entry_type": "IMMEDIATE", "entry_price": None, "max_buy_price": None,
-         "target_position_pct": "0.05", "stop_loss_price": "61.00", "take_profit_price": None, "max_holding_days": 5,
+         "target_position_pct": "0.05", "stop_loss_price": "61.00", "take_profit_price": "71.00", "max_holding_days": 5,
          "sell_fraction": None, "min_sell_price": None, "valid_minutes": 30}
     d.update(over)
     return AIResult("OK", text=json.dumps({"as_of_utc": payload["as_of_utc"], "strategy_version": payload["strategy_version"],
@@ -200,3 +200,46 @@ def test_as_of_check_passes_with_a_real_moving_clock_and_still_rejects_stale_out
                         provider="scripted", model="scripted")
     ints, decs2, calls2, _ = _run_with(env, ScriptedAI(stale))
     assert any("数据时点不符" in (d.outcome_reason or "") for d in decs2) and not ints
+
+
+def _vctx(strict=True, atr=None):
+    from app.ai.validate import ValidationContext
+
+    now = US_OPEN
+    return ValidationContext(as_of=now, strategy_version="sv", candidate_symbols={"US.Q"}, held_symbols=set(),
+                             evidence_ids={"US.Q": {"e1"}}, last_prices={"US.Q": Decimal("100")},
+                             max_target_position_pct=Decimal("0.15"), max_holding_days=20, max_valid_minutes=60, now=now,
+                             strict_entry=strict, atr=atr or {})
+
+
+def _one(**over):
+    d = {"symbol": "US.Q", "action": "BUY_PROPOSAL", "rationale": "x", "evidence_ids": ["e1"], "risk_flags": [],
+         "entry_type": "IMMEDIATE", "entry_price": None, "max_buy_price": None, "target_position_pct": "0.10",
+         "stop_loss_price": "95.00", "take_profit_price": "112.00", "max_holding_days": 10, "sell_fraction": None,
+         "min_sell_price": None, "valid_minutes": 30} | over
+    return json.dumps({"as_of_utc": US_OPEN.isoformat(), "strategy_version": "sv", "market_view": "", "decisions": [d]})
+
+
+@pytest.mark.parametrize("over,expect", [
+    ({}, None),  # 风险 5、回报 12：盈亏比 2.4，止损 5%
+    ({"take_profit_price": None}, "止盈"),
+    ({"take_profit_price": "107.00"}, "盈亏比"),  # 7/5 = 1.4
+    ({"stop_loss_price": "99.00", "take_profit_price": "110.00"}, "止损距离"),  # 1%
+    ({"entry_type": "LIMIT_AT_OR_BELOW", "entry_price": "98.00", "stop_loss_price": "95.00",
+      "take_profit_price": "103.00"}, "盈亏比"),  # 以 entry_price 计：5/3
+])
+def test_real_model_entry_quality_rules(over, expect):
+    from app.ai.validate import parse_and_validate
+
+    r = parse_and_validate(_one(**over), _vctx())
+    errs = " ".join(r.errors + [x for d in r.decisions for x in d.errors])
+    assert (expect is None and not errs) or (expect and expect in errs), errs
+
+
+def test_stop_inside_one_atr_is_rejected_and_fixture_is_exempt():
+    from app.ai.validate import parse_and_validate
+
+    r = parse_and_validate(_one(), _vctx(atr={"US.Q": 6.0}))  # 止损距离 5 < ATR 6
+    assert "ATR" in " ".join(e for d in r.decisions for e in d.errors)
+    r = parse_and_validate(_one(take_profit_price=None), _vctx(strict=False))
+    assert all(d.ok for d in r.decisions)  # 固定测试响应（演示）不受这些规则限制

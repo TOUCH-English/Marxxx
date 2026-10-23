@@ -28,6 +28,11 @@ class ValidationContext:
     max_holding_days: int
     max_valid_minutes: int
     now: datetime
+    # 入场质量硬性规则（只对真实模型启用；固定测试响应不受影响）
+    strict_entry: bool = False
+    atr: dict[str, float] = field(default_factory=dict)  # symbol -> atr_14（价格单位）
+    min_reward_risk: Decimal = Decimal("2")
+    min_stop_pct: Decimal = Decimal("0.015")
 
 
 @dataclass
@@ -128,6 +133,8 @@ def _check(d: RawDecision, ctx: ValidationContext) -> list[str]:
             e.append("条件入场必须给出 entry_price")
         if d.entry_type == "NONE":
             e.append("买入必须给出入场方式")
+        if ctx.strict_entry:
+            e += _entry_quality(d, ctx, last)
         for name, v in (("entry_price", d.entry_price), ("max_buy_price", d.max_buy_price)):
             if v is not None and last is not None and not (last * Decimal("0.8") <= v <= last * Decimal("1.2")):
                 e.append(f"{name} {v} 偏离当前价超过 20%")
@@ -136,4 +143,24 @@ def _check(d: RawDecision, ctx: ValidationContext) -> list[str]:
             e.append("未持有该证券，不能卖出（首版不做空）")
         if d.sell_fraction is None or not (Decimal(0) < d.sell_fraction <= 1):
             e.append("卖出比例必须在 0–1 之间")
+    return e
+
+
+def _entry_quality(d, ctx: ValidationContext, last: Decimal | None) -> list[str]:
+    """盈亏比、止损距离（含 ATR 下限）、必须有止盈。审核建议：小账户固定费用高，差的交易结构直接拒绝。"""
+    e: list[str] = []
+    if d.take_profit_price is None:
+        return ["买入必须给出止盈价（用于计算盈亏比）"]
+    ref = d.entry_price if d.entry_price is not None else last
+    if ref is None or d.stop_loss_price is None or d.stop_loss_price >= ref:
+        return e
+    risk = ref - d.stop_loss_price
+    reward = d.take_profit_price - ref
+    if reward <= 0 or reward / risk < ctx.min_reward_risk:
+        e.append(f"盈亏比 {(reward / risk):.2f} 低于要求 {ctx.min_reward_risk}（止盈 {d.take_profit_price}、入场 {ref}、止损 {d.stop_loss_price}）")
+    if risk / ref < ctx.min_stop_pct:
+        e.append(f"止损距离 {(risk / ref * 100):.2f}% 小于 {ctx.min_stop_pct * 100}%：容易被日常波动触发")
+    atr = ctx.atr.get(d.symbol)
+    if atr and risk < Decimal(str(atr)):
+        e.append(f"止损距离 {risk} 小于 1 倍 ATR（{atr}）：容易被日常波动触发")
     return e

@@ -224,6 +224,7 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
                    "max_target_position_pct": str(p["max_target_position_pct"]),
                    "max_holding_days": int(p["max_holding_days"]), "max_valid_minutes": int(p["max_valid_minutes"]),
                    "no_averaging_down": True, "no_short": True, "no_margin": True,
+                   "min_reward_risk": "2", "min_stop_pct": "0.015",
                    "fixture_params": p.get("fixture_params", {})},
         "account": {"currency": {"MY": "MYR", "US": "USD"}[market], "equity": str(ev.equity.quantize(Decimal('0.01'))),
                     "cash_available": str((ev.cash - ev.reserved).quantize(Decimal('0.01'))),
@@ -337,6 +338,8 @@ def _process(rt, ts: TickState, wall_now: datetime, job) -> None:
         last_prices={k: D(v) for k, v in meta["last_prices"].items() if v is not None},
         max_target_position_pct=D(meta["max_target_position_pct"]), max_holding_days=meta["max_holding_days"],
         max_valid_minutes=meta["max_valid_minutes"], now=rt.now(),
+        strict_entry=not job.ctx_meta["provider"].is_fixture,
+        atr={k: f["atr_14"] for k, f in meta.get("features", {}).items() if f and f.get("atr_14")},
     )
     batch = parse_and_validate(result.text, vctx)
     source = "AI_FIXTURE" if meta["provider"].is_fixture else "AI_MODEL"

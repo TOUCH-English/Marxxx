@@ -388,7 +388,7 @@ def _waiting_buy(sym, target="0.25"):
     from integration.test_ai_safety import ScriptedAI, _buy
 
     return ScriptedAI(lambda p: _buy(p, entry_type="LIMIT_AT_OR_BELOW", entry_price="100.00", max_buy_price="100.00",
-                                     stop_loss_price="94.00", target_position_pct=target)
+                                     stop_loss_price="94.00", take_profit_price="115.00", target_position_pct=target)
                       if p["candidates"] else _buy(p))
 
 
