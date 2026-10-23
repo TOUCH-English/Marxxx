@@ -12,6 +12,11 @@
 
 - 只监听 `127.0.0.1`；不开放公网，不开放 CORS（前端与 API 同源）。
 - 首次使用设置本机密码；会话 Cookie 为 HttpOnly + SameSite=Strict，空闲 2 小时/绝对 12 小时过期；连续 5 次密码错误锁定 1 分钟。
+- 可选「记住这台 Mac 30 天」（登录页勾选，默认不勾选）：
+  - `data/secrets/remembered_sessions.json`（0600、原子写入）只存会话令牌的 SHA-256 摘要、CSRF、创建时间、当前密码文件的摘要，不存令牌或密码；
+  - 30 天绝对过期；退出登录删除记录；更换密码后全部失效；每次请求都核对记录；
+  - 系统重启后恢复的会话不算「最近确认过密码」，敏感操作仍要再次输入密码；
+  - Cookie 仍是 HttpOnly + SameSite=Strict + CSRF，只是 Max-Age 为 30 天。
 - 所有改变状态的请求：必须有有效会话 + CSRF 双重提交令牌（`x-csrf-token` 与 Cookie 一致）+ Host 白名单 + Origin/Referer 校验。
   任何其他网页都无法跨站触发交易，即使服务只监听 localhost。
 - 安全响应头：CSP（只允许同源脚本）、`X-Frame-Options: DENY`、`nosniff`、`Referrer-Policy`。
