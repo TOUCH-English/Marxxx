@@ -69,7 +69,8 @@ def request_exit(s: Session, *, pos: Position, reason: str, bid: Decimal | None,
         strategy_version=strategy_version or pos.strategy_version, symbol=pos.symbol, market=pos.market,
         currency=pos.currency, side=Side.SELL, reason=reason, qty=qty, limit_price=limit, status=status,
         ref_price=D(bid), remark=iid, as_of=now,
-        expires_at=now + timedelta(minutes=int(params["exit_reprice_minutes"])),
+        # 保护性卖单（止损/止盈/到期）1 分钟没成交就撤单按最新价重挂；其他卖单按风控参数的改价间隔
+        expires_at=now + timedelta(minutes=1 if reason in PROTECTIVE_REASONS else int(params["exit_reprice_minutes"])),
         risk_check={"ok": True, "checks": [{"name": "防超卖", "ok": True, "detail": f"持仓 {pos.qty}，在途卖出后可卖 {avail}，本次 {qty}"}]},
     )
     s.add(it)

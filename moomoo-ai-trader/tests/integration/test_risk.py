@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.core.enums import LockKind, Mode, OrderStatus
 from app.db.models import Authorization, OrderIntent, Portfolio, RiskLock
 from app.db.session import read_session, write_session
-from app.db.types import utcnow
+from app.db.types import D, utcnow
 from app.portfolio import ledger
 from app.risk import locks
 from app.risk.engine import EntryRequest, RiskContext, create_entry_intent, evaluate_entry
@@ -49,7 +49,7 @@ def test_concurrent_entries_cannot_exceed_cash_or_slots(env):
     # 小资金：每笔都被单标的上限限制；名额 2；两两并发
     pid, _ = setup_run("live", "LIVE_AUTO", symbols=syms, capital={"USD": "3000"},
                        risk={"max_positions": 2, "max_position_pct": "0.5", "max_total_exposure_pct": "1.0",
-                             "risk_per_trade_pct": "0.02"})
+                             "risk_per_trade_pct": "0.02", "daily_loss_pct": "0.10"})
     ctx = _ctx("live", pid, prov, US_OPEN, syms)
     results = []
     barrier = threading.Barrier(6)
@@ -174,9 +174,8 @@ def test_daily_loss_and_drawdown_locks_persist(env):
     with read_session("sim") as s:
         p = ledger.get_open_position(s, pid, "US.UPA")
     assert p is not None
-    prov.set_quote("US.UPA", str(p.avg_cost - Decimal("3")))  # 浮亏，仍高于止损？
-    if p.stop_price and p.avg_cost - 3 <= p.stop_price:
-        prov.set_quote("US.UPA", str(p.stop_price + Decimal("0.3")))
+    # 新仓风险不超过当日亏损额度，正常止损不会超线；只有跳空到止损价以下才会触发（这里模拟跳空）
+    prov.set_quote("US.UPA", str(p.stop_price - Decimal("10")))
     eng.tick()
     with read_session("sim") as s:
         kinds = {lk.kind for lk in locks.active_locks(s, pid)}
@@ -250,3 +249,46 @@ def test_pause_keeps_protection_and_emergency_stop_does_not_sell(env):
         assert not buys_open, "紧急停止撤销入场单"
         assert {p.symbol for p in ledger.open_positions(s, pid)} == remaining, "紧急停止不卖出持仓"
     assert len([c for c in fb.place_calls if c["side"] == "SELL"]) == before_sells
+
+
+def test_us_daily_limits_follow_the_us_trading_day_not_malaysian_midnight(env):
+    """美股盘中跨过马来西亚午夜，日亏损锁和每日开仓次数不能在盘中重置。"""
+    from datetime import datetime, timezone
+
+    from app.core.calendar import next_risk_day_start, risk_day
+
+    before = datetime(2026, 10, 22, 15, 50, tzinfo=timezone.utc)  # 马来西亚 23:50，美东 11:50
+    after = datetime(2026, 10, 22, 16, 30, tzinfo=timezone.utc)  # 马来西亚 00:30（次日），美东 12:30
+    assert risk_day("USD", before) == risk_day("USD", after) == "2026-10-22"
+    assert risk_day("MYR", before) != risk_day("MYR", after)
+    assert next_risk_day_start("USD", after) == datetime(2026, 10, 23, 4, 0, tzinfo=timezone.utc)  # 美东午夜
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.X"], capital={"USD": "10000"})
+    with write_session("sim") as s:
+        locks.update_and_check(s, pid, "USD", Decimal("10000"), {"daily_loss_pct": "0.01", "max_drawdown_pct": "0.5"}, before)
+        locks.update_and_check(s, pid, "USD", Decimal("9800"), {"daily_loss_pct": "0.01", "max_drawdown_pct": "0.5"}, before)
+    with write_session("sim") as s:
+        lk = next(x for x in locks.active_locks(s, pid) if x.kind == LockKind.DAILY_LOSS)
+        assert lk.release_not_before == datetime(2026, 10, 23, 4, 0, tzinfo=timezone.utc)
+        assert not locks.try_release_daily(s, pid, after, True)  # 马来西亚午夜后仍在同一个美股交易日：不解除
+
+
+def test_new_trade_risk_counts_risk_already_open(env):
+    """已有持仓的止损风险要算进去：新仓风险不超过亏损线剩余额度和当日亏损额度剩余。"""
+    prov = StaticProvider()
+    prov.add("US.A1", trend(80, 50, 0.05), "54")
+    prov.add("US.A2", trend(80, 50, 0.05), "54")
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.A1", "US.A2"], capital={"USD": "2448"}, max_loss={"USD": "122"},
+                       risk={"max_position_pct": "0.25", "max_total_exposure_pct": "0.60", "risk_per_trade_pct": "0.01",
+                             "daily_loss_pct": "0.02", "max_positions": 3})
+    ctx = _ctx("sim", pid, prov, US_OPEN, ["US.A1", "US.A2"], mode="LOCAL_PAPER")
+    with write_session("sim") as s:
+        it1, r1 = create_entry_intent(s, ctx, _req(prov, "US.A1", "k1", "51", US_OPEN))
+    assert it1 is not None, r1.reasons
+    first_risk = D(r1.sizing["风险预算"])
+    assert first_risk <= Decimal("24.48")
+    with write_session("sim") as s:
+        it2, r2 = create_entry_intent(s, ctx, _req(prov, "US.A2", "k2", "51", US_OPEN))
+    notes = r2.sizing
+    assert D(notes["风险预算·已开仓风险"]) > 0
+    # 当日额度 48.96 − 已开仓风险（第一笔预留）= 第二笔最多可用
+    assert D(notes["风险预算"]) <= Decimal("48.96") - D(notes["风险预算·已开仓风险"]) + Decimal("0.01")

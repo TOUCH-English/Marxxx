@@ -58,7 +58,10 @@ def _params(ts: TickState) -> dict:
     p = dict(DEFAULT_AI_PARAMS)
     if ts.strategy:
         p.update(ts.strategy.params or {})
-    p["interval_minutes"] = max(get_settings().min_ai_interval_minutes, int(p["interval_minutes"]))
+    st = get_settings()
+    if st.ai_batch_interval_minutes:
+        p["interval_minutes"] = st.ai_batch_interval_minutes  # 部署配置覆盖：控制 AI 费用（日线数据一天变化不大）
+    p["interval_minutes"] = max(st.min_ai_interval_minutes, int(p["interval_minutes"]))
     # AI 目标仓位上限以用户确认的风控参数「单标的仓位上限」为准（策略版本里的旧值不再单独限制）
     if ts.params and ts.params.get("max_position_pct") is not None:
         p["max_target_position_pct"] = str(D(ts.params["max_position_pct"]))
@@ -244,6 +247,8 @@ def start_batch(rt, ts: TickState, wall_now: datetime, market: str, p: dict) -> 
 
         provider = DisabledProvider()
         meta["budget_note"] = why
+    if not provider.is_fixture:
+        payload["policy"].pop("fixture_params", None)  # 固定测试响应专用的阈值，不能给真实模型当参考
     fut = rt.executor.submit(provider.complete, payload)
     job = PendingAIJob(future=fut, market=market, as_of=rt.now(), payload=payload, ctx_meta=meta | {"provider": provider})
     if rt.is_replay:
@@ -261,7 +266,10 @@ def process_finished(rt, ts: TickState, wall_now: datetime) -> None:
     keep = []
     for job in rt.ai_jobs:
         if job.future.done():
-            _process(rt, ts, wall_now, job)
+            try:
+                _process(rt, ts, wall_now, job)
+            except Exception as e:  # 处理失败的结果不再保留，避免每一轮重复出错
+                _record_failure(rt, ts, job, "ERROR", f"处理 AI 结果时出错：{type(e).__name__}: {e}")
         elif (rt.now() - job.as_of).total_seconds() > get_settings().ai_timeout_s + 30:
             job.future.cancel()
             _record_failure(rt, ts, job, "TIMEOUT", "AI 响应超时，本轮不产生新订单")

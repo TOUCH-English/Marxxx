@@ -254,18 +254,27 @@ class TradingEngine:
             ts.health_blocks.append(recon["error"])
         # 5. 净值与锁定
         self._equity_and_locks(rt, ts)
-        # 6. 保护性退出（无论授权、暂停、AI 状态）
+        # 6. 保护性退出（无论授权、暂停、AI 状态），并立即提交，不受后面步骤出错影响
         self._protections(rt, ts)
+        self._submit_created(rt)
         # 7. 订单维护
         self._maintain_orders(rt, ts)
-        # 8. 策略
-        if ts.auth_ok and ts.strategy is not None:
-            if ts.strategy.key == "AI_AUTONOMOUS":
-                ai_autonomous.run(rt, ts, wall)
-            elif ts.strategy.key == "BASELINE_MA":
-                baseline_ma.run(rt, ts, wall)
-        else:
-            ai_autonomous.process_finished(rt, ts, wall)
+        # 8. 策略（出错只影响本轮新决策，不影响保护与提交）
+        try:
+            if ts.auth_ok and ts.strategy is not None:
+                if ts.strategy.key == "AI_AUTONOMOUS":
+                    ai_autonomous.run(rt, ts, wall)
+                elif ts.strategy.key == "BASELINE_MA":
+                    baseline_ma.run(rt, ts, wall)
+            else:
+                ai_autonomous.process_finished(rt, ts, wall)
+        except Exception as e:
+            log.exception("策略步骤出错")
+            with write_session(self.ns) as s:
+                audit(s, "STRATEGY", "STEP_ERROR", f"策略步骤出错，本轮不产生新决策：{type(e).__name__}: {e}",
+                      actor="worker", portfolio_id=pid)
+                notify(s, "error", "策略步骤出错", f"{type(e).__name__}: {e}"[:500],
+                       dedupe_key=f"strategyerr:{pid}:{type(e).__name__}:{wall:%Y%m%d%H}")
         # 9. 提交
         self._submit_created(rt)
         rt.om.process_events()
@@ -470,8 +479,22 @@ class TradingEngine:
                     continue
                 if not self.calendar.is_open(pos.market, now):
                     continue
+                ref = rt.last_good.get(pos.symbol)
                 q = rt.quote(pos.symbol)
                 if q is None or q.suspended or q.bid is None or q.last is None:
+                    self._warn_no_quote(s, rt, pos, now, suspended=bool(q is not None and q.suspended))
+                    continue
+                rt.no_quote_since.pop(pos.symbol, None)
+                # 价格断层（拆股或数据错误）：比上一次有效价跌超过 45%，暂停该证券的自动止损，交人工确认
+                ref = rt.prev_good.get(pos.symbol) if ref == q.last else ref
+                ref = ref or pos.avg_cost
+                if ref and q.last <= ref * Decimal("0.55"):
+                    audit(s, "PROTECTION", "PRICE_GAP_HOLD",
+                          f"{pos.symbol} 价格 {q.last} 比参考价 {ref} 低超过 45%，疑似拆股或数据错误：暂停自动止损，请人工确认",
+                          actor="worker", portfolio_id=rt.portfolio_id, symbol=pos.symbol, as_of=now)
+                    notify(s, "error", f"{pos.symbol} 价格异常，已暂停其自动止损",
+                           f"最新价 {q.last}，参考价 {ref}。可能是拆股或行情错误，请在 moomoo 核对后处理。",
+                           dedupe_key=f"pricegap:{rt.portfolio_id}:{pos.symbol}:{now:%Y%m%d}")
                     continue
                 reason, why = None, ""
                 if pos.stop_price is not None and (q.last <= pos.stop_price or q.bid <= pos.stop_price):
@@ -508,6 +531,20 @@ class TradingEngine:
                                     market=pos.market, currency=pos.currency)
                     it.decision_id = d.id
         self._flush_cancels(rt)
+
+    def _warn_no_quote(self, s, rt: Runtime, pos, now: datetime, *, suspended: bool) -> None:
+        """开盘时持仓拿不到报价：止损无法执行。超过 30 秒发通知（每只每天一次）。"""
+        if suspended:
+            return
+        wall = utcnow()
+        since = rt.no_quote_since.setdefault(pos.symbol, wall)
+        if (wall - since).total_seconds() < 30 and not rt.is_replay:
+            return
+        audit(s, "PROTECTION", "NO_QUOTE", f"{pos.symbol} 开盘中没有可用报价，止损暂时无法执行", actor="worker",
+              portfolio_id=rt.portfolio_id, symbol=pos.symbol, as_of=now)
+        notify(s, "error", f"{pos.symbol} 没有报价，止损暂时无法执行",
+               "可能是 OpenD 断线、行情权限或请求限速。请检查 OpenD 是否登录；恢复报价后止损会自动继续。",
+               dedupe_key=f"noquote:{rt.portfolio_id}:{pos.symbol}:{now:%Y%m%d}")
 
     def _flush_cancels(self, rt: Runtime) -> None:
         pend, self._pending_cancels = list(self._pending_cancels), []

@@ -162,6 +162,25 @@ def next_myt_midnight(t: datetime) -> datetime:
     return datetime.combine(d, time(0, 0), MYT).astimezone(timezone.utc)
 
 
+CCY_MARKET = {"USD": "US", "MYR": "MY"}
+
+
+def risk_day(ccy_or_market: str, t: datetime) -> str:
+    """风控日界：按该币种所在市场的当地日期（美股按美东日期，马股按马来西亚日期）。
+
+    美股交易时段跨越马来西亚午夜；若按马来西亚日期重置日亏损和每日开仓次数，同一个美股交易日会被切成两天。
+    """
+    mk = CCY_MARKET.get(ccy_or_market, ccy_or_market)
+    return t.astimezone(MARKET_TZ.get(mk, MYT)).date().isoformat()
+
+
+def next_risk_day_start(ccy_or_market: str, t: datetime) -> datetime:
+    mk = CCY_MARKET.get(ccy_or_market, ccy_or_market)
+    tz = MARKET_TZ.get(mk, MYT)
+    d = t.astimezone(tz).date() + timedelta(days=1)
+    return datetime.combine(d, time(0, 0), tz).astimezone(timezone.utc)
+
+
 _default: TradingCalendar | None = None
 
 

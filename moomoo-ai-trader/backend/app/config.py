@@ -8,7 +8,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -62,6 +62,14 @@ class Settings(BaseSettings):
     worker_tick_seconds: float = 2.0
     replay_step_minutes: int = 30
     min_ai_interval_minutes: int = 15
+    # 常规 AI 分析间隔（分钟）。留空则用策略版本里的值（60）。建议 180：日线数据一天变化不大，过于频繁只会多花钱、反复改主意。
+    # 持仓大幅波动时的额外复核不受影响（仍至少间隔 min_ai_interval_minutes）。
+    ai_batch_interval_minutes: int | None = None
+
+    @field_validator("ai_batch_interval_minutes", mode="before")
+    @classmethod
+    def _blank_is_none(cls, v):
+        return None if isinstance(v, str) and not v.strip() else v
 
     @property
     def secrets_dir(self) -> Path:

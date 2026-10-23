@@ -19,10 +19,10 @@ from sqlalchemy.orm import Session
 
 from ..core import authz
 from ..core.audit import audit
-from ..core.calendar import myt_day
+from ..core.calendar import risk_day
 from ..core.enums import MARKET_CURRENCY, IntentReason, Mode, OrderStatus, Side
 from ..core.money import calc_fees, is_valid_tick, round_lot_down, round_to_tick
-from ..db.models import Authorization, OrderIntent, Portfolio, Position, RiskReservation
+from ..db.models import Authorization, DailyEquity, OrderIntent, Portfolio, Position, RiskReservation
 from ..db.types import D
 from ..market_data.base import InstrumentInfo, Quote
 from ..portfolio import ledger
@@ -136,6 +136,24 @@ def _exposure(s: Session, ctx: RiskContext, ccy: str) -> dict[str, Decimal]:
             "reserved": ev.reserved, "by_symbol": by_symbol}  # type: ignore[dict-item]
 
 
+def _open_risk(s: Session, ctx: RiskContext, ccy: str) -> Decimal:
+    """所有持仓若同时打到止损还会亏的金额（按现价到止损价），加上待成交买单已预留的计划风险。"""
+    total = Decimal(0)
+    for p in ledger.open_positions(s, ctx.portfolio.id):
+        if p.currency != ccy or p.qty <= 0:
+            continue
+        px = (ctx.price_of(p.symbol) if ctx.price_of else None) or p.avg_cost
+        if p.stop_price is None:
+            total += px * p.qty  # 没有止损：整笔都算风险
+        elif px > p.stop_price:
+            total += (px - p.stop_price) * p.qty
+    for r in s.execute(select(RiskReservation).where(RiskReservation.portfolio_id == ctx.portfolio.id,
+                                                     RiskReservation.currency == ccy,
+                                                     RiskReservation.status == "ACTIVE")).scalars():
+        total += r.risk_amount or Decimal(0)
+    return total
+
+
 def _symbol_mv(s: Session, ctx: RiskContext, symbol: str) -> Decimal:
     p = ledger.get_open_position(s, ctx.portfolio.id, symbol)
     if p is None:
@@ -229,7 +247,7 @@ def evaluate_entry(s: Session, ctx: RiskContext, req: EntryRequest) -> EntryResu
     is_new_symbol = req.symbol not in open_syms and req.symbol not in pending_new
     add("持有标的名额", (not is_new_symbol) or slots < int(P["max_positions"]),
         f"已占 {slots}/{P['max_positions']}（含待成交新标的）")
-    day = myt_day(ctx.now)
+    day = risk_day(inst.currency, ctx.now)  # 按该市场的交易日计数（美股按美东日期）
     today_entries = s.execute(select(func.count()).select_from(RiskReservation).where(
         RiskReservation.portfolio_id == pid, RiskReservation.trading_day == day)).scalar_one()
     add("当日新开仓名额", today_entries < int(P["max_daily_new_orders"]),
@@ -255,12 +273,23 @@ def evaluate_entry(s: Session, ctx: RiskContext, req: EntryRequest) -> EntryResu
         return fb, fs
 
     risk_budget = equity * D(P["risk_per_trade_pct"])
+    # 已开仓的风险：若所有持仓同时止损还会再亏多少，加上待成交买单已预留的风险
+    open_risk = _open_risk(s, ctx, ccy)
+    budget_notes = {"每笔上限": risk_budget.quantize(Decimal("0.01")), "已开仓风险": open_risk.quantize(Decimal("0.01"))}
     if ctx.auth is not None:
         mpl = ctx.auth.max_planned_loss.get(ccy)
         alloc = ctx.auth.capital.get(ccy)
         if mpl is not None and alloc is not None:
-            remaining = D(mpl) - max(Decimal(0), D(alloc) - equity)
+            remaining = D(mpl) - max(Decimal(0), D(alloc) - equity) - open_risk
+            budget_notes["亏损线剩余"] = remaining.quantize(Decimal("0.01"))
             risk_budget = min(risk_budget, max(Decimal(0), remaining))
+    day_row = s.execute(select(DailyEquity).where(DailyEquity.portfolio_id == pid, DailyEquity.currency == ccy,
+                                                  DailyEquity.day_myt == risk_day(ccy, ctx.now))).scalar_one_or_none()
+    if day_row is not None:
+        base = day_row.start_equity + day_row.flows
+        day_left = base * D(P["daily_loss_pct"]) - max(Decimal(0), base - equity) - open_risk
+        budget_notes["当日亏损额度剩余"] = day_left.quantize(Decimal("0.01"))
+        risk_budget = min(risk_budget, max(Decimal(0), day_left))
 
     def risk_of(qty: int) -> Decimal:
         fb, fs = fees(qty)
@@ -296,6 +325,7 @@ def evaluate_entry(s: Session, ctx: RiskContext, req: EntryRequest) -> EntryResu
     qty = min(limits.values())
     sizing: dict[str, Any] = {"策略净值": equity.quantize(Decimal("0.01")), "风险预算": risk_budget.quantize(Decimal("0.01")),
                               "每股风险": per_share.quantize(Decimal("0.0001")), "入场限价": limit, "止损": stop}
+    sizing.update({f"风险预算·{k}": v for k, v in budget_notes.items()})
     sizing.update({f"{k}允许数量": v for k, v in limits.items()})
     binding = min(limits, key=lambda k: limits[k])
     if not add("仓位计算", qty >= lot, f"数量 {qty}（受「{binding}」限制，每手 {lot}）" if qty >= lot
@@ -336,7 +366,7 @@ def create_entry_intent(s: Session, ctx: RiskContext, req: EntryRequest) -> tupl
         portfolio_id=ctx.portfolio.id, intent_id=iid, symbol=req.symbol, currency=inst.currency,
         cash_amount=res.limit_price * res.qty + res.est_fee_buy,
         risk_amount=D(res.sizing.get("计划风险金额", 0)), takes_slot=req.symbol not in open_syms,
-        trading_day=myt_day(ctx.now),
+        trading_day=risk_day(inst.currency, ctx.now),
     ))
     audit(s, "RISK", "ENTRY_APPROVED", f"{req.symbol} 买入 {res.qty} @≤{res.limit_price} 通过风控并预留资金",
           actor="worker", portfolio_id=ctx.portfolio.id, symbol=req.symbol, decision_id=req.decision_id or "",

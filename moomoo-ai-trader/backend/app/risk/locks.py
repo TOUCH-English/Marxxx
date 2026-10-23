@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..core.audit import audit, notify
-from ..core.calendar import myt_day, next_myt_midnight
+from ..core.calendar import next_risk_day_start, risk_day
 from ..core.enums import LockKind
 from ..db.models import DailyEquity, RiskLock
 from ..db.types import D
@@ -63,7 +63,7 @@ def _latest(s: Session, pid: int, ccy: str) -> DailyEquity | None:
 
 
 def ensure_day(s: Session, pid: int, ccy: str, equity: Decimal, now: datetime) -> DailyEquity:
-    day = myt_day(now)
+    day = risk_day(ccy, now)  # DailyEquity.day_myt 存的是该币种的风控日（美元按美东日期）
     row = _row(s, pid, ccy, day)
     if row is None:
         prev = _latest(s, pid, ccy)
@@ -78,11 +78,11 @@ def ensure_day(s: Session, pid: int, ccy: str, equity: Decimal, now: datetime) -
 
 def record_flow(s: Session, pid: int, ccy: str, amount: Decimal, now: datetime) -> None:
     """入金/分配调整：从日内亏损和回撤计算中剔除。"""
-    row = _row(s, pid, ccy, myt_day(now))
+    row = _row(s, pid, ccy, risk_day(ccy, now))
     if row is None:
         prev = _latest(s, pid, ccy)
         base = prev.last_equity if prev else Decimal(0)
-        row = DailyEquity(portfolio_id=pid, currency=ccy, day_myt=myt_day(now), start_equity=base,
+        row = DailyEquity(portfolio_id=pid, currency=ccy, day_myt=risk_day(ccy, now), start_equity=base,
                           last_equity=base, min_equity=base, flows=Decimal(0),
                           hwm_adjusted=prev.hwm_adjusted if prev else base, updated_at=now)
         s.add(row)
@@ -108,7 +108,7 @@ def update_and_check(s: Session, pid: int, ccy: str, equity: Decimal, params: di
         if loss >= base * D(params["daily_loss_pct"]):
             add_lock(s, pid, LockKind.DAILY_LOSS,
                      f"{ccy} 当日亏损 {loss:.2f} 已达当日起始净值的 {D(params['daily_loss_pct']) * 100:.2f}%",
-                     now, release_not_before=next_myt_midnight(now))
+                     now, release_not_before=next_risk_day_start(ccy, now))
             fired.append(LockKind.DAILY_LOSS)
     if row.hwm_adjusted > 0:
         dd = (row.hwm_adjusted - equity) / row.hwm_adjusted
@@ -130,6 +130,6 @@ def try_release_daily(s: Session, pid: int, now: datetime, health_ok: bool) -> l
     released = []
     for lk in active_locks(s, pid):
         if lk.kind == LockKind.DAILY_LOSS and lk.release_not_before and now >= lk.release_not_before and health_ok:
-            release_lock(s, lk, "worker", "已过马来西亚时间日界线且健康检查通过", now)
+            release_lock(s, lk, "worker", "已进入新的交易日且健康检查通过", now)
             released.append(lk)
     return released
