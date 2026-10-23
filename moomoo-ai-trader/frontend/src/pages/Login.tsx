@@ -1,5 +1,5 @@
 import { LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Form, Input, Typography } from 'antd';
+import { Alert, Button, Card, Checkbox, Form, Input, Typography } from 'antd';
 import { useState } from 'react';
 import { api, errText } from '../api/client';
 
@@ -78,11 +78,11 @@ export function SetupPage({ onDone }: { onDone: () => void }) {
 export function LoginPage({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();
-  const onFinish = async (v: { password: string }) => {
+  const onFinish = async (v: { password: string; remember?: boolean }) => {
     setBusy(true);
     setErr(undefined);
     try {
-      await api.post('/api/auth/login', { password: v.password });
+      await api.post('/api/auth/login', { password: v.password, remember: !!v.remember });
       onDone();
     } catch (e) {
       setErr(errText(e));
@@ -101,6 +101,10 @@ export function LoginPage({ onDone }: { onDone: () => void }) {
         <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
           <Form.Item name="password" label="本机网页密码" rules={[{ required: true, message: '请输入密码' }]}>
             <Input.Password prefix={<LockOutlined />} autoFocus autoComplete="current-password" />
+          </Form.Item>
+          <Form.Item name="remember" valuePropName="checked" initialValue={false} style={{ marginBottom: 12 }}
+            extra="只在您自己的 Mac 上勾选。30 天后、退出登录或更换密码后需要重新登录；放宽风控等重要操作仍会要求输入密码。">
+            <Checkbox data-testid="remember-login">记住这台 Mac 30 天</Checkbox>
           </Form.Item>
           <Button type="primary" htmlType="submit" block loading={busy}>
             登录

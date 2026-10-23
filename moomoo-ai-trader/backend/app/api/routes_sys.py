@@ -29,9 +29,16 @@ class PwBody(BaseModel):
     password: str
 
 
+class LoginBody(PwBody):
+    remember: bool = False  # 记住这台 Mac 30 天（默认不勾选）
+
+
 def _set_session_cookies(resp: Response, sess: security.Session) -> None:
-    resp.set_cookie(security.SESSION_COOKIE, sess.token, httponly=True, samesite="strict", secure=False, path="/")
-    resp.set_cookie(security.CSRF_COOKIE, sess.csrf, httponly=False, samesite="strict", secure=False, path="/")
+    age = security.REMEMBER_S if sess.remember else None  # 不记住：浏览器会话 Cookie（关闭浏览器即失效）
+    resp.set_cookie(security.SESSION_COOKIE, sess.token, httponly=True, samesite="strict", secure=False, path="/",
+                    max_age=age)
+    resp.set_cookie(security.CSRF_COOKIE, sess.csrf, httponly=False, samesite="strict", secure=False, path="/",
+                    max_age=age)
 
 
 @router.get("/auth/state")
@@ -51,15 +58,15 @@ def auth_setup(body: PwBody, response: Response):
 
 
 @router.post("/auth/login")
-def login(body: PwBody, response: Response):
+def login(body: LoginBody, response: Response):
     if not security.store.login_allowed():
         raise HTTPException(429, "失败次数过多，请 1 分钟后再试")
     if not security.check_password(body.password):
         security.store.record_failure()
         raise HTTPException(401, "密码错误")
-    sess = security.store.create()
+    sess = security.store.create(remember=body.remember)
     _set_session_cookies(response, sess)
-    return {"ok": True}
+    return {"ok": True, "remembered_days": security.REMEMBER_S // 86400 if body.remember else 0}
 
 
 @router.post("/auth/reauth")
