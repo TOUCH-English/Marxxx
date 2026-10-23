@@ -256,7 +256,9 @@ def start_batch(rt, ts: TickState, wall_now: datetime, market: str, p: dict) -> 
     if not provider.is_fixture:
         payload["policy"].pop("fixture_params", None)  # 固定测试响应专用的阈值，不能给真实模型当参考
     fut = rt.executor.submit(provider.complete, payload)
-    job = PendingAIJob(future=fut, market=market, as_of=rt.now(), payload=payload, ctx_meta=meta | {"provider": provider})
+    # 校验用的数据时点必须与发给模型的 as_of_utc 是同一个时间戳（不能再取一次 now，否则真实时钟下永远不一致）
+    job = PendingAIJob(future=fut, market=market, as_of=datetime.fromisoformat(payload["as_of_utc"]), payload=payload,
+                       ctx_meta=meta | {"provider": provider})
     if rt.is_replay:
         # 回放时钟在等待期间不前进，因此同步等待不会延误任何保护性退出
         try:

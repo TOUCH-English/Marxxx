@@ -158,3 +158,45 @@ def test_fixture_responses_are_labeled(env):
     assert all(d.source == "AI_FIXTURE" for d in decs if d.source.startswith("AI"))
     assert any("固定测试响应" in (d.model_judgment or {}).get("provider_label", "") for d in decs if d.symbol != "*")
     assert FixtureProvider.label == "固定测试响应（非真实 AI）"
+
+
+class _TickingClock:
+    """真实时钟的特点：每次读取时间都会前进一点。"""
+    is_replay = False
+
+    def __init__(self, t):
+        self.t = t
+
+    def now(self):
+        self.t = self.t + timedelta(milliseconds=800)
+        return self.t
+
+    def advance(self, **kw):
+        self.t = self.t + timedelta(**kw)
+
+
+def test_as_of_check_passes_with_a_real_moving_clock_and_still_rejects_stale_output(env):
+    """回归（Mac 实测 2 次 INVALID）：请求里的 as_of 与校验用的 as_of 必须是同一个时间戳。"""
+    from datetime import timedelta as _td
+
+    prov = StaticProvider()
+    prov.add("US.UPA", trend(80, 60.0, 0.05), "64.00")
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.UPA"])
+    ai = ScriptedAI(lambda p: _buy(p, stop_loss_price="61.00"))
+    eng, fb = make_engine("sim", prov, _TickingClock(US_OPEN), ai=ai)
+    fb.callback_before_return = fb.fill_immediately = True
+    for _ in range(4):
+        eng.tick()
+        time.sleep(0.05)
+    with read_session("sim") as s:
+        calls = list(s.execute(select(AICallLog)).scalars())
+        decs = list(s.execute(select(Decision).where(Decision.portfolio_id == pid)).scalars())
+    assert calls and calls[0].status == "OK", [(c.status, c.error) for c in calls]
+    assert not any("数据时点不符" in (d.outcome_reason or "") for d in decs)
+    # 过期/缓存的结果（as_of 不同）仍然被拒绝
+    def stale(p):
+        r = _buy(p, stop_loss_price="61.00")
+        return AIResult("OK", text=r.text.replace(p["as_of_utc"], (datetime.fromisoformat(p["as_of_utc"]) - _td(hours=1)).isoformat()),
+                        provider="scripted", model="scripted")
+    ints, decs2, calls2, _ = _run_with(env, ScriptedAI(stale))
+    assert any("数据时点不符" in (d.outcome_reason or "") for d in decs2) and not ints

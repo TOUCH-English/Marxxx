@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     # 常规 AI 分析间隔（分钟）。留空则用策略版本里的值（60）。建议 180：日线数据一天变化不大，过于频繁只会多花钱、反复改主意。
     # 持仓大幅波动时的额外复核不受影响（仍至少间隔 min_ai_interval_minutes）。
     ai_batch_interval_minutes: int | None = None
+    # moomoo 条件选股返回的「成交额（20 日累计属性）」÷ 这个数 = 日均成交额（美元）。
+    # SDK 文档没有写清楚是日均、累计还是其他单位，需要用日 K 的成交额在 Mac 上核对后设定（见 docs/auto-universe-plan.md）。
+    scan_turnover_divisor: float = 1.0
 
     @field_validator("ai_batch_interval_minutes", mode="before")
     @classmethod

@@ -208,10 +208,11 @@ class MoomooQuoteProvider:
         mx = rules.get("max_price", {}).get("US")
         cap = rules.get("min_market_cap_usd")
         turn = rules.get("min_avg_turnover_20d", {}).get("US")
+        div = float(get_settings().scan_turnover_divisor or 1.0)  # 服务器返回值 ÷ div = 日均成交额（美元）
         filters = [
             simple(m.StockField.CUR_PRICE, float(mn) if mn is not None else None, float(mx) if mx is not None else None),
             simple(m.StockField.MARKET_VAL, float(cap) if cap is not None else None),
-            acc(m.StockField.TURNOVER, 20, float(turn) if turn is not None else None, sort=m.SortDir.DESCEND),
+            acc(m.StockField.TURNOVER, 20, float(turn) * div if turn is not None else None, sort=m.SortDir.DESCEND),
             acc(m.StockField.CHANGE_RATE, 20),
             acc(m.StockField.CHANGE_RATE, 60),
             simple(m.StockField.PE_TTM),
@@ -230,7 +231,8 @@ class MoomooQuoteProvider:
                 rows.append({
                     "symbol": str(it.stock_code), "name": str(it.stock_name or it.stock_code),
                     "price": _filter_value(it, "cur_price"), "market_cap": _filter_value(it, "market_val"),
-                    "turnover_20d": _filter_value(it, ("turnover", 20)),
+                    "turnover_20d": (lambda v: v / div if v is not None else None)(_filter_value(it, ("turnover", 20))),
+                    "turnover_20d_raw": _filter_value(it, ("turnover", 20)),
                     "change_20d_pct": _filter_value(it, ("change_rate", 20)),
                     "change_60d_pct": _filter_value(it, ("change_rate", 60)),
                     "pe_ttm": _filter_value(it, "pe_ttm"), "change_ytd_pct": _filter_value(it, "change_rate_begin_year"),
@@ -239,7 +241,7 @@ class MoomooQuoteProvider:
                 break
             begin += len(items)
             time.sleep(SCAN_PAGE_GAP_S)
-        return rows[:top], {"matched_total": int(total or 0), "fetched": min(len(rows), top)}
+        return rows[:top], {"matched_total": int(total or 0), "fetched": min(len(rows), top), "turnover_divisor": div}
 
     # ---------------------------------------------------------------- 证券资料
     def ensure_instruments(self, symbols) -> None:

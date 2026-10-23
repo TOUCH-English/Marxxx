@@ -360,3 +360,24 @@ def test_unaffordable_stocks_do_not_take_ai_candidate_slots(env):
         eng.tick()
         time.sleep(0.05)
     assert seen and all("US.PRICY" not in x for x in seen) and any("US.CHEAP" in x for x in seen)
+
+
+def test_turnover_divisor_converts_server_value_and_filter_threshold(env, monkeypatch):
+    """服务器返回的 20 日成交额单位未定：除数可配置，显示值与服务器端筛选门槛按同一除数换算。"""
+    from app.config import reset_settings_cache
+
+    seen = {}
+
+    class Ctx(FakeCtx):
+        def get_stock_filter(self, market, filter_list, begin=0, num=200):
+            seen["turnover_min"] = next(f.filter_min for f in filter_list if getattr(f, "days", None) == 20
+                                        and f.stock_field == m.StockField.TURNOVER)
+            return super().get_stock_filter(market, filter_list, begin, num)
+
+    monkeypatch.setenv("SCAN_TURNOVER_DIVISOR", "20")
+    reset_settings_cache()
+    members, excluded, stats = screen(_prov(Ctx()), AUTO_US_POOL_RULES, US_OPEN)
+    assert seen["turnover_min"] == 50_000_000 * 20
+    aaa = next(x for x in members if x["symbol"] == "US.AAA")
+    assert aaa["avg_turnover_20d"] == str(round(9e9 / 20))
+    assert stats["turnover_divisor"] == 20
