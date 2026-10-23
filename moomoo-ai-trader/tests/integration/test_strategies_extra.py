@@ -3,6 +3,8 @@ import json
 import time
 from decimal import Decimal
 
+import pytest
+
 from sqlalchemy import select
 
 from app.ai.providers import AIResult
@@ -89,3 +91,27 @@ def test_ai_cannot_approve_trades_rule_does_not_allow(env):
     with read_session("sim") as s:
         assert not s.execute(select(OrderIntent)).first()
     assert not ai.payloads, "规则没有信号时根本不会询问 AI"
+
+
+@pytest.mark.parametrize("risk_cap", [None, "0.25"])
+def test_ai_position_cap_follows_confirmed_risk_policy(env, risk_cap):
+    """AI 目标仓位上限 = 用户确认的「单标的仓位上限」；默认 10% 不变。"""
+    from app.ai.providers import FixtureProvider
+
+    seen = []
+
+    class Rec(FixtureProvider):
+        def complete(self, payload):
+            seen.append(payload["policy"]["max_target_position_pct"])
+            return super().complete(payload)
+
+    prov = StaticProvider()
+    c = trend(80, 50, 0.1)
+    prov.add("US.CAP", c, c[-1])
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.CAP"],
+                       risk={"max_position_pct": risk_cap} if risk_cap else None)
+    eng, _ = make_engine("sim", prov, ManualClock(US_OPEN), ai=Rec())
+    for _ in range(3):
+        eng.tick()
+        time.sleep(0.05)
+    assert seen and seen[0] == (risk_cap or "0.10")

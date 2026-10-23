@@ -59,6 +59,9 @@ def _params(ts: TickState) -> dict:
     if ts.strategy:
         p.update(ts.strategy.params or {})
     p["interval_minutes"] = max(get_settings().min_ai_interval_minutes, int(p["interval_minutes"]))
+    # AI 目标仓位上限以用户确认的风控参数「单标的仓位上限」为准（策略版本里的旧值不再单独限制）
+    if ts.params and ts.params.get("max_position_pct") is not None:
+        p["max_target_position_pct"] = str(D(ts.params["max_position_pct"]))
     return p
 
 

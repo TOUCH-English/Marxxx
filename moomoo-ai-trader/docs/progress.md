@@ -13,7 +13,7 @@
 | D 实盘离线验证 | LIVE_AUTO/LIVE_REVIEW、实盘闸门、伪券商故障注入、启动向导 | 完成（伪券商）；**真实下单未验证（按要求关闭）** |
 
 ## 验证结果
-- 后端：`.venv/bin/python -m pytest` → 80 passed（覆盖规格验收 1–27）。
+- 后端：`.venv/bin/python -m pytest` → 82 passed（覆盖规格验收 1–27）。
 - 前端：`npm run build` 通过；Playwright 浏览器冒烟 1 passed，无控制台错误。
 - 可复现示例：`scripts/demo_e2e.py` → `data/examples/demo_run/`。
 详见 `docs/acceptance.md`。
@@ -30,7 +30,7 @@
   修复版 `0bc7b1a` 已在 Mac 复验：`cash_fields_US` PASS（命令行与网页两种方式一致）。
 - LOCAL_PAPER 启动前准备清单见 `docs/runbook.md`「LOCAL_PAPER 启动前准备」。清单 A 的三项代码问题（快照限频、证券类型、演示证券）已修复并在 Mac 复验通过；尚未启动。
 - `6015058` 已在 Mac 复验：AAPL 类型 STOCK、10 次读取 1 次快照请求、日 K 251 根；免费模型检查通过（claude-opus-5-5 可用，测试输入 1012 tokens）。
-- LOCAL_PAPER 建议配置见 `docs/runbook.md`「LOCAL_PAPER 建议配置（待用户确认）」；未启动，没有付费请求。
+- 用户决定：「当做给 10,000 马币，由系统自由支配」。采用配置见 `docs/runbook.md`「采用的配置」。AI 目标仓位上限改为跟随风控「单标的仓位上限」。未启动，没有付费请求。
 - 下一步建议（待用户批准，未启动）：先 LOCAL_PAPER（只做美股，真实行情 + 真实 Claude + 本机模拟成交），再短期 BROKER_PAPER 验证下单链路。
 - **当前停在这里**。纸上自动交易、实盘、权限变更、部署都等用户决定，在 Mac 上协助操作。
 

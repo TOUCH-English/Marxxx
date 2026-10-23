@@ -1,7 +1,7 @@
 # 验收结果（docs/acceptance.md）
 
 测试日期：2026-10-23（云端开发环境，Linux，Python 3.13.16）。
-运行命令：`.venv/bin/python -m pytest`（项目根目录）。结果：**80 passed**（约 75 秒）。前端构建与浏览器冒烟测试见「前端」一节。
+运行命令：`.venv/bin/python -m pytest`（项目根目录）。结果：**82 passed**（约 77 秒）。前端构建与浏览器冒烟测试见「前端」一节。
 
 > 说明：本环境没有 moomoo OpenD、没有您的账户、没有 AI 密钥，也无法访问 openapi.moomoo.com。
 > 因此所有「券商」相关测试使用 **本地模拟撮合器** 或 **伪券商（故障注入）**；凡需要真实账户/行情/模型的项目单独列为「未验证」，
@@ -39,7 +39,7 @@
 | 26 | 未批准经验不改变提示词；批准切换不重复下单、不移除保护 | **通过** | `::test_unverified_experience_never_enters_prompt_and_sources_are_separated`、`::test_approved_switch_keeps_protection_no_duplicate_orders_and_rollback_keeps_locks` |
 | 27 | 升级/暂停/回退有审计；回退不清锁定；模拟经验不混入真实业绩 | **通过** | 同上 + `learning/scheduler.py::_post_upgrade_monitor` |
 
-补充测试：事件触发的额外 AI 复核（限频）、基准策略「AI 可否决」只能否决（`tests/integration/test_strategies_extra.py`）；
+补充测试：事件触发的额外 AI 复核（限频）、基准策略「AI 可否决」只能否决、AI 目标仓位上限跟随已确认风控参数（`tests/integration/test_strategies_extra.py`）；
 Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_provider.py`）；
 只读诊断子进程输出解析（结果 JSON 前后夹有 SDK 日志）、按市场/币种检查现金字段（假 SDK 跑完整诊断流程，`tests/unit/test_diagnostics.py`）；
 实盘闸门按市场要求现金字段通过（`test_isolation_security.py::test_cash_fields_capability_is_per_market_and_gate_keeps_strict_cash_threshold`）；
