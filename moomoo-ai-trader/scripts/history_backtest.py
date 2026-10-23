@@ -83,14 +83,22 @@ def cmd_check(_args) -> int:
         try:
             ret, df = ctx.get_earnings_calendar(m.Market.US, begin_date=today.isoformat(),
                                                 end_date=(today + timedelta(days=6)).isoformat())
-            out["earnings_calendar"] = {"ok": ret == m.RET_OK, "rows": len(df) if ret == m.RET_OK else 0,
-                                        "error": None if ret == m.RET_OK else str(df)[:200]}
+            rows = df.to_dict("records") if ret == m.RET_OK else []
+            out["earnings_calendar"] = {
+                "ok": ret == m.RET_OK, "rows": len(rows), "distinct_symbols": len({str(r.get("code")) for r in rows}),
+                "columns": list(df.columns) if ret == m.RET_OK else [],
+                "sample": [{k: str(r.get(k)) for k in ("code", "earnings_date", "pub_type")} for r in rows[:3]],
+                "note": "行数如果正好是 100/200/500 之类的整数，可能被截断，请回报",
+                "error": None if ret == m.RET_OK else str(df)[:200]}
         except Exception as e:  # 旧版 SDK 可能没有这个接口
             out["earnings_calendar"] = {"ok": False, "error": str(e)[:200]}
         try:
-            ret, df = ctx.get_owner_plate(["US.AAPL", "US.XOM"])
-            inds = ({str(r.get("code")): str(r.get("plate_name")) for r in df.to_dict("records")
-                     if str(r.get("plate_type", "")).split(".")[-1].upper() == "INDUSTRY"} if ret == m.RET_OK else {})
+            ret, df = ctx.get_owner_plate(["US.AAPL", "US.XOM", "US.CVX", "US.JPM"])
+            inds: dict[str, list[str]] = {}
+            if ret == m.RET_OK:  # 列出每只的全部行业板块：检查是否一只股票属于多个行业
+                for r in df.to_dict("records"):
+                    if str(r.get("plate_type", "")).split(".")[-1].upper() == "INDUSTRY":
+                        inds.setdefault(str(r.get("code")), []).append(str(r.get("plate_name")))
             out["owner_plate"] = {"ok": ret == m.RET_OK, "industries": inds,
                                   "error": None if ret == m.RET_OK else str(df)[:200]}
         except Exception as e:
