@@ -201,3 +201,11 @@ def test_price_filter_uses_raw_price_before_split():
     # 当时的原始价是复权价的 10 倍（后来 1 拆 10）：超过 600 美元上限，线上不会入选
     factors = {"US.SPL": {b.day: Decimal("0.1") for b in bars}}
     assert not pool_for_day(hist, AUTO_US_POOL_RULES, factors)
+
+
+def test_rules_only_variant_runs_the_whole_period_without_pauses():
+    h, _ = _gap_history()
+    paused = _run(h, max_loss=Decimal("12"))
+    free = _run(h, max_loss=None, risk_params=RISK | {"max_drawdown_pct": "1"})
+    assert paused.metrics["stop_line_hit_on"] is not None and free.metrics["stop_line_hit_on"] is None
+    assert free.metrics["gross_return_pct"] and free.metrics["fees_per_trade_usd"]

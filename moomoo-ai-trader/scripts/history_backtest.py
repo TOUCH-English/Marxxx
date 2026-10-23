@@ -267,15 +267,17 @@ def cmd_run(args) -> int:
               factors=factors)
     main = run_rules_backtest(hist, **kw)
     no_regime = run_rules_backtest(hist, **kw, policy=RulesPolicy(regime_filter=False))
-    no_halt = run_rules_backtest(hist, **(kw | {"max_loss": None}))
+    # 只看规则本身：停止线和 5% 回撤暂停都关掉，跑满整段时间
+    no_halt = run_rules_backtest(hist, **(kw | {"max_loss": None, "risk_params": risk | {"max_drawdown_pct": "1"}}))
     m = main.metrics
     md = report_markdown(m)
     md += "\n## 设置来源\n\n" + "".join(f"- {n}\n" for n in notes)
     md += f"- 股票清单：{len(hist) - 1} 只当前大市值美股 + SPY；行业数据 {len(inds)} 只\n"
-    md += "\n## 对比（同样数据，只改一项）\n\n| 版本 | 收益 | 最大回撤 | 交易数 | 平均 R |\n|---|---|---|---|---|\n"
-    for name, r in (("线上规则（含大盘过滤和停止线）", main), ("去掉大盘过滤", no_regime), ("不设停止线（只看规则本身）", no_halt)):
+    md += "\n## 对比（同样数据，只改一项）\n\n| 版本 | 收益 | 扣费前 | 最大回撤 | 交易数 | 平均 R |\n|---|---|---|---|---|---|\n"
+    for name, r in (("线上规则（含大盘过滤和停止线）", main), ("去掉大盘过滤", no_regime), ("不设停止线和回撤暂停（只看规则本身）", no_halt)):
         x = r.metrics
-        md += f"| {name} | {x['return_pct']} | {x['max_drawdown_pct']} | {x['closed_trades']} | {x['avg_r'] or '—'} |\n"
+        md += (f"| {name} | {x['return_pct']} | {x['gross_return_pct']} | {x['max_drawdown_pct']} | {x['closed_trades']} "
+               f"| {x['avg_r'] or '—'} |\n")
     rep = OUT / "reports"
     rep.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d-%H%M")

@@ -453,6 +453,8 @@ def _metrics(res: RulesResult, *, capital: Decimal, end_equity: Decimal, mdd: De
         "avg_stop_r": f"{sum(stop_rs, Decimal(0)) / len(stop_rs):.2f}" if stop_rs else None,
         "profit_factor": f"{pf:.2f}" if pf is not None else None,
         "fees_usd": str(fees.quantize(Decimal("0.01"))), "fee_share_of_gross_pct": _pct(cost_share),
+        "gross_return_pct": _pct((end_equity + fees) / capital - 1),
+        "fees_per_trade_usd": f"{fees / n:.2f}" if n else None,
         "avg_holding_days": f"{sum(t['holding_days'] for t in trades) / n:.1f}" if n else None,
         "avg_exposure_pct": _pct(sum((D(r["exposure_pct"]) for r in curve), Decimal(0)) / len(curve) / 100) if curve else "—",
         "stop_line_hit_on": halted_on.isoformat() if halted_on else None,
@@ -470,7 +472,8 @@ def report_markdown(m: dict, *, title: str = "历史规则回测报告") -> str:
              f"（关卡 B 用这个比）；按实际平均投入 {m['avg_exposure_pct']} 折算：{m['spy_exposure_matched_return_pct']}（仅供参考）",
              f"- 最大回撤：{m['max_drawdown_pct']}；已平仓 {m['closed_trades']} 笔，胜率 {m['win_rate_pct']}，"
              f"平均每笔 {m['avg_r'] or '—'}R，盈亏比 {m['profit_factor'] or '—'}",
-             f"- 手续费：{m['fees_usd']} 美元（占毛利 {m['fee_share_of_gross_pct']}）"]
+             f"- 手续费：{m['fees_usd']} 美元（每笔一买一卖约 {m['fees_per_trade_usd'] or '—'} 美元，占毛利 "
+             f"{m['fee_share_of_gross_pct']}）；扣手续费前的收益：{m['gross_return_pct']}"]
     if m.get("stop_line_hit_on"):
         lines.append(f"- ⚠️ {m['stop_line_hit_on']} {m.get('halt_reason') or '触发暂停'}，之后不再开新仓")
     lines += [f"- ⚠️ {w}" for w in m.get("warnings", [])]
