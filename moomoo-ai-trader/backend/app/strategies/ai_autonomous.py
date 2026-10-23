@@ -152,17 +152,26 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
         for score, sym, inst, q, f, bars in cands:
             ids = [f"quote:{sym}@{q.source_ts.isoformat() if q.source_ts else 'na'}",
                    f"features:{sym}@{bars[-1].day.isoformat()}", f"bars:{sym}:{len(bars)}d"]
-            evidence[sym] = set(ids)
             ev_desc += [{"id": ids[0], "type": "quote", "symbol": sym, "desc": f"报价 last={q.last} bid={q.bid} ask={q.ask}，来源 {q.source}"},
                         {"id": ids[1], "type": "features", "symbol": sym, "desc": "技术特征（已收盘日K）"},
                         {"id": ids[2], "type": "bars", "symbol": sym, "desc": f"{len(bars)} 根已收盘日K，截至 {bars[-1].day}"}]
+            pool = None
+            info = getattr(rt, "pool_info", {}).get(sym)
+            if info:
+                pid_ = f"pool:{sym}@{bars[-1].day.isoformat()}"
+                ids.append(pid_)
+                pool = {k: info.get(k) for k in ("pool_rank", "market_cap_usd", "pe_ttm", "change_20d_pct",
+                                                 "change_60d_pct", "change_ytd_pct") if info.get(k) is not None}
+                pool["note"] = "来自 moomoo 条件选股的参考数据（服务器计算，可能有延迟，未独立核实）"
+                ev_desc.append({"id": pid_, "type": "pool", "symbol": sym, "desc": "每日股票池入选数据（市值、市盈率、涨跌幅）"})
+            evidence[sym] = set(ids)
             cand_rows.append({
                 "symbol": sym, "name": inst.name, "sec_type": inst.sec_type, "currency": inst.currency,
                 "lot_size": inst.lot_size, "prescore": round(score, 3),
                 "quote": {"last": str(q.last), "bid": str(q.bid) if q.bid else None, "ask": str(q.ask) if q.ask else None,
                           "source": q.source, "source_ts": q.source_ts.isoformat() if q.source_ts else None},
                 "features": f, "recent_closes": [str(b.close) for b in bars[-10:]], "evidence_ids": ids,
-            })
+            } | ({"pool_data": pool} if pool else {}))
         pos_rows = []
         for pos in positions:
             q = rt.quote(pos.symbol)

@@ -291,6 +291,13 @@ function RulesText({ rules, labels }: { rules: PoolRules; labels: Record<string,
         [labels.max_price ?? '最高价格']: per(rules.max_price),
         [labels.min_avg_turnover_20d ?? '成交额下限']: per(rules.min_avg_turnover_20d),
         [labels.exclude_symbols ?? '手动排除']: (rules.exclude_symbols ?? []).join('、') || '无',
+        [labels.source ?? '候选来源']: rules.source === 'MOOMOO_SCAN' ? '每天用 moomoo 条件选股扫描全部美股（程序按规则筛选，不是 AI）' : '只筛自选中的证券',
+        ...(rules.source === 'MOOMOO_SCAN'
+          ? {
+              [labels.min_market_cap_usd ?? '最低市值']: fmtMoney(String(rules.min_market_cap_usd ?? ''), 0),
+              [labels.scan_top_by_turnover ?? '按成交额先取前几只']: String(rules.scan_top_by_turnover ?? '—'),
+            }
+          : {}),
       }}
     />
   );
@@ -298,6 +305,7 @@ function RulesText({ rules, labels }: { rules: PoolRules; labels: Record<string,
 
 function UniverseTab() {
   const { ns } = useAppState();
+  const { modal } = App.useApp();
   const u = useApi<UniverseInfo>(`/api/${ns}/universe`);
   const { run, busy } = useAction();
   const [previewId, setPreviewId] = useState<number | null>(null);
@@ -346,10 +354,83 @@ function UniverseTab() {
     if (r) void u.reload();
   };
 
+  const createAuto = async () => {
+    const r = await run(() => api.post<UniverseRule>(`/api/${ns}/universe/rules/auto-us`), { success: (x) => `已生成「每日自动股票池」规则草稿 v${x.version}，请预览成员后确认` });
+    if (r) {
+      void u.reload();
+      setPreviewId(r.id);
+    }
+  };
+
+  const cur = u.data?.current_run;
+  const confirmedRules = (u.data?.rules ?? []).filter((r) => r.confirmed_by_user);
+  const [scopeChoice, setScopeChoice] = useState<string>('');
+  const scopeText = (sc?: { type: string; universe_rule_id?: number; symbols?: string[] }) => {
+    if (!sc) return '—';
+    if (sc.type === 'WHITELIST') return `手动白名单：${(sc.symbols ?? []).join('、')}`;
+    const r = (u.data?.rules ?? []).find((x) => x.id === sc.universe_rule_id);
+    return `股票池规则 v${r?.version ?? '?'}${r?.rules.source === 'MOOMOO_SCAN' ? '（每日自动扫描全部美股）' : ''}`;
+  };
+  const changeScope = () => {
+    const isPool = scopeChoice.startsWith('rule:');
+    const body = isPool
+      ? { scope_type: 'POOL', universe_rule_id: Number(scopeChoice.slice(5)), confirm: true }
+      : { scope_type: 'WHITELIST', symbols: u.data?.whitelist ?? [], confirm: true };
+    modal.confirm({
+      title: '更换当前运行的交易范围？',
+      content: (
+        <Space direction="vertical">
+          <Text>新范围：{isPool ? scopeText({ type: 'POOL', universe_rule_id: Number(scopeChoice.slice(5)) }) : scopeText({ type: 'WHITELIST', symbols: u.data?.whitelist ?? [] })}</Text>
+          <Text>不变：资金、可承受亏损、风控版本、策略、到期时间。</Text>
+          <Text>已有持仓、止损和亏损记录全部保留；持仓即使不在新范围内，也照常按止损/止盈/持有期限管理。</Text>
+        </Space>
+      ),
+      okText: '确认更换',
+      cancelText: '取消',
+      onOk: async () => {
+        const r = await run(() => api.post<{ note: string }>(`/api/${ns}/control/scope`, body), { success: (x) => x.note });
+        if (r) void u.reload();
+      },
+    });
+  };
+
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <ErrorAlert error={u.error} />
       {u.data ? <Explain>{u.data.note} 范围条件改变需要您确认；范围内的例行成员更新无需逐只确认。</Explain> : null}
+      {cur ? (
+        <Card size="small" title="当前运行的交易范围">
+          <Paragraph>现在：{scopeText(cur.scope)}（运行 #{cur.portfolio_id}，授权 #{cur.authorization_id}）</Paragraph>
+          <Space wrap>
+            <Select
+              style={{ minWidth: 320 }}
+              placeholder="选择新的交易范围"
+              value={scopeChoice || undefined}
+              onChange={setScopeChoice}
+              options={[
+                ...confirmedRules.map((r) => ({ value: `rule:${r.id}`, label: `股票池规则 v${r.version}${r.rules.source === 'MOOMOO_SCAN' ? '（每日自动扫描全部美股）' : '（只筛自选）'}` })),
+                ...(u.data?.whitelist.length ? [{ value: 'whitelist', label: `手动白名单（${u.data.whitelist.join('、')}）` }] : []),
+              ]}
+            />
+            <Button type="primary" disabled={!scopeChoice} loading={busy} onClick={changeScope}>
+              更换（保留持仓）
+            </Button>
+          </Space>
+          <Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+            只能选择已确认的规则。更换不会新建运行，资金、亏损线、风控和到期时间都不变。
+          </Paragraph>
+        </Card>
+      ) : null}
+      <Card size="small" title="每日自动股票池（推荐）">
+        <Paragraph>
+          每天美股开盘前，程序用 moomoo 条件选股扫描<Text strong>全部美股</Text>，留下大公司、成交活跃、价格买得起的普通股（排除 ETF、场外交易和杠杆产品），
+          再按近 20/60 天的强弱选出前 20 只作为当天的股票池。盘中 AI 只在这 20 只里挑选并决定买卖，最终数量由风控决定。
+        </Paragraph>
+        <Paragraph type="secondary">
+          说明：扫描全市场是<Text strong>程序按规则</Text>完成的，不是 AI 研究整个市场；需要 moomoo OpenD 已登录。规则：价格 10–600 美元、市值 ≥ 100 亿美元、20 日平均成交额 ≥ 5,000 万美元。
+        </Paragraph>
+        <Button loading={busy} onClick={() => void createAuto()}>生成「每日自动股票池」规则草稿</Button>
+      </Card>
       <Card size="small" title="规则版本">
         <Table<UniverseRule>
           size="small"
@@ -383,6 +464,15 @@ function UniverseTab() {
           {preview.data ? (
             <>
               {preview.data.disclaimer ? <Alert type="info" showIcon message={preview.data.disclaimer} style={{ marginBottom: 8 }} /> : null}
+              {preview.data.stats?.matched_total !== undefined ? (
+                <Alert
+                  type="success"
+                  showIcon
+                  style={{ marginBottom: 8 }}
+                  message={`符合价格/市值条件的美股共 ${preview.data.stats.matched_total} 只；按成交额取前 ${preview.data.stats.fetched} 只，券商核实 ${preview.data.stats.verified} 只，最终入选 ${preview.data.stats.members} 只`}
+                  description={preview.data.stats.method}
+                />
+              ) : null}
               <Text strong>成员（{preview.data.members.length}）</Text>
               <MembersTable items={preview.data.members} />
               <Divider style={{ margin: '12px 0' }} />

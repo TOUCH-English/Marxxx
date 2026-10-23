@@ -369,14 +369,33 @@ class TradingEngine:
             now = rt.now()
             snap = s.execute(select(UniverseSnapshot).where(UniverseSnapshot.rule_id == rule.id)
                              .order_by(UniverseSnapshot.id.desc()).limit(1)).scalar_one_or_none()
-            day = rt.calendar.local_date("MY", now)
-            if snap is None or rt.calendar.local_date("MY", snap.as_of) != day:
-                members, excluded = screen(rt.provider, rule.rules, now)
-                snap = UniverseSnapshot(rule_id=rule.id, as_of=now, members=members, excluded=excluded,
-                                        data_source=rt.data_source)
-                s.add(snap)
-                audit(s, "UNIVERSE", "SNAPSHOT", f"授权股票池例行更新：{len(members)} 个成员（规则 v{rule.version}，无需逐只确认）",
-                      actor="worker", portfolio_id=rt.portfolio_id, as_of=now)
+            # 只做美股的规则按美股交易日更新（马来西亚午夜正处于美股交易时段，不能在盘中换池）
+            mk = "US" if rule.rules.get("markets") == ["US"] else "MY"
+            day = rt.calendar.local_date(mk, now)
+            due = snap is None or rt.calendar.local_date(mk, snap.as_of) != day
+            if due and (rt.pool_retry_at is None or now >= rt.pool_retry_at):
+                try:
+                    members, excluded, stats = screen(rt.provider, rule.rules, now)
+                except Exception as e:
+                    # 失败时沿用上一份股票池（没有就为空，只是不开新仓；已有持仓照常保护），30 分钟后再试
+                    rt.pool_retry_at = now + timedelta(minutes=30)
+                    audit(s, "UNIVERSE", "SNAPSHOT_FAILED", f"股票池更新失败，沿用上一份：{e}", actor="worker",
+                          portfolio_id=rt.portfolio_id, as_of=now)
+                    notify(s, "warn", "股票池今日更新失败", f"已沿用上一份股票池，30 分钟后重试。原因：{e}"[:500],
+                           dedupe_key=f"pool-fail:{rule.id}:{day}")
+                else:
+                    rt.pool_retry_at = None
+                    snap = UniverseSnapshot(rule_id=rule.id, as_of=now, members=members, excluded=excluded,
+                                            data_source=rt.data_source, stats=stats)
+                    s.add(snap)
+                    scanned = f"扫描 {stats['matched_total']} 只符合条件的美股中成交额前 {stats['fetched']} 只，" \
+                        if "matched_total" in stats else ""
+                    audit(s, "UNIVERSE", "SNAPSHOT",
+                          f"授权股票池例行更新：{scanned}{len(members)} 个成员（规则 v{rule.version}，无需逐只确认）",
+                          actor="worker", portfolio_id=rt.portfolio_id, as_of=now)
+            if snap is None:
+                return set()
+            rt.pool_info = {m["symbol"]: m for m in snap.members}
             return {m["symbol"] for m in snap.members}
         return set()
 

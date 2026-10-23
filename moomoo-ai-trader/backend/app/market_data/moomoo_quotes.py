@@ -29,6 +29,20 @@ BATCH_MAX = 200
 # get_stock_basicinfo 的 stock_type → 本系统证券类型。ETF 无法从接口判断是否杠杆/反向，
 # 在用户确认流程实现前一律记为 ETF_UNVERIFIED（风控与股票池都不允许）。
 SEC_TYPES = {"STOCK": "STOCK", "ETF": "ETF_UNVERIFIED"}
+US_LISTED_EXCHANGES = {"US_NYSE", "US_NASDAQ", "US_AMEX"}  # 场外（US_PINK）等不允许
+KL_QUOTA_RESERVE = 20  # 历史 K 线额度至少留这么多，不再为新证券下载日 K
+KL_QUOTA_CACHE_S = 1800
+SCAN_PAGE_MAX = 200  # 条件选股每页上限
+SCAN_PAGE_GAP_S = 3.5  # 翻页间隔（条件选股有频率限制，需按官方「权限及配额」核对）
+
+
+def _filter_value(item, key) -> float | None:
+    v = getattr(item, "__dict__", {}).get(key)
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if f == f else None  # 排除 NaN
 
 
 def _px(r: dict, k: str) -> Decimal | None:
@@ -58,6 +72,7 @@ class MoomooQuoteProvider:
         self._type_try: dict[str, float] = {}
         self._calls: deque[float] = deque()
         self.snapshot_requests = 0
+        self._kl_quota: tuple[float, int, set[str]] | None = None  # (查询时间, 剩余, 30 天内已计额度的证券)
 
     @classmethod
     def shared(cls) -> "MoomooQuoteProvider":
@@ -166,6 +181,66 @@ class MoomooQuoteProvider:
             self.ensure_instruments([symbol])
         return hit[1]
 
+    # ---------------------------------------------------------------- 全市场条件选股
+    def scan_us(self, rules: dict) -> tuple[list[dict], dict]:
+        """用 moomoo 条件选股（服务器端计算）扫描全部美股，按 20 日成交额从高到低取前 N 只。
+
+        只返回服务器给出的数字（价格、市值、成交额、涨跌幅、市盈率），不下载日 K，不占历史 K 线额度。
+        这是程序按规则筛选，不是 AI 研究。失败时抛出异常，由调用方保留上一份股票池。
+        """
+        import moomoo as m
+
+        def simple(field, lo=None, hi=None):
+            f = m.SimpleFilter()
+            f.stock_field = field
+            f.is_no_filter = lo is None and hi is None
+            f.filter_min, f.filter_max = lo, hi
+            return f
+
+        def acc(field, days, lo=None, sort=None):
+            f = m.AccumulateFilter()
+            f.stock_field, f.days = field, days
+            f.is_no_filter = lo is None and sort is None
+            f.filter_min, f.sort = lo, sort
+            return f
+
+        mn = rules.get("min_price", {}).get("US")
+        mx = rules.get("max_price", {}).get("US")
+        cap = rules.get("min_market_cap_usd")
+        turn = rules.get("min_avg_turnover_20d", {}).get("US")
+        filters = [
+            simple(m.StockField.CUR_PRICE, float(mn) if mn is not None else None, float(mx) if mx is not None else None),
+            simple(m.StockField.MARKET_VAL, float(cap) if cap is not None else None),
+            acc(m.StockField.TURNOVER, 20, float(turn) if turn is not None else None, sort=m.SortDir.DESCEND),
+            acc(m.StockField.CHANGE_RATE, 20),
+            acc(m.StockField.CHANGE_RATE, 60),
+            simple(m.StockField.PE_TTM),
+            simple(m.StockField.CHANGE_RATE_BEGIN_YEAR),
+        ]
+        top = int(rules.get("scan_top_by_turnover", 100))
+        rows: list[dict] = []
+        total, begin = 0, 0
+        while len(rows) < top:
+            ret, data = self._context().get_stock_filter(market=m.Market.US, filter_list=filters, begin=begin,
+                                                         num=min(SCAN_PAGE_MAX, top - len(rows)))
+            if ret != m.RET_OK:
+                raise RuntimeError(f"条件选股失败：{data}")
+            last_page, total, items = data
+            for it in items:
+                rows.append({
+                    "symbol": str(it.stock_code), "name": str(it.stock_name or it.stock_code),
+                    "price": _filter_value(it, "cur_price"), "market_cap": _filter_value(it, "market_val"),
+                    "turnover_20d": _filter_value(it, ("turnover", 20)),
+                    "change_20d_pct": _filter_value(it, ("change_rate", 20)),
+                    "change_60d_pct": _filter_value(it, ("change_rate", 60)),
+                    "pe_ttm": _filter_value(it, "pe_ttm"), "change_ytd_pct": _filter_value(it, "change_rate_begin_year"),
+                })
+            if last_page or not items:
+                break
+            begin += len(items)
+            time.sleep(SCAN_PAGE_GAP_S)
+        return rows[:top], {"matched_total": int(total or 0), "fetched": min(len(rows), top)}
+
     # ---------------------------------------------------------------- 证券资料
     def ensure_instruments(self, symbols) -> None:
         """用 get_stock_basicinfo 核实证券类型与每手股数后登记；查询失败的不登记，稍后重试。"""
@@ -192,13 +267,42 @@ class MoomooQuoteProvider:
                 continue
             mk = sym.split(".")[0]
             raw = str(r.get("stock_type", "")).split(".")[-1].upper()
+            sec_type = SEC_TYPES.get(raw, raw or "UNKNOWN")
+            exch = str(r.get("exchange_type") or "").split(".")[-1].upper()
+            if mk == "US" and exch and exch != "N/A" and exch not in US_LISTED_EXCHANGES:
+                sec_type = f"{sec_type}_OTC"  # 场外交易（如 US_PINK）：风控和股票池都不允许
             self._instruments[sym] = InstrumentInfo(
-                symbol=sym, market=mk, name=str(r.get("name") or sym), sec_type=SEC_TYPES.get(raw, raw or "UNKNOWN"),
+                symbol=sym, market=mk, name=str(r.get("name") or sym), sec_type=sec_type,
                 currency={"MY": "MYR", "US": "USD"}.get(mk, ""), lot_size=int(r["lot_size"]))
+
+    def _kl_quota_allows(self, symbol: str) -> bool:
+        """历史 K 线额度按「30 天内请求过的不同证券数」计。已计过的证券随时可再取；新证券要留足余量。"""
+        import moomoo as m
+
+        t = time.monotonic()
+        if self._kl_quota is None or t - self._kl_quota[0] > KL_QUOTA_CACHE_S:
+            try:
+                ret, data = self._context().get_history_kl_quota(get_detail=True)
+            except Exception as e:
+                self._err = f"历史K线额度查询失败：{e}"
+                return symbol in self._bars
+            if ret != m.RET_OK:
+                self._err = f"历史K线额度查询失败：{data}"
+                return symbol in self._bars
+            used, remain, detail = data
+            self._kl_quota = (t, int(remain), {str(d.get("code")) for d in (detail or [])})
+        _, remain, seen = self._kl_quota
+        if symbol in seen or symbol in self._bars:
+            return True
+        if remain <= KL_QUOTA_RESERVE:
+            self._err = f"历史K线额度剩余 {remain}，为保留余量不再下载新证券的日K"
+            return False
+        self._kl_quota = (self._kl_quota[0], remain - 1, seen | {symbol})
+        return True
 
     def daily_bars(self, symbol: str, now: datetime, n: int) -> list[Bar]:
         hit = self._bars.get(symbol)
-        if not hit or time.monotonic() - hit[0] > 600:
+        if (not hit or time.monotonic() - hit[0] > 600) and self._kl_quota_allows(symbol):
             import moomoo as m
 
             start = (now - timedelta(days=int(n * 1.6) + 10)).date().isoformat()
@@ -219,6 +323,8 @@ class MoomooQuoteProvider:
                 bars.append(Bar(symbol=symbol, day=date.fromisoformat(k), open=D(r["open"]), high=D(r["high"]),
                                 low=D(r["low"]), close=close, volume=int(r["volume"]), adj_factor=fac))
             self._bars[symbol] = (time.monotonic(), bars)
+        if symbol not in self._bars:
+            return []  # 额度不足且从未取过：不作为候选
         from ..core.calendar import get_calendar
 
         mk = symbol.split(".")[0]

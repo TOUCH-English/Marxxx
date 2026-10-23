@@ -118,7 +118,10 @@ function PoolRuleView({ info, ruleId }: { info: UniverseInfo | undefined; ruleId
   );
 }
 
+const pct = (v: number | null | undefined) => (v === null || v === undefined ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
+
 export function MembersTable({ items, excluded }: { items: UniverseMember[]; excluded?: boolean }) {
+  const scanned = items.some((x) => x.market_cap_usd !== undefined);
   return (
     <Table<UniverseMember>
       size="small"
@@ -134,6 +137,14 @@ export function MembersTable({ items, excluded }: { items: UniverseMember[]; exc
         { title: '类型', dataIndex: 'sec_type', render: (m: string) => SEC_TYPE_LABELS[m] ?? m },
         { title: '最近收盘', dataIndex: 'last_close', render: (v: string | null) => fmtPrice(v) },
         { title: '20日平均成交额', dataIndex: 'avg_turnover_20d', render: (v: string | null) => fmtMoney(v, 0) },
+        ...(scanned
+          ? [
+              ...(!excluded ? [{ title: '排名', dataIndex: 'pool_rank' }] : []),
+              { title: '市值（美元）', dataIndex: 'market_cap_usd', render: (v: string | null) => fmtMoney(v, 0) },
+              { title: '20日涨跌', dataIndex: 'change_20d_pct', render: (v: number | null) => pct(v) },
+              { title: '60日涨跌', dataIndex: 'change_60d_pct', render: (v: number | null) => pct(v) },
+            ]
+          : []),
         ...(excluded ? [{ title: '排除原因', dataIndex: 'reasons', render: (r: string[] | undefined) => (r ?? []).map((x) => <Tag key={x} color="orange">{x}</Tag>) }] : []),
       ]}
     />

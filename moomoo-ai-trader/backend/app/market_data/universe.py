@@ -10,6 +10,7 @@ from typing import Any
 from .base import MarketDataProvider
 
 DEFAULT_POOL_RULES: dict[str, Any] = {
+    "source": "WATCHLIST",  # WATCHLIST：只筛本机证券表（自选）；MOOMOO_SCAN：每天用 moomoo 条件选股扫描全部美股
     "markets": ["MY", "US"],
     "sec_types": ["STOCK", "ETF"],
     "exclude_leveraged": True,
@@ -17,6 +18,21 @@ DEFAULT_POOL_RULES: dict[str, Any] = {
     "max_price": {"MY": "100", "US": "1000"},
     "min_avg_turnover_20d": {"MY": "1000000", "US": "20000000"},
     "exclude_symbols": [],
+    "max_members": 20,
+    "min_market_cap_usd": None,  # 仅 MOOMOO_SCAN 使用
+    "scan_top_by_turnover": 100,  # 仅 MOOMOO_SCAN 使用：按 20 日成交额取前 N 只再排序
+}
+
+# 「每日自动股票池」预设：全部美股 → 大市值、成交活跃、价格买得起的普通股 → 按近期强弱取前 20 只
+AUTO_US_POOL_RULES: dict[str, Any] = DEFAULT_POOL_RULES | {
+    "source": "MOOMOO_SCAN",
+    "markets": ["US"],
+    "sec_types": ["STOCK"],
+    "min_price": {"US": "10"},
+    "max_price": {"US": "600"},
+    "min_avg_turnover_20d": {"US": "50000000"},
+    "min_market_cap_usd": "10000000000",
+    "scan_top_by_turnover": 100,
     "max_members": 20,
 }
 
@@ -29,10 +45,83 @@ RULE_LABELS = {
     "min_avg_turnover_20d": "20日平均成交额下限",
     "exclude_symbols": "手动排除",
     "max_members": "成员上限",
+    "source": "候选来源",
+    "min_market_cap_usd": "最低市值（美元）",
+    "scan_top_by_turnover": "按成交额先取前几只",
 }
 
 
-def screen(provider: MarketDataProvider, rules: dict[str, Any], now: datetime) -> tuple[list[dict], list[dict]]:
+def _num(v):
+    from ..db.types import D
+
+    return D(str(v))
+
+
+def screen_scan(provider, rules: dict[str, Any], now: datetime) -> tuple[list[dict], list[dict], dict]:
+    """每日自动股票池：全部美股 →（服务器端条件选股）→ 券商核实类型 → 规则复核 → 按近期强弱排序取前 N。
+
+    排序分 = 0.6 × 20 日涨跌幅 + 0.4 × 60 日涨跌幅（确定性规则，不是盈利预测，也不是 AI 判断）。
+    """
+    rows, stats = provider.scan_us(rules)
+    provider.ensure_instruments([r["symbol"] for r in rows])
+    members: list[dict] = []
+    excluded: list[dict] = []
+    mn, mx = rules.get("min_price", {}).get("US"), rules.get("max_price", {}).get("US")
+    turn, cap = rules.get("min_avg_turnover_20d", {}).get("US"), rules.get("min_market_cap_usd")
+    verified = 0
+    for r in rows:
+        reasons = []
+        inst = provider.instrument(r["symbol"])
+        if inst is None:
+            reasons.append("券商资料未核实（类型/每手股数），暂不纳入")
+        else:
+            verified += 1
+            if inst.sec_type not in rules.get("sec_types", ["STOCK"]):
+                reasons.append(f"证券类型 {inst.sec_type} 不允许")
+            if rules.get("exclude_leveraged", True) and inst.is_leveraged:
+                reasons.append("杠杆/反向产品已排除")
+        if r["symbol"] in rules.get("exclude_symbols", []):
+            reasons.append("用户手动排除")
+        price = r.get("price")
+        if price is None:
+            reasons.append("缺少价格")
+        else:
+            if mn is not None and _num(price) < _num(mn):
+                reasons.append(f"价格低于 {mn}")
+            if mx is not None and _num(price) > _num(mx):
+                reasons.append(f"价格高于 {mx}")
+        if turn is not None and (r.get("turnover_20d") is None or _num(r["turnover_20d"]) < _num(turn)):
+            reasons.append("成交额不足")
+        if cap is not None and (r.get("market_cap") is None or _num(r["market_cap"]) < _num(cap)):
+            reasons.append("市值不足")
+        c20, c60 = r.get("change_20d_pct"), r.get("change_60d_pct")
+        score = round(0.6 * (c20 or 0) + 0.4 * (c60 or 0), 2) if c20 is not None or c60 is not None else None
+        row = {"symbol": r["symbol"], "name": inst.name if inst else r["name"], "market": "US",
+               "sec_type": inst.sec_type if inst else "UNVERIFIED",
+               "last_close": str(price) if price is not None else None,
+               "avg_turnover_20d": str(round(r["turnover_20d"])) if r.get("turnover_20d") is not None else None,
+               "market_cap_usd": str(round(r["market_cap"])) if r.get("market_cap") is not None else None,
+               "change_20d_pct": c20, "change_60d_pct": c60, "change_ytd_pct": r.get("change_ytd_pct"),
+               "pe_ttm": r.get("pe_ttm"), "rank_score": score}
+        (excluded.append(row | {"reasons": reasons}) if reasons else members.append(row))
+    members.sort(key=lambda x: (x["rank_score"] is not None, x["rank_score"] or 0), reverse=True)
+    n = int(rules.get("max_members", 20))
+    for extra in members[n:]:
+        excluded.append(extra | {"reasons": ["超过成员上限（按近期强弱排序）"]})
+    members = members[:n]
+    for i, mbr in enumerate(members, 1):
+        mbr["pool_rank"] = i
+    stats = stats | {"verified": verified, "members": len(members), "excluded": len(excluded),
+                     "method": "moomoo 条件选股（服务器计算）→ 券商核实类型 → 规则复核 → 按 20/60 日涨跌幅排序"}
+    return members, excluded, stats
+
+
+def screen(provider: MarketDataProvider, rules: dict[str, Any], now: datetime) -> tuple[list[dict], list[dict], dict]:
+    """返回（成员，被排除，统计）。候选来源由规则的 source 决定。"""
+    if rules.get("source") == "MOOMOO_SCAN":
+        if not hasattr(provider, "scan_us"):
+            raise RuntimeError("「每日自动股票池」需要 moomoo 实时行情（OpenD 已登录）")
+        return screen_scan(provider, rules, now)
     from ..db.types import D
 
     members: list[dict] = []
@@ -77,4 +166,4 @@ def screen(provider: MarketDataProvider, rules: dict[str, Any], now: datetime) -
     cap = int(rules.get("max_members", 20))
     for extra in members[cap:]:
         excluded.append(extra | {"reasons": ["超过成员上限（按流动性排序）"]})
-    return members[:cap], excluded
+    return members[:cap], excluded, {"source": "WATCHLIST", "members": len(members[:cap]), "excluded": len(excluded)}

@@ -27,7 +27,7 @@ from ..db.models import (
     Position,
 )
 from ..db.session import read_session, write_session
-from ..services.runs import current_portfolio, revoke
+from ..services.runs import change_scope, current_portfolio, revoke
 from . import security
 from .deps import Mutator, Viewer, j, ns_of, row
 from .views import decision_view, intent_view, overview
@@ -143,6 +143,37 @@ def stop_run(ns: str, sess=Mutator):
         p = _portfolio(s, ns)
     n = revoke(ns, p.id, "user")
     return {"ok": True, "revoked": n, "note": "已停止新开仓；已有持仓继续按批准的保护规则管理"}
+
+
+class ScopeBody(BaseModel):
+    scope_type: str  # POOL / WHITELIST
+    universe_rule_id: int | None = None
+    symbols: list[str] = []
+    confirm: bool = False
+
+
+@router.post("/control/scope")
+def change_run_scope(ns: str, body: ScopeBody, sess=Mutator):
+    """更换当前运行的交易范围，保留持仓；资金、亏损线、风控版本、策略、到期时间都不变。"""
+    ns_of(ns)
+    if not body.confirm:
+        raise HTTPException(400, "请先阅读说明并确认")
+    if ns == "live":
+        security.require_recent_reauth(sess)
+    if body.scope_type == "POOL":
+        scope = {"type": "POOL", "universe_rule_id": body.universe_rule_id}
+    elif body.scope_type == "WHITELIST":
+        scope = {"type": "WHITELIST", "symbols": sorted({x.strip().upper() for x in body.symbols if x.strip()})}
+    else:
+        raise HTTPException(400, "交易范围只能是 POOL 或 WHITELIST")
+    with read_session(ns) as s:
+        p = _portfolio(s, ns)
+    try:
+        a = change_scope(ns, p.id, scope, "user")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True, "authorization_id": a.id, "summary": a.summary_text,
+            "note": "已更换交易范围；已有持仓、止损和亏损记录全部保留，新范围在下一轮生效"}
 
 
 @router.post("/control/end-sim")

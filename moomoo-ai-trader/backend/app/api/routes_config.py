@@ -23,6 +23,7 @@ from ..core.enums import Mode
 from ..core.money import calc_fees, validate_fee_items
 from ..db.models import (
     AccountBinding,
+    Authorization,
     BacktestRun,
     ConfigDraft,
     DeploymentHistory,
@@ -45,7 +46,7 @@ from ..db.models import (
 )
 from ..db.session import read_session, write_session
 from ..db.types import D, utcnow
-from ..market_data.universe import DEFAULT_POOL_RULES, RULE_LABELS, screen
+from ..market_data.universe import AUTO_US_POOL_RULES, DEFAULT_POOL_RULES, RULE_LABELS, screen
 from ..risk.locks import release_lock
 from ..risk.policy import HARD_LIMITS, PARAM_LABELS, SEED_RISK_PARAMS, diff_params, validate_params
 from ..services.runs import authorization_summary, create_authorization, current_portfolio, ensure_seed, start_sim_run
@@ -170,7 +171,17 @@ def get_universe(ns: str, sess=Viewer):
         rules = list(s.execute(select(UniverseRule).order_by(UniverseRule.version.desc())).scalars())
         snap = s.execute(select(UniverseSnapshot).order_by(UniverseSnapshot.id.desc()).limit(1)).scalar_one_or_none()
         wl = [w.symbol for w in s.execute(select(Watchlist).where(Watchlist.in_whitelist.is_(True))).scalars()]
+        p = current_portfolio(s, ns)
+        cur = None
+        if p is not None and p.running:
+            a = s.execute(select(Authorization).where(Authorization.portfolio_id == p.id, Authorization.status == "ACTIVE")
+                          .order_by(Authorization.id.desc()).limit(1)).scalar_one_or_none()
+            if a is not None:
+                cur = {"portfolio_id": p.id, "mode": p.mode, "authorization_id": a.id, "scope": a.scope,
+                       "expires_at": a.expires_at.isoformat()}
         return {"rules": [row(r) for r in rules], "labels": RULE_LABELS, "default_rules": DEFAULT_POOL_RULES,
+                "current_run": cur,
+                "auto_us_rules": AUTO_US_POOL_RULES,
                 "latest_snapshot": row(snap) if snap else None, "whitelist": wl,
                 "note": "成员由程序依据规则和可信数据确定并留存快照；AI 只能在快照成员中选择，无法扩大范围。"
                         + ("实盘默认范围为空，需要您批准。" if ns == "live" else "")}
@@ -187,12 +198,31 @@ def new_rule(ns: str, body: RuleBody, sess=Mutator):
     for k in body.rules:
         if k not in DEFAULT_POOL_RULES:
             raise HTTPException(400, f"未知规则项 {k}")
+    src = body.rules.get("source", "WATCHLIST")
+    if src not in ("WATCHLIST", "MOOMOO_SCAN"):
+        raise HTTPException(400, "候选来源只能是 WATCHLIST 或 MOOMOO_SCAN")
+    if src == "MOOMOO_SCAN" and body.rules.get("markets") != ["US"]:
+        raise HTTPException(400, "全市场扫描目前只支持美股（没有马股行情权限）")
     with write_session(ns) as s:
         nv = (s.execute(select(func.max(UniverseRule.version))).scalar() or 0) + 1
         r = UniverseRule(version=nv, rules=DEFAULT_POOL_RULES | body.rules, confirmed_by_user=False, note=body.note)
         s.add(r)
         s.flush()
         audit(s, "CONFIG", "UNIVERSE_DRAFT", f"股票池规则草稿 v{nv}", actor="user")
+        return row(r)
+
+
+@router.post("/universe/rules/auto-us")
+def new_auto_us_rule(ns: str, sess=Mutator):
+    """一键生成「每日自动股票池（全美股扫描）」规则草稿；仍需预览后确认。"""
+    ns_of(ns)
+    with write_session(ns) as s:
+        nv = (s.execute(select(func.max(UniverseRule.version))).scalar() or 0) + 1
+        r = UniverseRule(version=nv, rules=dict(AUTO_US_POOL_RULES), confirmed_by_user=False,
+                         note="每日自动股票池：程序每天扫描全部美股，按规则选出 20 只（不是 AI 选股）")
+        s.add(r)
+        s.flush()
+        audit(s, "CONFIG", "UNIVERSE_DRAFT", f"股票池规则草稿 v{nv}（每日自动股票池）", actor="user")
         return row(r)
 
 
@@ -224,12 +254,22 @@ def preview_rule(ns: str, sess=Viewer, rule_id: int | None = None, source: str |
         rules = r.rules if r else DEFAULT_POOL_RULES
         now = _biz_now(s, ns)
         p = current_portfolio(s, ns)
-    prov = _provider(ns, source or (p.data_source if p else None))
+    if rules.get("source") == "MOOMOO_SCAN":
+        from ..broker.moomoo_adapter import tcp_probe
+        from ..market_data.moomoo_quotes import MoomooQuoteProvider
+
+        st = get_settings()
+        if not tcp_probe(st.moomoo_opend_host, st.moomoo_opend_port):
+            raise HTTPException(503, "「每日自动股票池」需要 moomoo OpenD 已打开并登录")
+        prov = MoomooQuoteProvider.shared()
+        now = utcnow()
+    else:
+        prov = _provider(ns, source or (p.data_source if p else None))
     try:
-        members, excluded = screen(prov, rules, now)
+        members, excluded, stats = screen(prov, rules, now)
     except Exception as e:
         raise HTTPException(503, f"无法获取数据：{e}")
-    return {"as_of": now.isoformat(), "members": members, "excluded": excluded, "data_source": prov.name,
+    return {"as_of": now.isoformat(), "members": members, "excluded": excluded, "data_source": prov.name, "stats": stats,
             "rule": row(r) if r else None,
             "disclaimer": "演示证券为虚构，不构成投资推荐。" if prov.name == "DEMO_FIXTURE" else ""}
 

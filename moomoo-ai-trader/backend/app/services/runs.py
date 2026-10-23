@@ -189,6 +189,37 @@ def start_sim_run(*, mode: str = "DEMO", data_source: str = "DEMO_FIXTURE", capi
         return p.id, a.id
 
 
+def change_scope(ns: str, portfolio_id: int, scope: dict, actor: str) -> Authorization:
+    """更换当前运行的交易范围，保留持仓：在同一个运行上签发新授权，
+    资金、可承受亏损、策略版本、风控版本、隔夜设置和到期时间都沿用当前授权，只换交易范围。
+    已有持仓、止损、亏损记录和锁定不受影响（它们属于运行，不属于授权）。
+    """
+    with write_session(ns) as s:
+        p = s.get(Portfolio, portfolio_id)
+        if p is None or not p.running:
+            raise ValueError("运行不存在或已结束")
+        cur = s.execute(select(Authorization).where(Authorization.portfolio_id == portfolio_id,
+                                                    Authorization.status == "ACTIVE")
+                        .order_by(Authorization.id.desc()).limit(1)).scalar_one_or_none()
+        if cur is None:
+            raise ValueError("当前运行没有有效授权，请用启动向导重新授权")
+        now = p.sim_clock or utcnow()  # 业务时间（记账用）；授权有效期按真实时间计
+        hours = (cur.expires_at - utcnow()).total_seconds() / 3600
+        if hours <= 0:
+            raise ValueError("当前授权已到期，请用启动向导重新授权")
+        a = create_authorization(s, portfolio=p, capital=cur.capital, max_planned_loss=cur.max_planned_loss, scope=scope,
+                                 strategy_version_id=cur.strategy_version_ids[0],
+                                 risk_policy_version_id=cur.risk_policy_version_id, overnight=cur.overnight,
+                                 valid_hours=hours, exit_rules=cur.exit_rules, actor=actor, as_of=now)
+        a.expires_at = cur.expires_at  # 到期时间与原授权完全一致
+        a.signature = authz.sign(a)
+        audit(s, "AUTH", "SCOPE_CHANGED", f"更换交易范围（保留持仓）：授权 #{cur.id} → #{a.id}", actor=actor,
+              portfolio_id=portfolio_id, as_of=now)
+        s.flush()
+        s.expunge(a)
+        return a
+
+
 def revoke(ns: str, portfolio_id: int, actor: str) -> int:
     with write_session(ns) as s:
         n = 0

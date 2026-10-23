@@ -138,6 +138,7 @@ class UniverseSnapshot(Base):
     members: Mapped[list[Any]] = mapped_column(JSON)
     excluded: Mapped[list[Any]] = mapped_column(JSON, default=list)
     data_source: Mapped[str] = mapped_column(String(64))
+    stats: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # 全市场扫描的统计（扫描数、核实数等）
     created_at_utc: Mapped[datetime] = _now_col()
 
 

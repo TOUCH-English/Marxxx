@@ -504,10 +504,20 @@ export interface UniverseRule {
   note: string;
 }
 
+export interface CurrentRunScope {
+  portfolio_id: number;
+  mode: string;
+  authorization_id: number;
+  scope: { type: 'POOL' | 'WHITELIST'; universe_rule_id?: number; symbols?: string[] };
+  expires_at: string;
+}
+
 export interface UniverseInfo {
   rules: UniverseRule[];
   labels: Record<string, string>;
   default_rules: PoolRules;
+  auto_us_rules?: PoolRules;
+  current_run?: CurrentRunScope | null;
   latest_snapshot: null | { id: number; members?: unknown; [k: string]: unknown };
   whitelist: string[];
   note: string;
@@ -521,6 +531,11 @@ export interface UniverseMember {
   last_close: Dec | null;
   avg_turnover_20d: Dec | null;
   reasons?: string[];
+  pool_rank?: number;
+  market_cap_usd?: Dec | null;
+  change_20d_pct?: number | null;
+  change_60d_pct?: number | null;
+  rank_score?: number | null;
 }
 
 export interface UniversePreview {
@@ -529,6 +544,7 @@ export interface UniversePreview {
   excluded: UniverseMember[];
   data_source: string;
   disclaimer: string;
+  stats?: { matched_total?: number; fetched?: number; verified?: number; members?: number; excluded?: number; method?: string; source?: string };
 }
 
 export interface InstrumentRow {

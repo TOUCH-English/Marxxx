@@ -44,6 +44,8 @@ class Runtime:
     last_quote_store: datetime | None = None
     last_baseline_eval: dict[str, str] = field(default_factory=dict)
     adapter_instruments: set[str] = field(default_factory=set)  # 已登记到执行通道（本地模拟）的证券
+    pool_info: dict[str, dict] = field(default_factory=dict)  # 当前股票池成员的筛选数据（市值、涨跌幅等）
+    pool_retry_at: datetime | None = None  # 股票池更新失败后的下次重试时间
     started: bool = False
 
     def now(self) -> datetime:
