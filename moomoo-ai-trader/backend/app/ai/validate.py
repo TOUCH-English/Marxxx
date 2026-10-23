@@ -33,6 +33,7 @@ class ValidationContext:
     atr: dict[str, float] = field(default_factory=dict)  # symbol -> atr_14（价格单位）
     min_reward_risk: Decimal = Decimal("2")
     min_stop_pct: Decimal = Decimal("0.015")
+    earnings: dict = field(default_factory=dict)  # symbol -> 下次财报日期（date）
 
 
 @dataclass
@@ -160,6 +161,9 @@ def _entry_quality(d, ctx: ValidationContext, last: Decimal | None) -> list[str]
         e.append(f"盈亏比 {(reward / risk):.2f} 低于要求 {ctx.min_reward_risk}（止盈 {d.take_profit_price}、入场 {ref}、止损 {d.stop_loss_price}）")
     if risk / ref < ctx.min_stop_pct:
         e.append(f"止损距离 {(risk / ref * 100):.2f}% 小于 {ctx.min_stop_pct * 100}%：容易被日常波动触发")
+    ed = ctx.earnings.get(d.symbol)
+    if ed is not None and d.max_holding_days is not None and ctx.as_of.date() + timedelta(days=d.max_holding_days) >= ed:
+        e.append(f"持有期（{d.max_holding_days} 天）覆盖财报日 {ed.isoformat()}：财报可能跳空，止损无法保护")
     atr = ctx.atr.get(d.symbol)
     if atr and risk < Decimal(str(atr)):
         e.append(f"止损距离 {risk} 小于 1 倍 ATR（{atr}）：容易被日常波动触发")

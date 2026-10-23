@@ -68,6 +68,11 @@ class Settings(BaseSettings):
     # moomoo 条件选股返回的「成交额（20 日累计属性）」÷ 这个数 = 日均成交额（美元）。
     # SDK 文档没有写清楚是日均、累计还是其他单位，需要用日 K 的成交额在 Mac 上核对后设定（见 docs/auto-universe-plan.md）。
     scan_turnover_divisor: float = 1.0
+    # 市场背景规则（三方审核第 2 批）。数据取不到时视为未知，不拦截。
+    regime_filter: bool = True  # SPY 低于 200 日均线时不开新仓
+    earnings_blackout_days: int = 7  # 财报日在这么多天内（含今天）的证券不开新仓
+    exit_before_earnings: bool = True  # 持仓在财报前最后一个交易时段收市前 30 分钟内退出
+    one_position_per_industry: bool = True  # 同一行业最多持有 1 只
 
     @field_validator("ai_batch_interval_minutes", mode="before")
     @classmethod

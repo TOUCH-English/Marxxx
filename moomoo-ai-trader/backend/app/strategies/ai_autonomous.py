@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -24,6 +24,7 @@ from ..db.types import D
 from ..market_data.features import compute_features, momentum_score
 from ..portfolio import ledger
 from ..workers.runtime import PendingAIJob
+from . import market_context as mctx
 from .common import TickState, execute_buy, execute_sell, note, record_decision
 
 DEFAULT_AI_PARAMS: dict[str, Any] = {
@@ -137,13 +138,23 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
         ccy0 = {"MY": "MYR", "US": "USD"}[market]
         eq0 = ledger.equity_view(s, ts.portfolio.id, ccy0, rt.price_of).equity
         cap_amt = eq0 * D(ts.params.get("max_position_pct", "1")) if ts.params else None
+        # 市场背景（三方审核第 2 批）：大盘弱势不考虑新买入；财报临近、同行业已持有的不进候选
+        regime = mctx.market_regime(rt) if market == "US" else None
+        risk_off = bool(regime and regime["risk_off"] and get_settings().regime_filter)
+        earn = (mctx.earnings(rt) or {}) if market == "US" else {}
+        held_ind = mctx.held_industries(s, rt, ts.portfolio.id) if market == "US" else {}
+        skipped: dict[str, str] = {}
         cands = []
-        for sym in sorted(ts.scope):
+        for sym in ([] if risk_off else sorted(ts.scope)):
             inst = rt.provider.instrument(sym)
             if inst is None or inst.market != market or sym in held:
                 continue
             q = rt.quote(sym)
             if q is not None and q.last is not None and cap_amt is not None and q.last * inst.lot_size > cap_amt:
+                continue
+            ed = mctx.earnings_blocked(rt, sym) if earn else None
+            if ed is not None:
+                skipped[sym] = f"{ed.isoformat()} 财报"
                 continue
             bars = rt.provider.daily_bars(sym, now, int(p["bars_lookback"]))
             f = compute_features(bars, q)
@@ -151,7 +162,17 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
                 continue
             cands.append((momentum_score(f), sym, inst, q, f, bars))
         cands.sort(key=lambda x: -x[0])
+        if held_ind:
+            ind = mctx.industries(rt, [c[1] for c in cands])
+            kept = []
+            for c in cands:
+                if ind.get(c[1]) in held_ind:
+                    skipped[c[1]] = f"同行业已持有 {held_ind[ind[c[1]]]}"
+                else:
+                    kept.append(c)
+            cands = kept
         cands = cands[: int(p["max_candidates"])]
+        cand_ind = mctx.industries(rt, [c[1] for c in cands]) if market == "US" else {}
         ccy = {"MY": "MYR", "US": "USD"}[market]
         ev = ledger.equity_view(s, ts.portfolio.id, ccy, rt.price_of)
         acct_id = f"account:{ccy}@{now.isoformat()}"
@@ -180,7 +201,11 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
                 "quote": {"last": str(q.last), "bid": str(q.bid) if q.bid else None, "ask": str(q.ask) if q.ask else None,
                           "source": q.source, "source_ts": q.source_ts.isoformat() if q.source_ts else None},
                 "features": f, "recent_closes": [str(b.close) for b in bars[-10:]], "evidence_ids": ids,
-            } | ({"pool_data": pool} if pool else {}))
+            } | ({"pool_data": pool} if pool else {})
+              | ({"industry": cand_ind[sym]} if sym in cand_ind else {})
+              | ({"earnings_date": earn[sym]["date"].isoformat()} if sym in earn else {})
+              | ({"rel_strength_20d_vs_spy": round(f["ret_20d"] - regime["ret_20d"], 4)}
+                 if regime and f.get("ret_20d") is not None else {}))
         pos_rows = []
         for pos in positions:
             q = rt.quote(pos.symbol)
@@ -192,7 +217,13 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
                 ids.append(f"quote:{pos.symbol}@{q.source_ts.isoformat()}")
             evidence[pos.symbol] = set(ids)
             ev_desc.append({"id": pid, "type": "position", "symbol": pos.symbol, "desc": f"持仓 {pos.qty}，成本 {pos.avg_cost:.4f}"})
+            entry = s.get(Decision, pos.entry_decision_id) if pos.entry_decision_id else None
+            risk_ps, r_now = mctx.r_multiple(pos, q.last if q else None)
             pos_rows.append({
+                "entry_thesis": ((entry.proposal or {}).get("rationale", "") if entry else "")[:400] or None,
+                "initial_risk_per_share": str(risk_ps.quantize(Decimal("0.01"))) if risk_ps else None,
+                "r_multiple_now": str(r_now) if r_now is not None else None,
+                "earnings_date": earn[pos.symbol]["date"].isoformat() if pos.symbol in earn else None,
                 "symbol": pos.symbol, "qty": pos.qty, "avg_cost": str(pos.avg_cost.quantize(Decimal('0.0001'))),
                 "last": str(q.last) if q and q.last is not None else None,
                 "held_days": round((now - pos.opened_at).total_seconds() / 86400, 1),
@@ -230,6 +261,10 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
                     "cash_available": str((ev.cash - ev.reserved).quantize(Decimal('0.01'))),
                     "slots_remaining": max(0, slots), "evidence_id": acct_id},
         "candidates": cand_rows, "positions": pos_rows,
+        "market_state": (regime | {"note": "大盘弱势：本轮不考虑新买入" if risk_off else "大盘不弱"}) if regime
+                        else {"note": "大盘状态未知（缺少 SPY 日线）"},
+        "skipped_candidates": skipped,
+        "earnings_status": "已查询未来约 3 周财报日" if earn else "财报日未知（数据不可用）：请在 risk_flags 中注明",
         "untrusted_news": news,
         "news_status": "已提供新闻（不可信外部数据）" if news else "无新闻源：仅做价格数据分析",
     }
@@ -238,7 +273,8 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
             "last_prices": {c["symbol"]: c["quote"]["last"] for c in cand_rows} | {x["symbol"]: x["last"] for x in pos_rows if x["last"]},
             "max_target_position_pct": str(p["max_target_position_pct"]), "max_holding_days": int(p["max_holding_days"]),
             "max_valid_minutes": int(p["max_valid_minutes"]), "features": {c["symbol"]: c["features"] for c in cand_rows}
-            | {x["symbol"]: x["features"] for x in pos_rows}}
+            | {x["symbol"]: x["features"] for x in pos_rows},
+            "earnings": {c["symbol"]: c["earnings_date"] for c in cand_rows if c.get("earnings_date")}}
     return payload, meta
 
 
@@ -340,6 +376,7 @@ def _process(rt, ts: TickState, wall_now: datetime, job) -> None:
         max_valid_minutes=meta["max_valid_minutes"], now=rt.now(),
         strict_entry=not job.ctx_meta["provider"].is_fixture,
         atr={k: f["atr_14"] for k, f in meta.get("features", {}).items() if f and f.get("atr_14")},
+        earnings={k: date.fromisoformat(v) for k, v in meta.get("earnings", {}).items()},
     )
     batch = parse_and_validate(result.text, vctx)
     source = "AI_FIXTURE" if meta["provider"].is_fixture else "AI_MODEL"
@@ -401,6 +438,10 @@ def _act(s, rt, ts: TickState, wall_now: datetime, d: Decision) -> None:
 
 
 def _buy(s, rt, ts, wall_now, d: Decision) -> None:
+    why = mctx.entry_block_reason(s, rt, ts.portfolio.id, d.symbol) if d.market == "US" else None
+    if why:
+        d.outcome, d.outcome_reason = DecisionOutcome.RISK_BLOCKED, why
+        return
     prop = d.proposal
     ex = prop.get("exit_condition") or {}
     ec = prop.get("entry_condition") or {}

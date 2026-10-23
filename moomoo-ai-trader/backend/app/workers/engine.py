@@ -59,6 +59,7 @@ from ..orders.manager import OrderManager
 from ..portfolio import ledger
 from ..risk import locks
 from ..strategies import ai_autonomous, baseline_ma
+from ..strategies import market_context as mctx
 from ..strategies.common import TickState, record_decision
 from .runtime import Runtime
 
@@ -503,10 +504,11 @@ class TradingEngine:
                     reason, why = IntentReason.EXIT_TAKE_PROFIT, f"最新价 {q.last} 达到止盈 {pos.take_profit_price}"
                 elif pos.max_hold_until is not None and now >= pos.max_hold_until:
                     reason, why = IntentReason.EXIT_TIME, f"已到最长持有期限 {pos.max_hold_until.isoformat()}"
-                elif ts.auth is not None and not ts.auth.overnight:
-                    mtc = self.calendar.minutes_to_close(pos.market, now)
-                    if mtc is not None and mtc <= 20:
-                        reason, why = IntentReason.EXIT_TIME, "授权不隔夜：收市前退出"
+                elif ts.auth is not None and not ts.auth.overnight and \
+                        (mtc := self.calendar.minutes_to_close(pos.market, now)) is not None and mtc <= 20:
+                    reason, why = IntentReason.EXIT_TIME, "授权不隔夜：收市前退出"
+                elif pos.market == "US" and (ew := mctx.exit_before_earnings(rt, pos, now)):
+                    reason, why = IntentReason.EXIT_TIME, ew
                 if reason is None:
                     continue
                 # 保护优先：撤销同一证券的非保护性卖单

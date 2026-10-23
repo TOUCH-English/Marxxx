@@ -73,6 +73,10 @@ class MoomooQuoteProvider:
         self._calls: deque[float] = deque()
         self.snapshot_requests = 0
         self._kl_quota: tuple[float, int, set[str]] | None = None  # (查询时间, 剩余, 30 天内已计额度的证券)
+        self._earn: tuple[date, dict[str, dict]] | None = None  # (美东日期, 财报日历)
+        self._earn_try = -1e9
+        self._industry: dict[str, str] = {}
+        self._ind_try: dict[str, float] = {}
 
     @classmethod
     def shared(cls) -> "MoomooQuoteProvider":
@@ -242,6 +246,65 @@ class MoomooQuoteProvider:
             begin += len(items)
             time.sleep(SCAN_PAGE_GAP_S)
         return rows[:top], {"matched_total": int(total or 0), "fetched": min(len(rows), top), "turnover_divisor": div}
+
+    # ---------------------------------------------------------------- 财报日历 / 行业
+    def earnings_calendar(self, now: datetime, days: int = 21) -> dict[str, dict] | None:
+        """未来约 3 周（美东日期，含今天）有财报的美股：symbol → {"date": date, "pub_type": "BEFORE/AFTER/REGULAR/N/A"}。
+
+        接口每次最多 7 天，分 3 次查询；每个美东交易日查一次。失败返回 None（未知，不当作「没有财报」处理），30 分钟后重试。
+        """
+        import moomoo as m
+
+        day = now.astimezone(MARKET_TZ["US"]).date()
+        if self._earn is not None and self._earn[0] == day:
+            return self._earn[1]
+        t = time.monotonic()
+        if t - self._earn_try < RETRY_S * 30:
+            return self._earn[1] if self._earn is not None else None
+        self._earn_try = t
+        out: dict[str, dict] = {}
+        try:
+            for start in range(0, days, 7):
+                b, e = day + timedelta(days=start), day + timedelta(days=min(start + 6, days - 1))
+                ret, df = self._context().get_earnings_calendar(m.Market.US, begin_date=b.isoformat(), end_date=e.isoformat())
+                if ret != m.RET_OK:
+                    raise RuntimeError(str(df))
+                for r in df.to_dict("records"):
+                    try:
+                        d = date.fromisoformat(str(r.get("earnings_date"))[:10])
+                    except ValueError:
+                        continue
+                    sym = str(r.get("security"))
+                    if sym not in out or d < out[sym]["date"]:
+                        out[sym] = {"date": d, "pub_type": str(r.get("pub_type") or "N/A")}
+        except Exception as e:
+            self._err = f"财报日历查询失败：{e}"
+            return self._earn[1] if self._earn is not None else None
+        self._earn = (day, out)
+        return out
+
+    def industries(self, symbols) -> dict[str, str]:
+        """证券所属行业（moomoo 行业板块名）。查不到的不返回；每只最多每小时重试一次。"""
+        import moomoo as m
+
+        t = time.monotonic()
+        todo = sorted(x for x in set(symbols) if x not in self._industry and t - self._ind_try.get(x, -1e9) >= 3600)
+        for i in range(0, len(todo), 200):
+            chunk = todo[i:i + 200]
+            for x in chunk:
+                self._ind_try[x] = t
+            try:
+                ret, df = self._context().get_owner_plate(chunk)
+            except Exception as e:
+                self._err = f"行业查询失败：{e}"
+                break
+            if ret != m.RET_OK:
+                self._err = f"行业查询失败：{df}"
+                break
+            for r in df.to_dict("records"):
+                if str(r.get("plate_type", "")).split(".")[-1].upper() == "INDUSTRY":
+                    self._industry.setdefault(str(r.get("code")), str(r.get("plate_name")))
+        return {x: self._industry[x] for x in symbols if x in self._industry}
 
     # ---------------------------------------------------------------- 证券资料
     def ensure_instruments(self, symbols) -> None:
