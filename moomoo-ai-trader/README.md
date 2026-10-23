@@ -17,7 +17,8 @@
 | 系统 | 启动 | 停止 |
 | --- | --- | --- |
 | Windows | 双击 `scripts\start.bat` | 双击 `scripts\stop.bat` |
-| macOS / Linux | 终端运行 `./scripts/start.sh` | `./scripts/stop.sh` |
+| macOS | 在「访达」双击 `scripts/start.command`（首次若提示无法打开：右键 → 打开） | 双击 `scripts/stop.command` |
+| Linux（或 macOS 终端） | `./scripts/start.sh` | `./scripts/stop.sh` |
 
 启动脚本会：检查环境 → 创建 `.venv` 并安装锁定版本的依赖 → 生成 `.env`（默认：实盘关闭、无密钥时用固定测试响应）→
 初始化数据库 → 启动网页和后台工作进程 → 打开浏览器 `http://127.0.0.1:8710/`。
