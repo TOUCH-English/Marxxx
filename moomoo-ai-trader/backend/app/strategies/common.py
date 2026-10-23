@@ -64,7 +64,8 @@ def record_decision(s: Session, rt, ts: TickState, *, source: str, symbol: str, 
 
 def execute_buy(s: Session, rt, ts: TickState, wall_now: datetime, d: Decision, *, stop: Decimal | None,
                 take_profit: Decimal | None, max_hold_days: int | None, target_pct: Decimal | None,
-                max_price: Decimal | None, intent_key: str, reason: str = IntentReason.ENTRY) -> tuple[str, str]:
+                max_price: Decimal | None, intent_key: str, reason: str = IntentReason.ENTRY,
+                min_reward_risk: Decimal | None = None) -> tuple[str, str]:
     inst = rt.provider.instrument(d.symbol)
     q = rt.quote(d.symbol)
     sv = ts.strategy
@@ -73,6 +74,7 @@ def execute_buy(s: Session, rt, ts: TickState, wall_now: datetime, d: Decision, 
         strategy_version=d.strategy_version, strategy_version_id=sv.id if sv else 0, decision_id=d.id,
         take_profit_price=take_profit, max_hold_days=max_hold_days, target_position_pct=target_pct,
         max_price=max_price, signal_time=d.as_of, signal_expires_at=d.expires_at, reason=reason,
+        min_reward_risk=min_reward_risk,
     )
     intent, res = create_entry_intent(s, risk_ctx(rt, ts, wall_now), req)
     d.rule_calc = res.as_json()

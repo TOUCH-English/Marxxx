@@ -124,7 +124,7 @@ def test_one_position_per_industry(env):
     _spy(prov, weak=False)
     for sym, base in (("US.XOM", 100.0), ("US.CVX", 120.0), ("US.MSF", 80.0)):
         prov.add(sym, trend(80, base, 0.05), str(base + 4))
-    ai = ScriptedAI(lambda p: _buy(p, symbol="US.XOM", stop_loss_price="100.00", take_profit_price="112.00",
+    ai = ScriptedAI(lambda p: _buy(p, symbol="US.XOM", stop_loss_price="100.00", take_profit_price="113.00",
                                    evidence_ids=[e for c in p["candidates"] if c["symbol"] == "US.XOM" for e in c["evidence_ids"][:1]])
                     if any(c["symbol"] == "US.XOM" for c in p["candidates"]) else _buy(p))
     pid, eng, fb, clock = _run(prov, ["US.XOM", "US.CVX", "US.MSF"], ai, n=4)
@@ -151,7 +151,7 @@ def test_entry_block_reason_checks_industry_directly(env):
     _spy(prov, weak=False)
     prov.add("US.XOM", trend(80, 100.0, 0.05), "104")
     prov.add("US.CVX", trend(80, 120.0, 0.05), "124")
-    ai = ScriptedAI(lambda p: _buy(p, symbol="US.XOM", stop_loss_price="100.00", take_profit_price="112.00",
+    ai = ScriptedAI(lambda p: _buy(p, symbol="US.XOM", stop_loss_price="100.00", take_profit_price="113.00",
                                    evidence_ids=[e for c in p["candidates"] if c["symbol"] == "US.XOM" for e in c["evidence_ids"][:1]])
                     if any(c["symbol"] == "US.XOM" for c in p["candidates"]) else _buy(p))
     pid, eng, fb, clock = _run(prov, ["US.XOM", "US.CVX"], ai, n=4)

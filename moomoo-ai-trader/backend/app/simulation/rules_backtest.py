@@ -37,8 +37,9 @@ BENCHMARK = "US.SPY"
 ASSUMPTIONS = [
     "信号只用当日（含）之前已收盘的日 K；委托最早在下一个交易日开盘成交。",
     "买入限价 = 开盘价 ×(1+入场溢价)，按开盘价 + 滑点成交；卖出按开盘价 − 滑点成交。",
-    "同一根 K 线同时触及止损与止盈时，保守假设先止损；跳空低开穿过止损按开盘价 − 滑点成交，亏损可能超过 1R。",
-    "使用前复权价格：拆股与分红不会造成假涨跌，但绝对价格与当时不同（价格区间筛选有轻微偏差）。",
+    "同一根 K 线同时触及止损与止盈时，保守假设先止损；跳空低开穿过止损按开盘价 − 滑点成交，亏损可能超过 1R。买入当天也检查止损止盈。",
+    "回撤和停止线按当日最低净值判断（保守假设所有持仓同时在当日最低价）。",
+    "指标与成交用前复权价格（拆股、分红不会造成假涨跌）；价格区间、成交额和「买不买得起」按当时的原始价判断。",
     "股票清单固定为当前的大市值美股：历史上退市或跌出大盘股的公司不在里面（幸存者偏差，结果偏乐观）。",
     "没有历史财报日：不做「财报前不开仓 / 财报前卖出」，财报跳空风险没有被回避。",
     "没有历史盘口：不检查买卖价差；成交按日 K 估计，真实成交可能更差。",
@@ -56,6 +57,7 @@ class RulesPolicy:
     reduce_gain_atr: Decimal = Decimal("1.5")
     reduce_fraction: Decimal = Decimal("0.5")
     exit_ret_5d_below: float = -0.04
+    target_position_pct: Decimal = Decimal("0.08")  # 固定测试响应给出的目标仓位，线上同样受它约束
     regime_filter: bool = True
     one_position_per_industry: bool = True
 
@@ -87,12 +89,17 @@ class RulesResult:
 
 
 # ------------------------------------------------------------------ 数据
-def load_history(csv_path: Path) -> dict[str, list[Bar]]:
-    """读取回放格式 CSV（symbol,date,open,high,low,close,volume,adj_factor[,suspended]），返回前复权后的日 K。"""
+def load_history(csv_path: Path, factors: dict[str, dict[date, Decimal]] | None = None) -> dict[str, list[Bar]]:
+    """读取回放格式 CSV（symbol,date,open,high,low,close,volume,adj_factor[,suspended]），返回前复权后的日 K。
+
+    传入 factors 时顺便记下每天的复权因子（原始价 = 复权价 ÷ 因子），用于价格区间筛选和「买不买得起」。
+    """
     out: dict[str, list[Bar]] = {}
     with Path(csv_path).open(encoding="utf-8") as f:
         for r in csv.DictReader(f):
             fac = D(r.get("adj_factor") or "1")
+            if factors is not None:
+                factors.setdefault(r["symbol"], {})[date.fromisoformat(r["date"])] = fac
             out.setdefault(r["symbol"], []).append(Bar(
                 symbol=r["symbol"], day=date.fromisoformat(r["date"]), open=D(r["open"]) * fac, high=D(r["high"]) * fac,
                 low=D(r["low"]) * fac, close=D(r["close"]) * fac, volume=int(float(r["volume"])),
@@ -103,18 +110,21 @@ def load_history(csv_path: Path) -> dict[str, list[Bar]]:
 
 
 # ------------------------------------------------------------------ 规则
-def pool_for_day(hist: dict[str, list[Bar]], rules: dict) -> list[tuple[str, float]]:
-    """线上每日自动股票池的复刻：价格区间 + 20 日平均成交额，按 0.6×20日 + 0.4×60日 涨幅排名。"""
+def pool_for_day(hist: dict[str, list[Bar]], rules: dict, factors: dict[str, dict[date, Decimal]] | None = None
+                 ) -> list[tuple[str, float]]:
+    """线上每日自动股票池的复刻：价格区间 + 20 日平均成交额（都按当时的原始价），按 0.6×20日 + 0.4×60日 涨幅排名。"""
     lo, hi = D(rules["min_price"]["US"]), D(rules["max_price"]["US"])
     min_turn = D(rules["min_avg_turnover_20d"]["US"])
+    factors = factors or {}
     ranked = []
     for sym, bars in hist.items():
         if sym == BENCHMARK or len(bars) < 61 or bars[-1].suspended:
             continue
+        fac = factors.get(sym, {})
         last = bars[-1].close
-        if not lo <= last <= hi:
+        if not lo <= last / fac.get(bars[-1].day, Decimal(1)) <= hi:
             continue
-        turnover = sum(b.close * b.volume for b in bars[-20:]) / 20
+        turnover = sum(b.close / fac.get(b.day, Decimal(1)) * b.volume for b in bars[-20:]) / 20
         if turnover < min_turn:
             continue
         r20 = float(last / bars[-21].close - 1)
@@ -154,11 +164,37 @@ def exit_signal(bars: list[Bar], pos: _Pos, pol: RulesPolicy) -> Decimal | None:
     return None
 
 
+# ------------------------------------------------------------------ 仓数（与 risk/engine.evaluate_entry 相同的约束）
+def size_entry(*, eq: Decimal, cash: Decimal, px: Decimal, stop: Decimal, open_risk: Decimal, exposure: Decimal,
+               drawdown_from_capital: Decimal, max_loss: Decimal | None, fee_schedule: dict | None, per_trade: Decimal,
+               daily_loss: Decimal, pos_cap: Decimal, tot_cap: Decimal, target_pct: Decimal | None, slip: Decimal) -> int:
+    """风险预算 = min(单笔上限, 停止线剩余 − 在途风险, 当日亏损额度 − 在途风险)，且买卖手续费也算进风险；
+    再受单只上限、目标仓位、总投入和现金（含买入费用）约束。美股每手 1 股。"""
+    budget = eq * per_trade
+    if max_loss is not None:
+        budget = min(budget, max(Decimal(0), max_loss - drawdown_from_capital - open_risk))
+    budget = min(budget, max(Decimal(0), eq * daily_loss - open_risk))
+
+    def fees(q: int) -> tuple[Decimal, Decimal]:
+        return (calc_fees(fee_schedule, "BUY", q, px) or Decimal(0), calc_fees(fee_schedule, "SELL", q, stop) or Decimal(0))
+
+    per_share = px - stop + px * slip
+    q_risk = int(budget / per_share) if per_share > 0 else 0
+    while q_risk > 0 and per_share * q_risk + sum(fees(q_risk)) > budget:
+        q_risk -= 1
+    cap = min(pos_cap, target_pct) if target_pct is not None else pos_cap
+    q_cash = int(cash / px)
+    while q_cash > 0 and px * q_cash + fees(q_cash)[0] > cash:
+        q_cash -= 1
+    return max(0, min(q_risk, int(eq * cap / px), int(max(Decimal(0), eq * tot_cap - exposure) / px), q_cash))
+
+
 # ------------------------------------------------------------------ 回测
 def run_rules_backtest(history: dict[str, list[Bar]], *, start: date, end: date, capital: Decimal,
                        max_loss: Decimal | None, fee_schedule: dict | None, risk_params: dict,
                        policy: RulesPolicy | None = None, pool_rules: dict | None = None,
-                       industries: dict[str, str] | None = None, entry_premium_bps: int = 30) -> RulesResult:
+                       industries: dict[str, str] | None = None, entry_premium_bps: int = 30,
+                       factors: dict[str, dict[date, Decimal]] | None = None) -> RulesResult:
     pol = policy or RulesPolicy()
     rules = pool_rules or AUTO_US_POOL_RULES
     industries = industries or {}
@@ -172,6 +208,8 @@ def run_rules_backtest(history: dict[str, list[Bar]], *, start: date, end: date,
     max_positions = int(risk_params.get("max_positions", 3))
     max_new = int(risk_params.get("max_daily_new_orders", 3))
     daily_loss = D(risk_params.get("daily_loss_pct", "0.01"))
+    dd_limit = D(risk_params.get("max_drawdown_pct", "0.05"))
+    factors = factors or {}
 
     idx = {s: {b.day: i for i, b in enumerate(bs)} for s, bs in history.items()}
     days = [b.day for b in history[BENCHMARK] if start <= b.day <= end]
@@ -185,6 +223,10 @@ def run_rules_backtest(history: dict[str, list[Bar]], *, start: date, end: date,
     res = RulesResult()
     stats = {"risk_off_days": 0, "skipped_industry": 0, "skipped_size": 0, "skipped_slots": 0, "no_fill": 0}
     halted_on: date | None = None
+    halt_reason = ""
+    notes: list[str] = []
+    if pol.regime_filter and len([b for b in history[BENCHMARK] if b.day < start]) < 200:
+        notes.append("开始日之前 SPY 日 K 不足 200 根：前一段时间无法判断大盘，大盘过滤没有生效")
     peak = cash
     mdd = Decimal(0)
     prev_exposure_frac = Decimal(0)
@@ -268,16 +310,16 @@ def run_rules_backtest(history: dict[str, list[Bar]], *, start: date, end: date,
             stop = round_to_tick("US", px - stop_dist, "down")
             tp = round_to_tick("US", px + pol.reward_risk * stop_dist, "up")
             eq = equity()
-            orisk = open_risk()
-            budget = eq * per_trade
-            if max_loss is not None:
-                budget = min(budget, D(max_loss) - max(Decimal(0), D(capital) - eq) - orisk)
-            budget = min(budget, eq * daily_loss - orisk)
-            per_share = px - stop + px * slip
-            exposure = sum(p.qty * mark(s) for s, p in positions.items())
-            q = min(int(budget / per_share) if budget > 0 and per_share > 0 else 0,
-                    int(eq * pos_cap / px), int(max(Decimal(0), eq * tot_cap - exposure) / px),
-                    int(cash / (px * Decimal("1.01"))))
+            # 线上会跳过一股（按当时原始价）都超过单只上限的股票
+            if px / factors.get(sym, {}).get(d, Decimal(1)) > eq * pos_cap:
+                stats["skipped_size"] += 1
+                continue
+            q = size_entry(eq=eq, cash=cash, px=px, stop=stop, open_risk=open_risk(),
+                           exposure=sum(p.qty * mark(s) for s, p in positions.items()),
+                           drawdown_from_capital=max(Decimal(0), D(capital) - eq),
+                           max_loss=None if max_loss is None else D(max_loss), fee_schedule=fee_schedule,
+                           per_trade=per_trade, daily_loss=daily_loss, pos_cap=pos_cap, tot_cap=tot_cap,
+                           target_pct=pol.target_position_pct, slip=slip)
             if q < 1 or stop <= 0:
                 stats["skipped_size"] += 1
                 continue
@@ -288,18 +330,18 @@ def run_rules_backtest(history: dict[str, list[Bar]], *, start: date, end: date,
             res.fills.append({"day": d.isoformat(), "symbol": sym, "side": "BUY", "qty": q, "price": str(px),
                               "fee": str(fee), "reason": f"规则买入（动量分 {info['score']:.2f}）"})
         pending_buys = []
-        # 2) 盘中保护（买入当日不触发，和日 K 回测器一致）
+        # 2) 盘中保护：开盘买入后，当天余下的走势也会触发止损/止盈（线上止损在成交后立即生效）
         for sym in list(positions):
             p = positions[sym]
             b = bar(sym, d)
-            if b is None or b.suspended or p.entry_day >= d:
+            if b is None or b.suspended:
                 continue
             if b.low <= p.stop:
-                gap = b.open < p.stop
+                gap = b.open < p.stop and p.entry_day < d
                 sell(sym, p.qty, (b.open if gap else p.stop) * (1 - slip), d, "止损（跳空）" if gap else "止损")
             elif b.high >= p.take_profit:
-                sell(sym, p.qty, max(b.open, p.take_profit) * (1 - slip), d, "止盈")
-            elif (d - p.entry_day).days >= pol.max_holding_days:
+                sell(sym, p.qty, (max(b.open, p.take_profit) if p.entry_day < d else p.take_profit) * (1 - slip), d, "止盈")
+            elif p.entry_day < d and (d - p.entry_day).days >= pol.max_holding_days:
                 sell(sym, p.qty, b.close * (1 - slip), d, "持有期限")
         # 3) 收盘：估值、基准、停止线
         for sym in history:
@@ -315,14 +357,19 @@ def run_rules_backtest(history: dict[str, list[Bar]], *, start: date, end: date,
             spy_prev = spy_bar.close
         exposure = sum(p.qty * mark(s) for s, p in positions.items())
         prev_exposure_frac = exposure / eq if eq > 0 else Decimal(0)
-        peak = max(peak, eq)
+        # 当日最低净值（保守：所有持仓同时在当日最低价），线上的回撤、停止线按盘中净值判断
+        low_eq = cash + sum(p.qty * (bar(s, d).low if bar(s, d) is not None else mark(s)) for s, p in positions.items())
         if peak > 0:
-            mdd = max(mdd, (peak - eq) / peak)
+            dd_today = (peak - min(low_eq, eq)) / peak
+            mdd = max(mdd, dd_today)
+            if halted_on is None and dd_today >= dd_limit:
+                halted_on, halt_reason = d, f"回撤达到 {dd_limit * 100:.0f}% 暂停线（线上需人工复核才恢复）"
+        peak = max(peak, eq)
         res.equity_curve.append({"day": d.isoformat(), "equity": str(eq.quantize(Decimal("0.01"))),
                                  "exposure_pct": str((prev_exposure_frac * 100).quantize(Decimal("0.1"))),
                                  "spy_index": str(spy_curve.quantize(Decimal("0.0001")))})
-        if max_loss is not None and halted_on is None and D(capital) - eq >= D(max_loss):
-            halted_on = d
+        if max_loss is not None and halted_on is None and D(capital) - min(low_eq, eq) >= D(max_loss):
+            halted_on, halt_reason = d, "累计亏损达到停止线（可承受亏损）"
         # 4) 收盘后决策（只用截至今日的 K 线）
         for sym, p in positions.items():
             frac = exit_signal(upto(sym, d), p, pol)
@@ -336,7 +383,7 @@ def run_rules_backtest(history: dict[str, list[Bar]], *, start: date, end: date,
             continue
         hist_today = {s: upto(s, d, 300) for s in history if idx[s].get(d) is not None}
         cands = []
-        for sym, _ in pool_for_day(hist_today, rules):
+        for sym, _ in pool_for_day(hist_today, rules, factors):
             if sym in positions:
                 continue
             sig = entry_signal(hist_today[sym], pol)
@@ -347,6 +394,8 @@ def run_rules_backtest(history: dict[str, list[Bar]], *, start: date, end: date,
     res.metrics = _metrics(res, capital=D(capital), end_equity=equity(), mdd=mdd, spy=spy_curve - 1,
                            spy_matched=matched - 1, tot_cap=tot_cap, stats=stats, halted_on=halted_on,
                            days=days, open_positions=len(positions))
+    res.metrics["halt_reason"] = halt_reason
+    res.metrics["warnings"] = notes
     return res
 
 
@@ -362,7 +411,7 @@ def _metrics(res: RulesResult, *, capital: Decimal, end_equity: Decimal, mdd: De
     stop_rs = [D(t["r"]) for t in trades if t["r"] is not None and t["exit_reason"].startswith("止损")]
     gross_win = sum((x for x in pnls if x > 0), Decimal(0))
     gross_loss = -sum((x for x in pnls if x < 0), Decimal(0))
-    fees = sum((D(f["fee"]) for f in res.fills), Decimal(0))
+    fees = sum((D(t["fees"]) for t in trades), Decimal(0))  # 只算已平仓交易，和成绩单一致
     gross_before = sum((D(t["pnl"]) + D(t["fees"]) for t in trades if D(t["pnl"]) + D(t["fees"]) > 0), Decimal(0))
     n = len(trades)
     ret = end_equity / capital - 1
@@ -373,8 +422,8 @@ def _metrics(res: RulesResult, *, capital: Decimal, end_equity: Decimal, mdd: De
     enough = n >= sc.GATE_B_MIN_TRADES
     gate_b = sc._gate([
         sc._item("已平仓交易数", f"{n} 笔", f"≥ {sc.GATE_B_MIN_TRADES} 笔", st(True, enough)),
-        sc._item("扣费后收益 vs 资金占用匹配的 SPY", f"{_pct(ret)} vs {_pct(spy_matched)}", "不低于基准",
-                 st(ret >= spy_matched, enough)),
+        sc._item("扣费后收益 vs 按总投入上限折算的 SPY", f"{_pct(ret)} vs {_pct(spy * tot_cap)}", "不低于基准",
+                 st(ret >= spy * tot_cap, enough), "和线上成绩单同一算法"),
         sc._item("平均每笔 R", f"{avg_r:.2f}R" if avg_r is not None else "—", f"≥ {sc.MIN_AVG_R}R",
                  st(avg_r is not None and avg_r >= sc.MIN_AVG_R, enough and avg_r is not None)),
         sc._item("盈亏比（总盈利 ÷ 总亏损）", f"{pf:.2f}" if pf is not None else "—", f"≥ {sc.MIN_PROFIT_FACTOR}",
@@ -396,7 +445,7 @@ def _metrics(res: RulesResult, *, capital: Decimal, end_equity: Decimal, mdd: De
         "label": "【历史规则回测｜不用 AI 的固定规则（对照组）】",
         "period": f"{days[0].isoformat()} ~ {days[-1].isoformat()}", "sessions": len(days),
         "capital": str(capital), "final_equity": str(end_equity.quantize(Decimal("0.01"))),
-        "return_pct": _pct(ret), "spy_return_pct": _pct(spy), "spy_matched_return_pct": _pct(spy_matched),
+        "return_pct": _pct(ret), "spy_return_pct": _pct(spy), "spy_exposure_matched_return_pct": _pct(spy_matched),
         "spy_cap_matched_return_pct": _pct(spy * tot_cap),
         "max_drawdown_pct": _pct(mdd), "closed_trades": n,
         "win_rate_pct": _pct(Decimal(len([x for x in pnls if x > 0])) / n) if n else "—",
@@ -417,16 +466,18 @@ def report_markdown(m: dict, *, title: str = "历史规则回测报告") -> str:
     lines = [f"# {title}", "", m["label"], "",
              f"- 区间：{m['period']}（{m['sessions']} 个交易日）",
              f"- 起始资金：{m['capital']} 美元 → 结束：{m['final_equity']} 美元（{m['return_pct']}，已扣手续费）",
-             f"- 同期 SPY 买入持有：{m['spy_return_pct']}；按实际资金占用折算的 SPY：{m['spy_matched_return_pct']}"
-             f"（平均投入 {m['avg_exposure_pct']}）",
+             f"- 同期 SPY 买入持有：{m['spy_return_pct']}；按总投入上限折算的 SPY：{m['spy_cap_matched_return_pct']}"
+             f"（关卡 B 用这个比）；按实际平均投入 {m['avg_exposure_pct']} 折算：{m['spy_exposure_matched_return_pct']}（仅供参考）",
              f"- 最大回撤：{m['max_drawdown_pct']}；已平仓 {m['closed_trades']} 笔，胜率 {m['win_rate_pct']}，"
              f"平均每笔 {m['avg_r'] or '—'}R，盈亏比 {m['profit_factor'] or '—'}",
              f"- 手续费：{m['fees_usd']} 美元（占毛利 {m['fee_share_of_gross_pct']}）"]
     if m.get("stop_line_hit_on"):
-        lines.append(f"- ⚠️ {m['stop_line_hit_on']} 亏损达到停止线，之后不再开新仓")
+        lines.append(f"- ⚠️ {m['stop_line_hit_on']} {m.get('halt_reason') or '触发暂停'}，之后不再开新仓")
+    lines += [f"- ⚠️ {w}" for w in m.get("warnings", [])]
     lines += ["", "## 每年对比", "", "| 年份 | 策略 | SPY |", "|---|---|---|"]
     lines += [f"| {y} | {v['strategy']} | {v['spy']} |" for y, v in m["by_year"].items()]
-    lines += ["", f"## 关卡 B（有没有优势）：{m['gate_b']['status_cn']}", "", "| 项目 | 数值 | 标准 | 结果 |", "|---|---|---|---|"]
+    lines += ["", f"## 关卡 B（有没有优势）：{m['gate_b']['status_cn']}（历史回测只作参考）", "",
+              "股票清单是今天的大公司，历史回测偏乐观；最终以纸上交易的成绩单为准。", "", "| 项目 | 数值 | 标准 | 结果 |", "|---|---|---|---|"]
     lines += [f"| {i['name']} | {i['value']} | {i['target']} | {i['status_cn']} |" for i in m["gate_b"]["items"]]
     lines += ["", "## 重要假设与局限", ""] + [f"- {a}" for a in m["assumptions"]]
     return "\n".join(lines) + "\n"

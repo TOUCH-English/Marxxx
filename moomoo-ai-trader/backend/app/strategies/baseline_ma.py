@@ -19,6 +19,7 @@ from ..db.session import write_session
 from ..db.types import D
 from ..market_data.features import atr, sma
 from ..portfolio import ledger
+from . import market_context as mctx
 from .common import TickState, execute_buy, execute_sell, record_decision
 
 DEFAULT_BASELINE_PARAMS: dict[str, Any] = {
@@ -106,6 +107,10 @@ def run(rt, ts: TickState, wall_now: datetime) -> None:
                 if overlay == "veto" and not agrees:
                     d.outcome, d.outcome_reason = DecisionOutcome.NO_ACTION, f"AI 否决了本次新开仓（实验模式）：{why[:120]}"
                     continue
+            why = mctx.entry_block_reason(s, rt, ts.portfolio.id, sym) if inst.market == "US" else None
+            if why:  # 与 AI 策略同样的大盘、财报、同行业检查
+                d.outcome, d.outcome_reason = DecisionOutcome.RISK_BLOCKED, why
+                continue
             d.outcome, d.outcome_reason = execute_buy(
                 s, rt, ts, wall_now, d, stop=stop, take_profit=None, max_hold_days=int(p["max_hold_days"]),
                 target_pct=None, max_price=None, intent_key=f"BASE:{sv}:{sym}:{sig['signal_day']}:BUY")

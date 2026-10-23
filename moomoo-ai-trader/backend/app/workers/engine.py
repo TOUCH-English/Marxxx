@@ -255,7 +255,9 @@ class TradingEngine:
             ts.health_blocks.append(recon["error"])
         # 5. 净值与锁定
         self._equity_and_locks(rt, ts)
-        # 6. 保护性退出（无论授权、暂停、AI 状态），并立即提交，不受后面步骤出错影响
+        # 6. 保护性退出（无论授权、暂停、AI 状态），并立即提交，不受后面步骤出错影响。
+        #    财报日历在写事务之外先取好（每个美东日期一次），避免在写锁内访问 OpenD
+        mctx.earnings(rt)
         self._protections(rt, ts)
         self._submit_created(rt)
         # 7. 订单维护
@@ -471,6 +473,15 @@ class TradingEngine:
                 OrderIntent.portfolio_id == rt.portfolio_id, OrderIntent.status == OrderStatus.UNKNOWN)).first()
             locks.try_release_daily(s, rt.portfolio_id, now, health_ok)
 
+    @staticmethod
+    def _earnings_exit(rt: Runtime, pos, now: datetime) -> str | None:
+        """财报前退出属于附加规则：出错只记日志，不能影响止损等其他保护。"""
+        try:
+            return mctx.exit_before_earnings(rt, pos, now)
+        except Exception:
+            log.exception("财报前退出检查出错（%s），本轮跳过该规则", pos.symbol)
+            return None
+
     def _protections(self, rt: Runtime, ts: TickState) -> None:
         now = rt.now()
         with write_session(self.ns) as s:
@@ -507,7 +518,7 @@ class TradingEngine:
                 elif ts.auth is not None and not ts.auth.overnight and \
                         (mtc := self.calendar.minutes_to_close(pos.market, now)) is not None and mtc <= 20:
                     reason, why = IntentReason.EXIT_TIME, "授权不隔夜：收市前退出"
-                elif pos.market == "US" and (ew := mctx.exit_before_earnings(rt, pos, now)):
+                elif pos.market == "US" and (ew := self._earnings_exit(rt, pos, now)):
                     reason, why = IntentReason.EXIT_TIME, ew
                 if reason is None:
                     continue

@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import time
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
@@ -18,6 +19,7 @@ from ..db.models import RiskReservation
 from ..portfolio import ledger
 
 BENCHMARK = "US.SPY"
+UNKNOWN_RETRY_S = 600  # 取不到 SPY 时，10 分钟后重试（不能整天都当作「未知」而放开大盘过滤）
 
 
 def us_day(now: datetime) -> date:
@@ -25,12 +27,14 @@ def us_day(now: datetime) -> date:
 
 
 def market_regime(rt) -> dict | None:
-    """SPY 的 20/60 日涨跌、相对 200 日均线的位置。每个美东日期计算一次。"""
+    """SPY 的 20/60 日涨跌、相对 200 日均线的位置。每个美东日期计算一次；取不到时 10 分钟后重试。"""
     now = rt.now()
     day = us_day(now)
     cached = getattr(rt, "regime", None)
-    if cached is not None and cached[0] == day:
+    if cached is not None and cached[0] == day and (cached[1] is not None or
+                                                     time.monotonic() - getattr(rt, "regime_try", 0.0) < UNKNOWN_RETRY_S):
         return cached[1]
+    rt.regime_try = time.monotonic()
     try:
         bars = rt.provider.daily_bars(BENCHMARK, now, 220)
     except Exception:
@@ -117,8 +121,12 @@ def exit_before_earnings(rt, pos, now: datetime) -> str | None:
     nxt = today + timedelta(days=1)
     while not rt.calendar.is_session_day(pos.market, nxt) and nxt < today + timedelta(days=10):
         nxt += timedelta(days=1)
-    before_open_today = info["date"] == today and info["pub_type"].upper() == "BEFORE"
-    if before_open_today or info["date"] not in (today, nxt):
+    d = info["date"]
+    # 今天盘前已公布的不用再退出；今天盘后/时间不明，或在下一个交易日之前（含周末、假日公布）都要在今天收市前退出
+    if d == today:
+        if str(info.get("pub_type", "")).upper() == "BEFORE":
+            return None
+    elif not today < d <= nxt:
         return None
     mtc = rt.calendar.minutes_to_close(pos.market, now)
     if mtc is None or mtc > 30:

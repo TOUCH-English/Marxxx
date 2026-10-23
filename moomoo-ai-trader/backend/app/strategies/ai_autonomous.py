@@ -15,7 +15,7 @@ from typing import Any
 from sqlalchemy import select
 
 from ..ai.budget import budget_ok
-from ..ai.validate import ValidationContext, parse_and_validate
+from ..ai.validate import MIN_REWARD_RISK, ValidationContext, parse_and_validate
 from ..config import get_settings
 from ..core.enums import DecisionAction, DecisionOutcome
 from ..db.models import AICallLog, Decision, NewsItem
@@ -255,7 +255,7 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
                    "max_target_position_pct": str(p["max_target_position_pct"]),
                    "max_holding_days": int(p["max_holding_days"]), "max_valid_minutes": int(p["max_valid_minutes"]),
                    "no_averaging_down": True, "no_short": True, "no_margin": True,
-                   "min_reward_risk": "2", "min_stop_pct": "0.015",
+                   "min_reward_risk": str(MIN_REWARD_RISK), "min_stop_pct": "0.015",
                    "fixture_params": p.get("fixture_params", {})},
         "account": {"currency": {"MY": "MYR", "US": "USD"}[market], "equity": str(ev.equity.quantize(Decimal('0.01'))),
                     "cash_available": str((ev.cash - ev.reserved).quantize(Decimal('0.01'))),
@@ -452,7 +452,8 @@ def _buy(s, rt, ts, wall_now, d: Decision) -> None:
         s, rt, ts, wall_now, d, stop=D(ex["stop_loss_price"]) if ex.get("stop_loss_price") else None,
         take_profit=D(ex["take_profit_price"]) if ex.get("take_profit_price") else None,
         max_hold_days=ex.get("max_holding_days"), target_pct=D(prop["target_position_pct"]) if prop.get("target_position_pct") else None,
-        max_price=max_price, intent_key=f"AI:{d.id}:BUY")
+        max_price=max_price, intent_key=f"AI:{d.id}:BUY",
+        min_reward_risk=MIN_REWARD_RISK if d.source == "AI_MODEL" else None)
 
 
 def check_waiting(rt, ts: TickState, wall_now: datetime) -> None:

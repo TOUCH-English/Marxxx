@@ -29,6 +29,8 @@ IND_PATH = OUT / "us_industries.json"
 META_PATH = OUT / "us_meta.json"
 
 # 当前的大市值、高成交额美股（跨行业）。这是「现在」的名单，回测有幸存者偏差，报告会写明。
+RESERVE_DEFAULT = 150
+
 DEFAULT_SYMBOLS = [
     "US.SPY",
     "US.AAPL", "US.MSFT", "US.NVDA", "US.GOOGL", "US.AMZN", "US.META", "US.AVGO", "US.AMD", "US.ORCL", "US.CRM",
@@ -66,7 +68,7 @@ def _kline(ctx, m, sym: str, start: str, end: str, autype) -> list[dict]:
         if ret != m.RET_OK:
             raise RuntimeError(str(df))
         rows += df.to_dict("records")
-        time.sleep(0.6)  # 历史 K 线接口限频（每 30 秒 60 次）
+        time.sleep(1.0)  # 历史 K 线接口限频每 30 秒 60 次；放慢一半，给自动交易留余量
         if key is None:
             return rows
 
@@ -93,7 +95,7 @@ def cmd_check(_args) -> int:
                                   "error": None if ret == m.RET_OK else str(df)[:200]}
         except Exception as e:
             out["owner_plate"] = {"ok": False, "error": str(e)[:200]}
-        if "US.SPY" in seen or remain > 0:
+        if "US.SPY" in seen or remain > RESERVE_DEFAULT:
             rows = _kline(ctx, m, "US.SPY", (today - timedelta(days=420)).isoformat(), today.isoformat(), m.AuType.QFQ)
             out["spy_daily"] = {"bars": len(rows), "enough_for_200d": len(rows) >= 200,
                                 "last": str(rows[-1]["time_key"])[:10] if rows else None}
@@ -103,7 +105,18 @@ def cmd_check(_args) -> int:
     return 0
 
 
+def _us_market_open() -> bool:
+    from app.core.calendar import get_calendar
+
+    cal = get_calendar()
+    now = datetime.now(timezone.utc)
+    return any(a <= now < b for a, b in cal.windows("US", cal.local_date("US", now)))
+
+
 def cmd_fetch(args) -> int:
+    if _us_market_open() and not args.allow_market_hours:
+        print("美股正在交易：为了不和自动交易抢行情接口，请在收盘后再下载（或加 --allow-market-hours）。")
+        return 2
     m, ctx = _ctx()
     OUT.mkdir(parents=True, exist_ok=True)
     end = date.today()
@@ -132,10 +145,20 @@ def cmd_fetch(args) -> int:
             except Exception as e:
                 print(f"  {sym} 失败：{e}")
                 continue
-            for r in raw:
+            fac, missing = None, 0
+            for r in reversed(raw):  # 从最新往回：缺少复权价的日期沿用后一天的因子，不会混入原始价造成假跳空
                 k = str(r["time_key"])[:10]
                 close = Decimal(str(r["close"]))
-                fac = adj[k] / close if k in adj and close > 0 else Decimal(1)
+                if k in adj and close > 0:
+                    fac = adj[k] / close
+                else:
+                    missing += 1
+                r["_fac"] = fac if fac is not None else Decimal(1)
+            if missing:
+                print(f"  {sym}：{missing} 天缺少复权价，已沿用相邻日期的因子")
+            for r in raw:
+                k = str(r["time_key"])[:10]
+                fac = r["_fac"]
                 rows_out.append([sym, k, r["open"], r["high"], r["low"], r["close"], int(r["volume"]), f"{fac:.8f}"])
             print(f"  [{i}/{len(chosen)}] {sym}：{len(raw)} 根日 K")
         with CSV_PATH.open("w", newline="", encoding="utf-8") as f:
@@ -166,35 +189,51 @@ def cmd_fetch(args) -> int:
     return 0
 
 
-def _local_settings(args):
-    """读本机已确认的风控版本、官方费用表、当前授权的资金与停止线（只读）。"""
+def _read_db(notes: list[str]) -> tuple[dict | None, dict | None, Decimal | None, Decimal | None]:
+    """读本机当前授权的风控版本、官方费用表、资金与停止线（只读；没有数据库时不创建）。"""
     from sqlalchemy import select
 
-    from app.core.money import TEST_FEE_SCHEDULES
+    from app.config import get_settings
     from app.db.models import Authorization, FeeSchedule, RiskPolicyVersion
     from app.db.session import read_session
-    from app.risk.policy import SEED_RISK_PARAMS
 
-    risk, fee, cap, loss, notes = dict(SEED_RISK_PARAMS), None, None, None, []
-    try:
-        with read_session("sim") as s:
+    if not get_settings().db_path("sim").exists():
+        notes.append("本机没有模拟数据库，使用默认值")
+        return None, None, None, None
+    risk = fee = cap = loss = None
+    with read_session("sim") as s:
+        a = s.execute(select(Authorization).where(Authorization.status == "ACTIVE")
+                      .order_by(Authorization.id.desc()).limit(1)).scalar_one_or_none()
+        rp = s.get(RiskPolicyVersion, a.risk_policy_version_id) if a else None
+        if rp is None:
             rp = s.execute(select(RiskPolicyVersion).where(RiskPolicyVersion.confirmed_by_user.is_(True))
                            .order_by(RiskPolicyVersion.version.desc()).limit(1)).scalar_one_or_none()
-            if rp:
-                risk = dict(rp.params)
-                notes.append(f"风控：已确认的 v{rp.version}")
-            fs = s.execute(select(FeeSchedule).where(FeeSchedule.market == "US", FeeSchedule.active.is_(True))
-                           .order_by(FeeSchedule.id.desc()).limit(1)).scalar_one_or_none()
-            if fs:
-                fee = fs.params
-                notes.append(f"费用：{fs.source}" + ("（测试费率）" if fs.is_test else ""))
-            a = s.execute(select(Authorization).where(Authorization.status == "ACTIVE")
-                          .order_by(Authorization.id.desc()).limit(1)).scalar_one_or_none()
-            if a and "USD" in (a.capital or {}):
-                cap, loss = Decimal(str(a.capital["USD"])), Decimal(str(a.max_planned_loss.get("USD", "0"))) or None
-                notes.append(f"资金与停止线：当前授权 #{a.id}")
+        if rp:
+            risk = dict(rp.params)
+            notes.append(f"风控：v{rp.version}" + ("（当前授权使用的版本）" if a else "（最新已确认版本）"))
+        fs = s.execute(select(FeeSchedule).where(FeeSchedule.market == "US", FeeSchedule.active.is_(True))
+                       .order_by(FeeSchedule.id.desc()).limit(1)).scalar_one_or_none()
+        if fs:
+            fee = fs.params
+            notes.append(f"费用：{fs.source}" + ("（测试费率）" if fs.is_test else ""))
+        if a and "USD" in (a.capital or {}):
+            cap = Decimal(str(a.capital["USD"]))
+            loss = Decimal(str(a.max_planned_loss.get("USD", "0"))) or None
+            notes.append(f"资金与停止线：当前授权 #{a.id}")
+    return risk, fee, cap, loss
+
+
+def _local_settings(args):
+    from app.core.money import TEST_FEE_SCHEDULES
+    from app.risk.policy import SEED_RISK_PARAMS
+
+    notes: list[str] = []
+    try:
+        risk, fee, cap, loss = _read_db(notes)
     except Exception as e:
+        risk = fee = cap = loss = None
         notes.append(f"读取本机设置失败，改用默认值：{str(e).splitlines()[0][:120]}")
+    risk = risk or dict(SEED_RISK_PARAMS)
     if fee is None:
         fee = TEST_FEE_SCHEDULES["US"]
         notes.append("费用：未找到官方费用表，使用测试费率（结果仅供参考）")
@@ -209,13 +248,15 @@ def cmd_run(args) -> int:
     if not CSV_PATH.exists():
         print("还没有历史数据，请先运行：python scripts/history_backtest.py fetch")
         return 2
-    hist = load_history(CSV_PATH)
+    factors: dict = {}
+    hist = load_history(CSV_PATH, factors)
     inds = json.loads(IND_PATH.read_text(encoding="utf-8")) if IND_PATH.exists() else {}
     spy_days = [b.day for b in hist[BENCHMARK]]
     start = date.fromisoformat(args.start) if args.start else spy_days[min(260, len(spy_days) - 1)]
     end = date.fromisoformat(args.end) if args.end else spy_days[-1]
     risk, fee, cap, loss, notes = _local_settings(args)
-    kw = dict(start=start, end=end, capital=cap, max_loss=loss, fee_schedule=fee, risk_params=risk, industries=inds)
+    kw = dict(start=start, end=end, capital=cap, max_loss=loss, fee_schedule=fee, risk_params=risk, industries=inds,
+              factors=factors)
     main = run_rules_backtest(hist, **kw)
     no_regime = run_rules_backtest(hist, **kw, policy=RulesPolicy(regime_filter=False))
     no_halt = run_rules_backtest(hist, **(kw | {"max_loss": None}))
@@ -246,10 +287,11 @@ def main() -> int:
     sub.add_parser("check")
     f = sub.add_parser("fetch")
     f.add_argument("--years", type=float, default=3.0)
-    f.add_argument("--reserve", type=int, default=150, help="至少保留给自动交易的 K 线额度")
+    f.add_argument("--reserve", type=int, default=RESERVE_DEFAULT, help="至少保留给自动交易的 K 线额度")
+    f.add_argument("--allow-market-hours", action="store_true", help="允许在美股交易时段下载（默认不允许）")
     f.add_argument("--symbols", default="", help="逗号分隔，默认用内置大市值清单")
     r = sub.add_parser("run")
-    r.add_argument("--start", default="")
+    r.add_argument("--start", default="", help="例如纸上交易开始日，用来和 AI 的实际成绩比同一段时间")
     r.add_argument("--end", default="")
     r.add_argument("--capital", default="")
     r.add_argument("--max-loss", default="")

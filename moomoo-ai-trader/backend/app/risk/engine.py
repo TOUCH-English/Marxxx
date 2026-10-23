@@ -63,6 +63,7 @@ class EntryRequest:
     max_hold_days: int | None = None
     target_position_pct: Decimal | None = None
     max_price: Decimal | None = None
+    min_reward_risk: Decimal | None = None  # 真实模型的买入：按实际限价复核盈亏比
     signal_time: datetime | None = None
     signal_expires_at: datetime | None = None
     reason: str = IntentReason.ENTRY
@@ -233,6 +234,11 @@ def evaluate_entry(s: Session, ctx: RiskContext, req: EntryRequest) -> EntryResu
     if not add("止损价", stop is not None and stop > 0 and stop < limit, f"止损 {stop}" if stop else "缺少止损价，不生成买单"):
         return EntryResult(False, checks)
     dist = (limit - stop) / limit
+    if req.min_reward_risk is not None:
+        tp = req.take_profit_price
+        rr = (tp - limit) / (limit - stop) if tp is not None else None
+        add("盈亏比（按实际限价）", rr is not None and rr >= req.min_reward_risk,
+            f"{rr:.2f}（止盈 {tp}、限价 {limit}、止损 {stop}；要求 ≥ {req.min_reward_risk}）" if rr is not None else "缺少止盈价")
     add("止损距离", D(P["min_stop_distance_pct"]) <= dist <= D(P["max_stop_distance_pct"]),
         f"{dist * 100:.2f}%（允许 {D(P['min_stop_distance_pct']) * 100:.1f}%–{D(P['max_stop_distance_pct']) * 100:.0f}%）")
     # 11. 费用资料

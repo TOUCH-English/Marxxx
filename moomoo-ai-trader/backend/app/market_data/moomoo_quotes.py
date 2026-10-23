@@ -365,29 +365,37 @@ class MoomooQuoteProvider:
         self._kl_quota = (self._kl_quota[0], remain - 1, seen | {symbol})
         return True
 
+    def _fetch_daily(self, symbol: str, now: datetime, n: int) -> list[Bar]:
+        import moomoo as m
+
+        start = (now - timedelta(days=int(n * 1.6) + 10)).date().isoformat()
+        ctx = self._context()
+        ret, df, _ = ctx.request_history_kline(symbol, start=start, end=now.date().isoformat(),
+                                               ktype=m.KLType.K_DAY, autype=m.AuType.NONE, max_count=1000)
+        if ret != m.RET_OK:
+            raise RuntimeError(str(df))
+        # 前复权收盘价用于计算复权因子（指标用复权价，成交与持仓用原始价）
+        ret2, adf, _ = ctx.request_history_kline(symbol, start=start, end=now.date().isoformat(),
+                                                 ktype=m.KLType.K_DAY, autype=m.AuType.QFQ, max_count=1000)
+        adj = {str(r["time_key"])[:10]: D(r["close"]) for r in adf.to_dict("records")} if ret2 == m.RET_OK else {}
+        bars = []
+        for r in df.to_dict("records"):
+            k = str(r["time_key"])[:10]
+            close = D(r["close"])
+            fac = (adj[k] / close) if k in adj and close > 0 else Decimal(1)
+            bars.append(Bar(symbol=symbol, day=date.fromisoformat(k), open=D(r["open"]), high=D(r["high"]),
+                            low=D(r["low"]), close=close, volume=int(r["volume"]), adj_factor=fac))
+        return bars
+
     def daily_bars(self, symbol: str, now: datetime, n: int) -> list[Bar]:
         hit = self._bars.get(symbol)
         if (not hit or time.monotonic() - hit[0] > 600) and self._kl_quota_allows(symbol):
-            import moomoo as m
-
-            start = (now - timedelta(days=int(n * 1.6) + 10)).date().isoformat()
-            ctx = self._context()
-            ret, df, _ = ctx.request_history_kline(symbol, start=start, end=now.date().isoformat(),
-                                                   ktype=m.KLType.K_DAY, autype=m.AuType.NONE, max_count=1000)
-            if ret != m.RET_OK:
-                return []
-            # 前复权收盘价用于计算复权因子（指标用复权价，成交与持仓用原始价）
-            ret2, adf, _ = ctx.request_history_kline(symbol, start=start, end=now.date().isoformat(),
-                                                     ktype=m.KLType.K_DAY, autype=m.AuType.QFQ, max_count=1000)
-            adj = {str(r["time_key"])[:10]: D(r["close"]) for r in adf.to_dict("records")} if ret2 == m.RET_OK else {}
-            bars = []
-            for r in df.to_dict("records"):
-                k = str(r["time_key"])[:10]
-                close = D(r["close"])
-                fac = (adj[k] / close) if k in adj and close > 0 else Decimal(1)
-                bars.append(Bar(symbol=symbol, day=date.fromisoformat(k), open=D(r["open"]), high=D(r["high"]),
-                                low=D(r["low"]), close=close, volume=int(r["volume"]), adj_factor=fac))
-            self._bars[symbol] = (time.monotonic(), bars)
+            try:
+                self._bars[symbol] = (time.monotonic(), self._fetch_daily(symbol, now, n))
+            except Exception as e:  # 取不到时沿用上次的日 K（如有），不能让大盘过滤等因一次失败而失效
+                self._err = f"日K获取失败（{symbol}）：{e}"
+                if hit:  # 1 分钟后再试，期间用旧数据
+                    self._bars[symbol] = (time.monotonic() - 600 + RETRY_S, hit[1])
         if symbol not in self._bars:
             return []  # 额度不足且从未取过：不作为候选
         from ..core.calendar import get_calendar

@@ -7,7 +7,7 @@
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
-from ..core.calendar import MARKET_TZ
+from ..core.calendar import CCY_MARKET, MARKET_TZ, get_calendar
 from ..db.models import (
     AICallLog,
     AuditEvent,
@@ -139,11 +139,21 @@ def build(s: Session, portfolio_id: int, *, price_of, provider=None, ccy: str = 
 
     rows = list(s.execute(select(DailyEquity).where(DailyEquity.portfolio_id == portfolio_id, DailyEquity.currency == ccy)
                           .order_by(DailyEquity.day_myt)).scalars())
+    # 回撤：当日最低点只和「当天开始前的最高点」比（当天稍后才创新高时，不能拿后来的高点比早先的低点）；
+    # 收市值和包含当天的最高点比。这样只会少估盘中回撤，不会多估。
     mdd = Decimal(0)
+    prev_hwm: Decimal | None = None
     for r_ in rows:
+        before = max(prev_hwm, r_.start_equity) if prev_hwm is not None else r_.start_equity
+        if before > 0:
+            mdd = max(mdd, (before - r_.min_equity) / before)
         if r_.hwm_adjusted > 0:
-            mdd = max(mdd, (r_.hwm_adjusted - r_.min_equity) / r_.hwm_adjusted)
-    sessions = len(rows)
+            mdd = max(mdd, (r_.hwm_adjusted - r_.last_equity) / r_.hwm_adjusted)
+        prev_hwm = r_.hwm_adjusted
+    # 工作进程周末也在运行，每天都会有净值记录；只数真正的交易日
+    cal = get_calendar()
+    mkt = CCY_MARKET.get(ccy, "US")
+    sessions = sum(1 for r_ in rows if cal.is_session_day(mkt, date.fromisoformat(str(r_.day_myt))))
 
     prot_issues = s.execute(select(AuditEvent).where(AuditEvent.portfolio_id == portfolio_id, AuditEvent.created_at_utc >= start,
                                                      AuditEvent.action.in_(["NO_QUOTE", "PRICE_GAP_HOLD"]))).scalars().all()
@@ -163,7 +173,7 @@ def build(s: Session, portfolio_id: int, *, price_of, provider=None, ccy: str = 
         _item("AI 无效输出比例", pct(ai_rate) + f"（{ai_bad}/{ai_calls}）", f"< {MAX_INVALID_AI_RATE * 100:.0f}%",
               INSUFFICIENT if ai_calls < 20 else (PASS if ai_rate < MAX_INVALID_AI_RATE else FAIL)),
         _item("AI 费用", f"{ai_cost:.2f} 美元", f"每月 ≤ {month_budget} 美元",
-              PASS if ai_cost <= month_budget * max(1, sessions // 21 + 1) else FAIL),
+              PASS if ai_cost <= month_budget * ((now - start).days // 30 + 1) else FAIL),
         _item("止损交易的平均亏损", f"{avg_stop_r}R" if avg_stop_r is not None else "—", f"不差于 {MAX_STOP_LOSS_R}R",
               INSUFFICIENT if avg_stop_r is None else (PASS if avg_stop_r >= MAX_STOP_LOSS_R else FAIL),
               "比 -1R 差很多说明止损执行不到位（跳空或卖不出）"),
@@ -184,6 +194,9 @@ def build(s: Session, portfolio_id: int, *, price_of, provider=None, ccy: str = 
     ])
     if gate_b["status"] == PASS:
         verdict = "关卡 B 通过：可以进入下一阶段的准备（仍需完成上真钱前的清单）。"
+        if spy is not None and net_ret < spy:
+            verdict += (f"注意：同期把全部资金买入 SPY 的收益（{pct(spy)}）更高。策略最多只投入一部分资金、风险较小，"
+                        "所以按投入比例比较；但如果只看赚多少，指数基金更好。")
     elif gate_b["status"] == FAIL:
         verdict = "关卡 B 未通过：不建议用真钱。按约定，建议改为定期买入标普 500 指数基金，或先改进策略再测。"
     else:

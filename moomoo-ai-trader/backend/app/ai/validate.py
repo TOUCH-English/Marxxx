@@ -16,6 +16,9 @@ from pydantic import ValidationError
 from .schema import AIProposal, RawBatch, RawDecision
 
 
+MIN_REWARD_RISK = Decimal("2")
+
+
 @dataclass
 class ValidationContext:
     as_of: datetime
@@ -31,7 +34,7 @@ class ValidationContext:
     # 入场质量硬性规则（只对真实模型启用；固定测试响应不受影响）
     strict_entry: bool = False
     atr: dict[str, float] = field(default_factory=dict)  # symbol -> atr_14（价格单位）
-    min_reward_risk: Decimal = Decimal("2")
+    min_reward_risk: Decimal = MIN_REWARD_RISK
     min_stop_pct: Decimal = Decimal("0.015")
     earnings: dict = field(default_factory=dict)  # symbol -> 下次财报日期（date）
 
@@ -153,8 +156,13 @@ def _entry_quality(d, ctx: ValidationContext, last: Decimal | None) -> list[str]
     if d.take_profit_price is None:
         return ["买入必须给出止盈价（用于计算盈亏比）"]
     ref = d.entry_price if d.entry_price is not None else last
-    if ref is None or d.stop_loss_price is None or d.stop_loss_price >= ref:
+    # 买单最高可能按「最高买入价」成交：盈亏比和止损距离按最差的入场价算（独立审核发现）
+    if ref is not None and d.max_buy_price is not None:
+        ref = max(ref, d.max_buy_price)
+    if ref is None or d.stop_loss_price is None:
         return e
+    if d.stop_loss_price >= ref:
+        return [f"止损价 {d.stop_loss_price} 不低于入场价 {ref}"]
     risk = ref - d.stop_loss_price
     reward = d.take_profit_price - ref
     if reward <= 0 or reward / risk < ctx.min_reward_risk:

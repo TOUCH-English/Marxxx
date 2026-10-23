@@ -183,3 +183,34 @@ def test_watchlist_verifies_real_stock_before_paper_run_when_opend_is_up(env, mo
     n = len(ctx.snapshots)
     assert c.post("/api/sim/watchlist", json={"symbol": "US.DMOA"}, headers=h).status_code == 200
     assert len(ctx.snapshots) == n
+
+
+def test_daily_bars_keep_last_good_data_when_a_refresh_fails(clock, monkeypatch):
+    """独立审核：日 K 刷新失败时不能返回空（否则大盘过滤会失效一整天），沿用上次数据并在 1 分钟后重试。"""
+    from datetime import date, datetime, timezone
+    from decimal import Decimal
+
+    from app.market_data.base import Bar
+
+    prov, _ = _provider()
+    monkeypatch.setattr(prov, "_kl_quota_allows", lambda s: True)
+    good = [Bar("US.SPY", date(2026, 10, 20), Decimal(1), Decimal(1), Decimal(1), Decimal(500), 1)]
+    calls = {"n": 0}
+
+    def fetch(sym, now, n):
+        calls["n"] += 1
+        if calls["n"] > 1:
+            raise RuntimeError("rate limited")
+        return good
+
+    monkeypatch.setattr(prov, "_fetch_daily", fetch)
+    now = datetime(2026, 10, 21, 15, tzinfo=timezone.utc)
+    assert prov.daily_bars("US.SPY", now, 220) == good
+    clock["now"] += 601  # 缓存过期，刷新失败
+    assert prov.daily_bars("US.SPY", now, 220) == good and calls["n"] == 2
+    clock["now"] += 30
+    prov.daily_bars("US.SPY", now, 220)
+    assert calls["n"] == 2  # 1 分钟内不重试
+    clock["now"] += 31
+    prov.daily_bars("US.SPY", now, 220)
+    assert calls["n"] == 3
