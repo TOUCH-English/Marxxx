@@ -1,7 +1,7 @@
 # 验收结果（docs/acceptance.md）
 
 测试日期：2026-10-23（云端开发环境，Linux，Python 3.13.16）。
-运行命令：`.venv/bin/python -m pytest`（项目根目录）。结果：**66 passed**（约 60 秒）。
+运行命令：`.venv/bin/python -m pytest`（项目根目录）。结果：**66 passed**（约 60 秒）。前端构建与浏览器冒烟测试见「前端」一节。
 
 > 说明：本环境没有 moomoo OpenD、没有您的账户、没有 AI 密钥，也无法访问 openapi.moomoo.com。
 > 因此所有「券商」相关测试使用 **本地模拟撮合器** 或 **伪券商（故障注入）**；凡需要真实账户/行情/模型的项目单独列为「未验证」，
@@ -44,7 +44,14 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
 
 ## 前端
 
-<!-- FRONTEND_RESULTS -->
+- 构建：`cd frontend && npm run build`（`tsc -b && vite build`，TypeScript 严格模式）→ **通过，0 错误**。
+- 浏览器冒烟（Playwright + Chromium）：先用一键启动脚本 `python3 scripts/launcher.py start` 在全新数据目录启动网页和后台工作进程，再运行
+  `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers npm run e2e` → **1 passed（26 秒）**。覆盖：设置密码 → 退出 → 登录 →
+  启动向导开始演示 → 等到 AI 自动决策/持仓出现 → 逐页访问全部页面 → 只读诊断 → 证券图表 → 决策详情 → 运行回测 →
+  点「暂停新开仓」并通过 API 确认状态改变 → 恢复 → 切换到实盘页确认「真实交易在部署配置中关闭」横幅；**全程无控制台错误**。
+- 再次输入密码（428）流程：拦截请求模拟一次 428 → 弹窗 → 错误密码提示「密码错误」→ 正确密码后原请求重试成功。
+- 手机宽度（390px）无横向滚动。
+- 一键启动/停止脚本：在 Linux 上实测 `launcher.py start / status / stop` 正常；Windows（`start.bat`）、macOS 未实测。
 
 ## 可复现示例
 

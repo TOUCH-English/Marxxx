@@ -34,9 +34,10 @@ test('冒烟：设置密码 → 登录 → 向导启动 DEMO → 浏览全部页
   // 2. 退出后用密码登录
   await page.getByTestId('logout').click();
   await page.locator('.ant-modal-confirm').getByRole('button', { name: '退出登录' }).click();
-  await expect(page.getByRole('button', { name: '登录' })).toBeVisible();
+  await expect(page.locator('.ant-modal-confirm')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible();
   await page.getByLabel('本机网页密码').fill(PASSWORD);
-  await page.getByRole('button', { name: '登录' }).click();
+  await page.getByRole('button', { name: '登录', exact: true }).click();
   await expect(page.getByTestId('status-bar')).toBeVisible();
   await expect(page.getByTestId('status-bar')).toContainText('尚未启动运行');
   await shot(page, '01-overview-empty');

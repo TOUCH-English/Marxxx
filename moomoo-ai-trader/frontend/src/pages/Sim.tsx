@@ -51,6 +51,23 @@ function MetricsView({ m }: { m: BacktestMetrics }) {
                 <Col span={12}><PctStat title="基准：等权买入持有" v={v.benchmark_buy_hold_equal_weight_pct} /></Col>
                 <Col span={12}><PctStat title="基准：持有现金" v={v.benchmark_cash_pct} /></Col>
               </Row>
+              <Descriptions
+                size="small"
+                column={2}
+                style={{ marginTop: 8 }}
+                items={[
+                  { key: 'rt', label: '完成交易', children: v.round_trips ?? '—' },
+                  { key: 'pnl', label: '已实现盈亏', children: v.net_pnl ? `${fmtMoney(v.net_pnl)} ${ccy}` : '—' },
+                  { key: 'pr', label: '盈亏比', children: v.payoff_ratio ?? '—' },
+                  { key: 'pf', label: '盈利因子', children: v.profit_factor ?? '—' },
+                  { key: 'fee', label: '费用', children: v.fees ? `${fmtMoney(v.fees)} ${ccy}` : '—' },
+                  {
+                    key: 'fs',
+                    label: '费用占毛盈亏',
+                    children: m.fee_share_of_gross_pct?.[ccy] !== undefined ? fmtPct(m.fee_share_of_gross_pct[ccy]) : '—',
+                  },
+                ]}
+              />
             </Card>
           </Col>
         ))}
@@ -60,14 +77,10 @@ function MetricsView({ m }: { m: BacktestMetrics }) {
         bordered
         column={{ xs: 1, sm: 2, md: 3 }}
         items={[
-          { key: 'rt', label: '完成交易（买卖来回）', children: m.round_trips ?? '—' },
+          { key: 'rt', label: '完成交易（全部币种，笔数）', children: m.round_trips ?? '—' },
           { key: 'b', label: '买入次数', children: m.buys ?? '—' },
           { key: 'wr', label: '胜率', children: m.win_rate_pct !== undefined ? fmtPct(m.win_rate_pct) : '—' },
-          { key: 'pr', label: '盈亏比', children: m.payoff_ratio ?? '—' },
-          { key: 'pf', label: '盈利因子', children: m.profit_factor ?? '—' },
           { key: 'ah', label: '平均持有天数', children: m.avg_holding_days ?? '—' },
-          { key: 'fee', label: '费用合计（各币种原值相加，仅参考）', children: m.total_fees ? fmtMoney(m.total_fees) : '—' },
-          { key: 'fs', label: '费用占毛盈亏', children: m.fee_share_of_gross_pct !== undefined ? fmtPct(m.fee_share_of_gross_pct) : '—' },
           { key: 'sd', label: '样本交易日', children: m.sample_days ?? '—' },
           { key: 'op', label: '期末未平仓', children: m.open_positions_at_end ?? '—' },
         ]}

@@ -220,6 +220,15 @@ def decision_view(s: Session, d: Decision, full: bool = False) -> dict:
     out["outcome_label"] = DECISION_OUTCOME_LABELS.get(d.outcome, d.outcome)
     out["rationale"] = (d.model_judgment or {}).get("rationale") or (d.proposal or {}).get("rule", "")
     out["proposal"] = d.proposal
+    rc = d.rule_calc or {}
+    first = s.execute(select(OrderIntent).where(OrderIntent.decision_id == d.id)
+                      .order_by(OrderIntent.created_at_utc)).scalars().first()
+    out["summary"] = {"qty": first.qty if first else rc.get("qty"),
+                      "limit_price": j(first.limit_price) if first else rc.get("limit_price"),
+                      "est_fee": j(first.est_fees) if first else rc.get("est_fee_buy"),
+                      "order_id": first.id if first else None, "order_status": first.status if first else None,
+                      "order_status_label": ORDER_STATUS_LABELS.get(first.status, first.status) if first else None,
+                      "filled_qty": first.filled_qty if first else None}
     if full:
         out.update({"facts": d.facts, "rule_calc": d.rule_calc, "model_judgment": d.model_judgment,
                     "evidence": d.evidence})

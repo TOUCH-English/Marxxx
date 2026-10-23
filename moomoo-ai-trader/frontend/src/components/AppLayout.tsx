@@ -235,7 +235,8 @@ export function AppLayout({ onLoggedOut }: { onLoggedOut: () => void }) {
         } catch {
           /* 即使失败也回到登录页 */
         }
-        onLoggedOut();
+        // 先让确认框关闭，再切换到登录页
+        window.setTimeout(onLoggedOut, 0);
       },
     });
 

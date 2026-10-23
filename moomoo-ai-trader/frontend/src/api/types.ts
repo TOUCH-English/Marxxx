@@ -693,17 +693,19 @@ export interface BacktestMetrics {
       max_drawdown_pct: Dec;
       benchmark_buy_hold_equal_weight_pct: Dec;
       benchmark_cash_pct: Dec;
+      round_trips?: number;
+      net_pnl?: Dec;
+      fees?: Dec;
+      payoff_ratio?: Dec | null;
+      profit_factor?: Dec | null;
     }
   >;
   round_trips?: number;
   buys?: number;
-  net_pnl?: Dec;
   win_rate_pct?: Dec;
-  payoff_ratio?: Dec;
-  profit_factor?: Dec;
   avg_holding_days?: Dec;
-  total_fees?: Dec;
-  fee_share_of_gross_pct?: Dec;
+  fees_by_currency?: Record<string, Dec>;
+  fee_share_of_gross_pct?: Record<string, Dec> | null;
   sample_days?: number;
   open_positions_at_end?: number;
   sample_warning?: string;

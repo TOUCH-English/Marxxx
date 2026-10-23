@@ -16,7 +16,12 @@
    "net_return_pct": "-1.28",
    "max_drawdown_pct": "1.47",
    "benchmark_buy_hold_equal_weight_pct": "15.80",
-   "benchmark_cash_pct": "0.00"
+   "benchmark_cash_pct": "0.00",
+   "round_trips": 16,
+   "net_pnl": "-256.76",
+   "fees": "131.26",
+   "payoff_ratio": "1.15",
+   "profit_factor": "0.38"
   },
   "USD": {
    "initial": "5000",
@@ -24,18 +29,27 @@
    "net_return_pct": "-0.17",
    "max_drawdown_pct": "0.79",
    "benchmark_buy_hold_equal_weight_pct": "17.94",
-   "benchmark_cash_pct": "0.00"
+   "benchmark_cash_pct": "0.00",
+   "round_trips": 5,
+   "net_pnl": "-8.56",
+   "fees": "18.53",
+   "payoff_ratio": "1.11",
+   "profit_factor": "0.74"
   }
  },
  "round_trips": 21,
  "buys": 21,
- "net_pnl": "-265.32",
+ "net_pnl_note": "盈亏与费用按币种见 per_currency；不同币种不相加",
  "win_rate_pct": "28.6",
- "payoff_ratio": "1.02",
- "profit_factor": "0.41",
  "avg_holding_days": "23.6",
- "total_fees": "149.79",
- "fee_share_of_gross_pct": "23.7",
+ "fees_by_currency": {
+  "MYR": "131.26",
+  "USD": "18.53"
+ },
+ "fee_share_of_gross_pct": {
+  "MYR": "22.9",
+  "USD": "32.2"
+ },
  "sample_days": 257,
  "open_positions_at_end": 0,
  "sample_warning": "样本量过小，结果不具统计意义"

@@ -99,7 +99,14 @@ def migrate(namespace: Namespace | str) -> None:
     from alembic import command
     from alembic.config import Config
 
+    from filelock import FileLock
+
     ns = Namespace(namespace).value
+    with FileLock(str(get_settings().data_dir / f"{ns}.migrate.lock"), timeout=120):
+        _migrate_locked(ns, Config, command)
+
+
+def _migrate_locked(ns: str, Config, command) -> None:
     backend_dir = Path(__file__).resolve().parents[2]
     cfg = Config(str(backend_dir / "alembic.ini"))
     cfg.set_main_option("script_location", str(backend_dir / "alembic"))

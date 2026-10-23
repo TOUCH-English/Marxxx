@@ -67,8 +67,8 @@ export function ReauthHost() {
       </Typography.Paragraph>
       {err ? <Alert type="error" showIcon message={err} style={{ marginBottom: 12 }} /> : null}
       <Form layout="vertical" onFinish={submit}>
-        <Form.Item label="本机网页密码">
-          <Input.Password autoFocus value={pw} onChange={(e) => setPw(e.target.value)} onPressEnter={submit} autoComplete="current-password" />
+        <Form.Item label="本机网页密码" htmlFor="reauth-password">
+          <Input.Password id="reauth-password" autoFocus value={pw} onChange={(e) => setPw(e.target.value)} onPressEnter={submit} autoComplete="current-password" />
         </Form.Item>
       </Form>
     </Modal>

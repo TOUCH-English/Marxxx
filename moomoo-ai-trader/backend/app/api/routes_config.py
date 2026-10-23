@@ -216,7 +216,11 @@ def confirm_rule(ns: str, rid: int, sess=Mutator):
 def preview_rule(ns: str, sess=Viewer, rule_id: int | None = None, source: str | None = None):
     ns_of(ns)
     with read_session(ns) as s:
-        r = s.get(UniverseRule, rule_id) if rule_id else None
+        r = s.get(UniverseRule, rule_id) if rule_id else \
+            s.execute(select(UniverseRule).order_by(UniverseRule.version.desc()).limit(1)).scalar_one_or_none()
+        if r is None and ns == "live":
+            return {"as_of": utcnow().isoformat(), "members": [], "excluded": [], "data_source": None,
+                    "rule": None, "disclaimer": "实盘默认交易范围为空：请先创建并确认股票池规则，或使用手动白名单。"}
         rules = r.rules if r else DEFAULT_POOL_RULES
         now = _biz_now(s, ns)
         p = current_portfolio(s, ns)
@@ -226,6 +230,7 @@ def preview_rule(ns: str, sess=Viewer, rule_id: int | None = None, source: str |
     except Exception as e:
         raise HTTPException(503, f"无法获取数据：{e}")
     return {"as_of": now.isoformat(), "members": members, "excluded": excluded, "data_source": prov.name,
+            "rule": row(r) if r else None,
             "disclaimer": "演示证券为虚构，不构成投资推荐。" if prov.name == "DEMO_FIXTURE" else ""}
 
 
@@ -694,7 +699,9 @@ def wizard_start(ns: str, body: WizardBody, sess=Mutator):
         sv = s.execute(select(StrategyVersion).where(StrategyVersion.key == body.strategy_key,
                                                      StrategyVersion.status == "ACTIVE")).scalar_one()
         rule = s.get(UniverseRule, body.universe_rule_id) if body.universe_rule_id else None
-        sc = scope or {"type": "POOL", "universe_rule_id": rule.id if rule else None}
+        if scope is None and (rule is None or not rule.confirmed_by_user):
+            raise HTTPException(400, "实盘交易范围必须是您已确认的股票池规则或手动白名单（默认范围为空）")
+        sc = scope or {"type": "POOL", "universe_rule_id": rule.id}
         try:
             a = create_authorization(s, portfolio=p, capital=body.capital, max_planned_loss=body.max_planned_loss,
                                      scope=sc, strategy_version_id=sv.id, risk_policy_version_id=rp.id,
@@ -801,6 +808,7 @@ def get_bt(ns: str, bid: int, sess=Viewer):
 
 @router.get("/backtests/{bid}/{kind}.csv")
 def bt_csv(ns: str, bid: int, kind: str, sess=Viewer):
+    ns_of(ns)
     from .routes_ns import _csv
 
     with read_session(ns) as s:
@@ -814,6 +822,7 @@ def bt_csv(ns: str, bid: int, kind: str, sess=Viewer):
 
 @router.get("/backtests/{bid}/report.txt", response_class=PlainTextResponse)
 def bt_report(ns: str, bid: int, sess=Viewer):
+    ns_of(ns)
     with read_session(ns) as s:
         r = s.get(BacktestRun, bid)
         if r is None:
@@ -823,9 +832,10 @@ def bt_report(ns: str, bid: int, sess=Viewer):
                  f"数据来源 {m.get('data_source')}，交易日 {m.get('sample_days')}", ""]
         for c, v in m.get("per_currency", {}).items():
             lines.append(f"{c}：初始 {v['initial']} → 期末 {v['final_equity']}，净收益 {v['net_return_pct']}%，最大回撤 "
-                         f"{v['max_drawdown_pct']}%，等权买入持有基准 {v['benchmark_buy_hold_equal_weight_pct']}%，现金基准 0%")
-        lines += [f"完成交易 {m['round_trips']} 笔，胜率 {m['win_rate_pct']}%，盈亏比 {m['payoff_ratio']}，盈利因子 {m['profit_factor']}，"
-                  f"平均持有 {m['avg_holding_days']} 天", f"费用合计 {m['total_fees']}，占毛盈亏 {m['fee_share_of_gross_pct']}%",
+                         f"{v['max_drawdown_pct']}%，等权买入持有基准 {v['benchmark_buy_hold_equal_weight_pct']}%，现金基准 0%；"
+                         f"完成交易 {v['round_trips']} 笔，已实现盈亏 {v['net_pnl']}，盈亏比 {v['payoff_ratio']}，"
+                         f"盈利因子 {v['profit_factor']}，费用 {v['fees']}（占毛盈亏 {m['fee_share_of_gross_pct'].get(c, '—')}%）")
+        lines += [f"全部完成交易 {m['round_trips']} 笔，胜率 {m['win_rate_pct']}%，平均持有 {m['avg_holding_days']} 天（不同币种的金额不相加）",
                   f"样本提示：{m['sample_warning']}", m.get("leakage_note", ""), "", "撮合与数据假设："]
         lines += [f"- {a}" for a in m.get("assumptions", [])]
         lines.append("\n本报告为模拟结果，不代表真实交易收益，也不构成投资建议。")
@@ -908,6 +918,7 @@ def reviews(ns: str, sess=Viewer, kind: str | None = None, limit: int = 60):
 
 @router.get("/reviews/{rid}.txt", response_class=PlainTextResponse)
 def review_txt(ns: str, rid: int, sess=Viewer):
+    ns_of(ns)
     with read_session(ns) as s:
         r = s.get(ReviewRun, rid)
         if r is None:

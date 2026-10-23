@@ -28,11 +28,28 @@ body {
 
 .app-sider {
   border-right: 1px solid #f0f0f0;
-  position: sticky;
+  position: sticky !important;
   top: 0;
   height: 100vh;
-  overflow: auto;
   z-index: 20;
+}
+
+.app-sider .ant-layout-sider-children {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.app-sider .ant-layout-sider-zero-width-trigger {
+  top: 12px;
+}
+
+@media (max-width: 991px) {
+  .app-sider {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12);
+  }
 }
 
 .app-sider .logo {
@@ -66,9 +83,12 @@ body {
   font-size: 12px;
 }
 
+.app-root .app-header.ant-layout-header {
+  padding: 0 16px;
+}
+
 .app-header {
   background: #fff;
-  padding: 0 16px;
   height: auto;
   min-height: 56px;
   line-height: normal;
@@ -280,5 +300,17 @@ body {
   }
   .chart-box {
     height: 220px;
+  }
+}
+
+@media (max-width: 991px) {
+  .app-root .app-header.ant-layout-header {
+    padding-left: 56px;
+  }
+}
+
+@media (min-width: 992px) {
+  .app-sider .ant-layout-sider-zero-width-trigger {
+    display: none;
   }
 }

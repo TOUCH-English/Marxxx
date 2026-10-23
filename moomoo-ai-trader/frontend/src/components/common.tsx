@@ -77,8 +77,8 @@ export function ChecksTable({ checks, size = 'small' }: { checks: Check[] | unde
       dataSource={checks}
       scroll={{ x: true }}
       columns={[
-        { title: '结果', dataIndex: 'ok', width: 70, render: (ok: boolean) => (
-          <Space size={4}>
+        { title: '结果', dataIndex: 'ok', width: 96, render: (ok: boolean) => (
+          <Space size={4} style={{ whiteSpace: 'nowrap' }}>
             <OkIcon ok={ok} />
             <span>{ok ? '通过' : '未通过'}</span>
           </Space>

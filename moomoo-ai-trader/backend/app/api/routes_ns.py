@@ -9,7 +9,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
 from ..core.audit import audit
 from ..core.calendar import MYT
@@ -197,8 +197,10 @@ def list_decisions(ns: str, sess=Viewer, symbol: str | None = None, outcome: str
         if day:
             d0 = datetime.combine(date.fromisoformat(day), datetime.min.time(), MYT)
             q = q.where(Decision.as_of >= d0, Decision.as_of < d0 + timedelta(days=1))
+        total = s.execute(select(func.count()).select_from(q.subquery())).scalar_one()
         items = list(s.execute(q.order_by(Decision.as_of.desc(), Decision.created_at_utc.desc()).offset(offset).limit(limit)).scalars())
-        return {"items": [decision_view(s, d) for d in items]}
+        return {"items": [decision_view(s, d) for d in items], "total": total, "offset": offset, "limit": limit,
+                "sources": ["AI_MODEL", "AI_FIXTURE", "BASELINE", "PROTECTION"]}
 
 
 @router.get("/decisions/{did}")

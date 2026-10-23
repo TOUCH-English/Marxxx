@@ -96,6 +96,17 @@ def _decision_ai_fixture(bars: list[Bar], params: dict, held: BTPosition | None)
     return "NONE", {}
 
 
+def _ratios(pnls: list[Decimal]) -> dict:
+    """盈亏比与盈利因子只在同一币种内计算。"""
+    w = [x for x in pnls if x > 0]
+    lo = [x for x in pnls if x <= 0]
+    return {
+        "payoff_ratio": str((sum(w) / len(w) / abs(sum(lo) / len(lo))).quantize(Decimal("0.01")))
+        if w and lo and sum(lo) != 0 else None,
+        "profit_factor": str((sum(w) / abs(sum(lo))).quantize(Decimal("0.01"))) if lo and sum(lo) != 0 else None,
+    }
+
+
 def run_backtest(provider, calendar, *, symbols: list[str], start: date, end: date, capital: dict[str, Decimal],
                  fee_schedules: dict[str, dict], strategy_key: str, strategy_params: dict, risk_params: dict,
                  slippage_bps: int = 10, entry_premium_bps: int = 30) -> BTResult:
@@ -234,11 +245,11 @@ def run_backtest(provider, calendar, *, symbols: list[str], start: date, end: da
     sells = [t for t in trades if t["side"] == "SELL"]
     pnls = [D(t["pnl"]) for t in sells]
     wins = [x for x in pnls if x > 0]
-    losses = [x for x in pnls if x <= 0]
-    fees = sum((D(t["fee"]) for t in trades), Decimal(0))
     metrics: dict[str, Any] = {"assumptions": ASSUMPTIONS, "per_currency": {}}
     for c in cash:
         end_eq = D(curve[-1][c]) if curve else initial[c]
+        c_pnls = [D(t["pnl"]) for t in sells if t["currency"] == c]
+        c_fees = sum((D(t["fee"]) for t in trades if t["currency"] == c), Decimal(0))
         bh = []
         for s, inst in insts.items():
             if inst.currency != c or s not in bench_start or s not in last_close:
@@ -250,21 +261,26 @@ def run_backtest(provider, calendar, *, symbols: list[str], start: date, end: da
             "max_drawdown_pct": str((max_dd[c] * 100).quantize(Decimal("0.01"))),
             "benchmark_buy_hold_equal_weight_pct": str((sum(bh) / len(bh) * 100).quantize(Decimal("0.01"))) if bh else None,
             "benchmark_cash_pct": "0.00",
+            "round_trips": len(c_pnls), "net_pnl": str(sum(c_pnls, Decimal(0)).quantize(Decimal("0.01"))),
+            "fees": str(c_fees.quantize(Decimal("0.01"))),
+            **_ratios(c_pnls),
         }
     metrics.update({
         "round_trips": len(sells), "buys": len([t for t in trades if t["side"] == "BUY"]),
-        "net_pnl": str(sum(pnls, Decimal(0)).quantize(Decimal("0.01"))),
+        "net_pnl_note": "盈亏与费用按币种见 per_currency；不同币种不相加",
         "win_rate_pct": str((Decimal(len(wins)) / len(pnls) * 100).quantize(Decimal("0.1"))) if pnls else None,
-        "payoff_ratio": str((sum(wins) / len(wins) / abs(sum(losses) / len(losses))).quantize(Decimal("0.01")))
-        if wins and losses and sum(losses) != 0 else None,
-        "profit_factor": str((sum(wins) / abs(sum(losses))).quantize(Decimal("0.01"))) if losses and sum(losses) != 0 else None,
         "avg_holding_days": str(round(sum(t["holding_days"] for t in sells) / len(sells), 1)) if sells else None,
-        "total_fees": str(fees.quantize(Decimal("0.01"))),
+        "fees_by_currency": {c: str(sum((D(t["fee"]) for t in trades if t["currency"] == c), Decimal(0)).quantize(Decimal("0.01")))
+                             for c in cash},
         "fee_share_of_gross_pct": None,
         "sample_days": len(days), "open_positions_at_end": len(positions),
         "sample_warning": "样本量过小，结果不具统计意义" if len(sells) < 30 else "样本仍有限，需前向验证",
     })
-    gross = sum((abs(x) for x in pnls), Decimal(0))
-    if gross > 0:
-        metrics["fee_share_of_gross_pct"] = str((fees / gross * 100).quantize(Decimal("0.1")))
+    shares = {}
+    for c in cash:
+        g = sum((abs(D(t["pnl"])) for t in sells if t["currency"] == c), Decimal(0))
+        f = sum((D(t["fee"]) for t in trades if t["currency"] == c), Decimal(0))
+        if g > 0:
+            shares[c] = str((f / g * 100).quantize(Decimal("0.1")))
+    metrics["fee_share_of_gross_pct"] = shares
     return BTResult(trades=trades, equity_curve=curve, metrics=metrics)
