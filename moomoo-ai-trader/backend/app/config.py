@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     ai_price_output_per_mtok: str = "20.00"
     ai_price_source: str = "Anthropic 官方价目 claude-opus-5-5（缓存于 2026-10-06，需核对）"
     ai_monthly_budget_usd: str = "30"
+    # 演示/历史回放是加速运行的（每 2 秒前进 30 分钟）。若在其中调用真实模型，几分钟就会产生大量费用，
+    # 且历史回放结果有信息泄漏问题。因此默认演示/回放一律使用固定测试响应；真实模型只用于真实行情。
+    ai_in_replay: bool = False
 
     # --- Worker ---
     worker_tick_seconds: float = 2.0

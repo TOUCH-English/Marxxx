@@ -52,8 +52,11 @@ export function StatusBar() {
   const { ns, overview, status, lastUpdated, streamOk, overviewError, statusError } = useAppState();
   const p = overview?.portfolio;
   const w = overview?.worker ?? status?.workers?.[ns];
-  const ai = status?.ai;
   const runtimeAi = p?.runtime?.ai;
+  // 优先显示当前运行实际使用的 AI（演示/回放即使配置了密钥也使用固定测试响应）
+  const ai = status?.ai
+    ? { ...status.ai, ...(runtimeAi ? { label: runtimeAi.label, is_fixture: runtimeAi.is_fixture } : {}) }
+    : undefined;
   return (
     <div className={`status-bar ${ns === 'live' ? 'status-bar-live' : ''}`} data-testid="status-bar">
       <StatusItem label="运行模式">{p ? <Text strong>{p.mode_label}</Text> : <Text type="secondary">尚未启动运行</Text>}</StatusItem>

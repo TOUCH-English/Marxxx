@@ -119,7 +119,14 @@ class TradingEngine:
         if hasattr(adapter, "register_instrument"):
             for inst in provider.instruments():
                 adapter.register_instrument(inst.symbol, inst.market, inst.currency, inst.lot_size)
-        ai = self.overrides["ai_provider"]() if "ai_provider" in self.overrides else get_provider()
+        if "ai_provider" in self.overrides:
+            ai = self.overrides["ai_provider"]()
+        elif not provider.is_realtime and not st.ai_in_replay:
+            from ..ai.providers import FixtureProvider
+
+            ai = FixtureProvider()  # 加速回放不调用付费模型
+        else:
+            ai = get_provider()
         om = OrderManager(self.ns, adapter, fees, clock.now)
         rt = Runtime(ns=self.ns, portfolio_id=pid, mode=mode, provider=provider, clock=clock, adapter=adapter, om=om,
                      calendar=self.calendar, fee_schedules=fees, data_source=data_source,

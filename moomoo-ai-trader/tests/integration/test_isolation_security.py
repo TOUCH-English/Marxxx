@@ -238,3 +238,27 @@ def test_secrets_never_leak_and_cross_site_rejected(env, monkeypatch):
     if os.name == "posix":
         assert stat.S_IMODE(pw.stat().st_mode) == 0o600
         assert "password123" not in pw.read_text()
+
+
+def test_replay_never_calls_paid_model_even_with_key(env, monkeypatch):
+    """演示/回放是加速的：即使配置了 API 密钥，也只使用固定测试响应，不产生模型费用。"""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-placeholder")
+    monkeypatch.setenv("AI_PROVIDER", "auto")
+    from app.config import reset_settings_cache
+
+    reset_settings_cache()
+    from app.ai import providers
+
+    def boom(*a, **k):
+        raise AssertionError("演示不应构造真实模型客户端")
+
+    monkeypatch.setattr(providers.AnthropicProvider, "__init__", boom)
+    from app.services.runs import start_sim_run
+    from app.workers.engine import TradingEngine
+
+    pid, _ = start_sim_run()
+    eng = TradingEngine("sim")
+    for _ in range(20):
+        st = eng.tick()
+        assert "error" not in st["portfolios"][pid]
+    assert eng.runtimes[pid].ai_provider.is_fixture
