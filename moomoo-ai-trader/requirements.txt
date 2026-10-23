@@ -1,0 +1,14 @@
+# 直接依赖（已测试版本）。完整锁定见 requirements.lock.txt
+fastapi==0.161.1
+uvicorn==0.54.0
+pydantic==2.14.1
+pydantic-settings==2.16.1
+SQLAlchemy==2.1.6
+alembic==1.20.1
+filelock==4.2.4
+exchange_calendars==4.13.2
+tzdata==2026.5
+anthropic==2.1.0
+moomoo-api==10.11.7108
+pytest==9.1.1
+httpx==0.28.1

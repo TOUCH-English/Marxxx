@@ -1,0 +1,101 @@
+[
+ {
+  "symbol": "MY.D001",
+  "market": "MY",
+  "name": "演示种植（虚构）",
+  "sec_type": "STOCK",
+  "currency": "MYR",
+  "lot_size": 100,
+  "spread_bps": 80,
+  "is_demo": true,
+  "is_leveraged": false
+ },
+ {
+  "symbol": "MY.D002",
+  "market": "MY",
+  "name": "演示银行（虚构）",
+  "sec_type": "STOCK",
+  "currency": "MYR",
+  "lot_size": 100,
+  "spread_bps": 40,
+  "is_demo": true,
+  "is_leveraged": false
+ },
+ {
+  "symbol": "MY.D003",
+  "market": "MY",
+  "name": "演示科技（虚构）",
+  "sec_type": "STOCK",
+  "currency": "MYR",
+  "lot_size": 100,
+  "spread_bps": 120,
+  "is_demo": true,
+  "is_leveraged": false
+ },
+ {
+  "symbol": "MY.D004",
+  "market": "MY",
+  "name": "演示红利ETF（虚构）",
+  "sec_type": "ETF",
+  "currency": "MYR",
+  "lot_size": 100,
+  "spread_bps": 60,
+  "is_demo": true,
+  "is_leveraged": false
+ },
+ {
+  "symbol": "MY.D005",
+  "market": "MY",
+  "name": "演示低流动（虚构）",
+  "sec_type": "STOCK",
+  "currency": "MYR",
+  "lot_size": 100,
+  "spread_bps": 400,
+  "is_demo": true,
+  "is_leveraged": false
+ },
+ {
+  "symbol": "US.DMOA",
+  "market": "US",
+  "name": "Demo Alpha Corp（虚构）",
+  "sec_type": "STOCK",
+  "currency": "USD",
+  "lot_size": 1,
+  "spread_bps": 5,
+  "is_demo": true,
+  "is_leveraged": false
+ },
+ {
+  "symbol": "US.DMOB",
+  "market": "US",
+  "name": "Demo Beta Inc（虚构）",
+  "sec_type": "STOCK",
+  "currency": "USD",
+  "lot_size": 1,
+  "spread_bps": 4,
+  "is_demo": true,
+  "is_leveraged": false
+ },
+ {
+  "symbol": "US.DMOC",
+  "market": "US",
+  "name": "Demo Gamma ETF（虚构）",
+  "sec_type": "ETF",
+  "currency": "USD",
+  "lot_size": 1,
+  "spread_bps": 3,
+  "is_demo": true,
+  "is_leveraged": false
+ },
+ {
+  "symbol": "US.DMOL",
+  "market": "US",
+  "name": "Demo 3x Leveraged ETF（虚构）",
+  "sec_type": "ETF",
+  "currency": "USD",
+  "lot_size": 1,
+  "spread_bps": 10,
+  "is_demo": true,
+  "is_leveraged": true
+ }
+]

@@ -1,0 +1,14 @@
+[
+ {
+  "symbol": "MY.D002",
+  "ex_date": "2026-08-12",
+  "kind": "DIVIDEND",
+  "cash_per_share": "0.12"
+ },
+ {
+  "symbol": "US.DMOB",
+  "ex_date": "2026-08-03",
+  "kind": "SPLIT",
+  "split_ratio": "2"
+ }
+]
