@@ -1,7 +1,7 @@
 # 验收结果（docs/acceptance.md）
 
 测试日期：2026-10-23（云端开发环境，Linux，Python 3.13.16）。
-运行命令：`.venv/bin/python -m pytest`（项目根目录）。结果：**66 passed**（约 60 秒）。前端构建与浏览器冒烟测试见「前端」一节。
+运行命令：`.venv/bin/python -m pytest`（项目根目录）。结果：**70 passed**（约 80 秒）。前端构建与浏览器冒烟测试见「前端」一节。
 
 > 说明：本环境没有 moomoo OpenD、没有您的账户、没有 AI 密钥，也无法访问 openapi.moomoo.com。
 > 因此所有「券商」相关测试使用 **本地模拟撮合器** 或 **伪券商（故障注入）**；凡需要真实账户/行情/模型的项目单独列为「未验证」，
@@ -40,7 +40,8 @@
 | 27 | 升级/暂停/回退有审计；回退不清锁定；模拟经验不混入真实业绩 | **通过** | 同上 + `learning/scheduler.py::_post_upgrade_monitor` |
 
 补充测试：事件触发的额外 AI 复核（限频）、基准策略「AI 可否决」只能否决（`tests/integration/test_strategies_extra.py`）；
-Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_provider.py`）。
+Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_provider.py`）；
+只读诊断子进程输出解析（结果 JSON 前后夹有 SDK 日志，`tests/unit/test_diagnostics.py`）。
 
 ## 前端
 
@@ -60,7 +61,18 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
 - 升级方式：在原安装路径更新源码，保留本机 `.env`、网页密码和数据库。
 - 结果：`start → stop → 无额外等待立即 start` **通过**。新的模拟后台进程成功运行，数据库心跳距当前 0.8 秒。
 - 配置状态：AI 密钥已配置（`key_configured=true`，未显示内容）、`LIVE_TRADING_ENABLED=false`、`AI_IN_REPLAY=false`。
-- 未做的事：没有发送真实 AI 请求，没有任何交易，没有安装 OpenD。
+- 未做的事：没有发送真实 AI 请求，没有任何交易。
+
+### OpenD 只读接入（同日，Codex 在用户 Mac 上执行并回报）
+
+- 安装包：官网下载页的 `moomoo_OpenD_10.11.7108_Mac.tar.gz`，长度与服务器一致。
+  先前 `codesign` 失败是受限工具环境造成的；用正常系统权限重验：`codesign` valid on disk、
+  Gatekeeper `accepted`（`source=Notarized Developer ID`，Shenzhen Futu，团队 ID 6HE4ZULJ45）、`stapler validate` 成功。正常安装，没有绕过任何安全设置。
+- 用户在 OpenD 官方界面自行登录（密码未经过本系统或聊天）。
+- 只读诊断结果：OpenD 连接、行情服务器登录、交易服务器登录 **通过**；`US.AAPL` 快照 **可读**；`MY.1155` **NEEDS_PERMISSION**（无马股行情权限）。
+- 发现的问题：诊断页报 `JSONDecodeError: Extra data`。原因是只解析子进程标准输出的最后一行，而 SDK 关闭连接的日志可能打印在结果 JSON 之后。
+  修复：从后往前逐行找「是对象且 `items` 为列表」的 JSON；找不到时照旧显示「诊断进程失败」。Mac 上先做了同样的最小修复并通过实测，源码分支已同步并补回归测试。
+- 没有做的事：没有绑定真实账户、没有解锁交易、没有下单、没有发送真实 AI 请求。
 
 ## 可复现示例
 
@@ -74,10 +86,10 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
 
 | 项目 | 原因 | 如何验证 |
 | --- | --- | --- |
-| OpenD 连接、账户列表、行情权限、现金字段、订单类型探测 | 本环境无 OpenD/账户 | 「连接与权限诊断」页运行只读诊断 |
+| 账户绑定、现金字段、订单类型探测（OpenD 连接与美股行情已实测通过） | 尚未选择账户 | 「连接与权限诊断」页选择账户后运行只读诊断 |
 | 券商模拟账户（BROKER_PAPER）下单 | 同上 | 诊断通过并选择 SIMULATE 账户后用向导启动 |
 | 真实下单、撤单、成交推送、对账（LIVE_REVIEW / LIVE_AUTO） | 交付时实盘关闭；仅伪券商故障注入验证 | 完成 README 第三节 C 的全部条件后，小额启用 |
-| 马股实时行情 | 官方资料不一致，权限页列为不支持 | 诊断页 `MY.xxxx` 快照检测；无行情时用历史回放 |
+| 马股实时行情 | 用户 Mac 实测 `MY.1155` 为 NEEDS_PERMISSION（当前账户无马股行情权限） | 开通权限后在诊断页重测；否则马股只用历史回放 |
 | 真实 AI 模型表现与结构化输出兼容性 | 无密钥 | `.env` 填密钥后运行演示或 `scripts/demo_e2e.py --ai anthropic` |
 | 费用、马股价格档位、节假日数据 | 测试值/第三方日历 | 按官方资料核对并在设置中更新 |
 | 实盘股票池的全市场筛选 | 首版从已核对的自选/证券表中按规则筛选；未接入 `get_stock_filter` | — |

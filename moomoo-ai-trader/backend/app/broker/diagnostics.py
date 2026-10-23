@@ -21,6 +21,25 @@ LOGIN_STEPS = [
 ]
 
 
+def parse_runner_output(stdout: str | None) -> dict[str, Any]:
+    """从诊断子进程的标准输出中取出结果 JSON。
+
+    SDK 会把自己的日志打印到标准输出，而且 close() 的日志可能出现在结果之后，
+    因此不能只解析最后一行：从后往前找第一行「是 dict 且 items 为列表」的 JSON，找不到返回 {}。
+    """
+    for line in reversed((stdout or "").splitlines()):
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(obj, dict) and isinstance(obj.get("items"), list):
+            return obj
+    return {}
+
+
 def run_diagnostics(acc_id: str | None = None, trd_env: str | None = None, symbols: list[str] | None = None,
                     timeout: float = 45) -> dict[str, Any]:
     st = get_settings()
@@ -36,7 +55,7 @@ def run_diagnostics(acc_id: str | None = None, trd_env: str | None = None, symbo
     backend = Path(__file__).resolve().parents[2]
     try:
         out = subprocess.run(args, cwd=str(backend), capture_output=True, text=True, timeout=timeout)
-        data = json.loads(out.stdout.strip().splitlines()[-1]) if out.stdout.strip() else {}
+        data = parse_runner_output(out.stdout)
         if not data:
             data = {"ok": False, "items": [{"key": "runner", "label": "诊断进程", "status": "FAIL",
                                             "detail": (out.stderr or "无输出")[-500:]}], "accounts": []}
