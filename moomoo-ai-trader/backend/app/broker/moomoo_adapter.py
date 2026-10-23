@@ -101,6 +101,7 @@ class MoomooExecutionAdapter:
         self._pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="moomoo")
         self._lock = threading.Lock()
         self._last_error = ""
+        self.last_accinfo: dict = {}
 
     # ------------------------------------------------------------ 构造
     @classmethod
@@ -271,7 +272,10 @@ class MoomooExecutionAdapter:
                                                                 currency=m.Currency.MYR)).result(timeout=10)
         if ret != m.RET_OK:
             raise RuntimeError(str(data))
-        return parse_cash(data.to_dict("records")[0])
+        row = data.to_dict("records")[0]
+        self.last_accinfo = {"total_assets": str(row.get("total_assets")), "currency": "MYR",
+                             "note": "券商账户总资产（只读，含系统未管理的持仓）"}
+        return parse_cash(row)
 
     def health(self) -> AdapterHealth:
         st = get_settings()

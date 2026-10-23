@@ -529,6 +529,7 @@ class TradingEngine:
                    "pending_jobs": len(rt.ai_jobs)},
             "auth_ok": ts.auth_ok, "auth_reason": ts.auth_reason, "health_blocks": ts.health_blocks,
             "scope_size": len(ts.scope),
+            "broker_total_assets": (getattr(rt.adapter, "last_accinfo", {}) or {}).get("total_assets"),
         }
 
     def _advance_replay(self, rt: Runtime) -> None:

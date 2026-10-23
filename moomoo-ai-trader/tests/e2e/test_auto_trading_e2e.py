@@ -128,3 +128,35 @@ def test_background_continues_without_browser_and_revocation_blocks_new_risk(env
     clock.advance(minutes=5)
     assert tick_until(eng, lambda: _pos("sim", pid, sym).status == "CLOSED")
     assert any(i.reason == "EXIT_STOP" for i in _intents("sim", pid))
+
+
+def test_authorization_expiry_stops_new_risk_but_keeps_protection(env):
+    from datetime import timedelta
+
+    from app.core import authz
+    from app.db.models import Authorization
+    from app.db.session import write_session
+    from app.db.types import utcnow
+
+    prov = StaticProvider()
+    prov.add("US.UPA", trend(80, 60.0, 0.05), "64.00")
+    pid, aid = setup_run("sim", "LOCAL_PAPER", symbols=["US.UPA"])
+    clock = ManualClock(US_OPEN)
+    eng, fb = make_engine("sim", prov, clock)
+    fb.callback_before_return = fb.fill_immediately = True
+    assert tick_until(eng, lambda: _pos("sim", pid, "US.UPA") is not None)
+    # 授权到期（重新签名的合法到期，而不是篡改）
+    with write_session("sim") as s:
+        a = s.get(Authorization, aid)
+        a.valid_from = utcnow() - timedelta(hours=2)
+        a.expires_at = utcnow() - timedelta(seconds=1)
+        a.signature = authz.sign(a)
+    eng.tick()
+    with read_session("sim") as s:
+        assert s.get(Authorization, aid).status == "EXPIRED"
+    n_buys = len([i for i in _intents("sim", pid) if i.side == "BUY"])
+    p = _pos("sim", pid, "US.UPA")
+    prov.set_quote("US.UPA", str(p.stop_price - Decimal("0.3")))
+    clock.advance(minutes=61)
+    assert tick_until(eng, lambda: _pos("sim", pid, "US.UPA").status == "CLOSED"), "到期后保护性退出继续运行"
+    assert len([i for i in _intents("sim", pid) if i.side == "BUY"]) == n_buys
