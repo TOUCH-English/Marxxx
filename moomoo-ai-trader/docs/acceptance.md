@@ -53,6 +53,15 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
 - 手机宽度（390px）无横向滚动。
 - 一键启动/停止脚本：在 Linux 上实测 `launcher.py start / status / stop` 正常；Windows（`start.bat`）、macOS 未实测。
 
+## macOS 实机验证（2026-10-23，由在用户 Mac 上协助的 Codex 执行并回报）
+
+- 环境：arm64 Mac，Python 3.13.14。
+- 安装包：提交 `6e35c5c` 的 ZIP，SHA-256 `3f79140a5996cc563f9b474873a02d968dc5f18de988c640a1f193ec3baf60e5`，与发布值一致；已核对包含释放租约、约 35 秒租约重试、启动存活检查三处修复。
+- 升级方式：在原安装路径更新源码，保留本机 `.env`、网页密码和数据库。
+- 结果：`start → stop → 无额外等待立即 start` **通过**。新的模拟后台进程成功运行，数据库心跳距当前 0.8 秒。
+- 配置状态：AI 密钥已配置（`key_configured=true`，未显示内容）、`LIVE_TRADING_ENABLED=false`、`AI_IN_REPLAY=false`。
+- 未做的事：没有发送真实 AI 请求，没有任何交易，没有安装 OpenD。
+
 ## 可复现示例
 
 `python scripts/demo_e2e.py --ticks 900` → `data/examples/demo_run/`（已提交）：
@@ -74,4 +83,4 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
 | 实盘股票池的全市场筛选 | 首版从已核对的自选/证券表中按规则筛选；未接入 `get_stock_filter` | — |
 | 真实模型的候选改进自动评估 | 需前向影子模拟（首版未自动实现） | 见 `docs/learning-loop.md` |
 | 邮件/推送告警 | 未配置（首版只有站内通知） | 无人值守实盘前需另行接入并验证 |
-| Windows/macOS 一键脚本实机运行 | 本环境为 Linux | 在您的电脑运行 `scripts/start.bat` / `start.sh` |
+| Windows 一键脚本实机运行 | 未在 Windows 上测试（macOS 已实测，见上文） | 在 Windows 电脑运行 `scripts/start.bat` |
