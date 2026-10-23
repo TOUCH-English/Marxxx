@@ -313,3 +313,50 @@ def test_change_scope_follows_upgraded_strategy_and_clears_pool_info(env):
     change_scope("sim", pid, {"type": "WHITELIST", "symbols": ["US.AAA"]}, "user")
     eng.tick()
     assert eng.runtimes[pid].pool_info == {}  # 回到白名单后不再附带旧股票池数据
+
+
+def test_change_scope_can_adopt_latest_confirmed_risk_version_keeping_positions(env):
+    from app.db.models import RiskPolicyVersion
+    from app.risk.policy import SEED_RISK_PARAMS
+
+    pid, aid = setup_run("sim", "LOCAL_PAPER", symbols=["US.AAA"], capital={"USD": "2448"}, max_loss={"USD": "122"})
+    with read_session("sim") as s:
+        old_rp = s.get(Authorization, aid).risk_policy_version_id
+    with write_session("sim") as s:
+        draft = RiskPolicyVersion(version=500, params=dict(SEED_RISK_PARAMS) | {"max_position_pct": "0.15"},
+                                  confirmed_by_user=False, is_test_seed=False)
+        s.add(draft)
+        s.flush()
+        draft_id = draft.id
+    a = change_scope("sim", pid, {"type": "WHITELIST", "symbols": ["US.AAA"]}, "user", adopt_latest_risk=True)
+    assert a.risk_policy_version_id == old_rp  # 未确认的草稿不会被采用
+    with write_session("sim") as s:
+        s.get(RiskPolicyVersion, draft_id).confirmed_by_user = True
+    b = change_scope("sim", pid, {"type": "WHITELIST", "symbols": ["US.AAA"]}, "user", adopt_latest_risk=True)
+    assert b.risk_policy_version_id == draft_id
+    c = change_scope("sim", pid, {"type": "WHITELIST", "symbols": ["US.AAA"]}, "user")
+    assert c.risk_policy_version_id == draft_id  # 不勾选时沿用当前授权的版本
+
+
+def test_unaffordable_stocks_do_not_take_ai_candidate_slots(env):
+    """单只上限 15% × 2448 ≈ 367 美元：一股 900 美元的股票不会作为 AI 候选。"""
+    from app.ai.providers import FixtureProvider
+    from helpers import StaticProvider, trend
+
+    seen = []
+
+    class Rec(FixtureProvider):
+        def complete(self, payload):
+            seen.append([c["symbol"] for c in payload["candidates"]])
+            return super().complete(payload)
+
+    prov = StaticProvider()
+    prov.add("US.CHEAP", trend(80, 100, 0.1), "108")
+    prov.add("US.PRICY", trend(80, 880, 1.0), "960")
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.CHEAP", "US.PRICY"], capital={"USD": "2448"},
+                       max_loss={"USD": "122"}, risk={"max_position_pct": "0.15"})
+    eng, _ = make_engine("sim", prov, ManualClock(US_OPEN), ai=Rec())
+    for _ in range(3):
+        eng.tick()
+        time.sleep(0.05)
+    assert seen and all("US.PRICY" not in x for x in seen) and any("US.CHEAP" in x for x in seen)

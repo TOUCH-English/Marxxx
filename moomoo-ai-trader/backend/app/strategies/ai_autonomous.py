@@ -133,13 +133,19 @@ def build_payload(rt, ts: TickState, market: str, p: dict) -> tuple[dict, dict]:
     with read_session(ns) as s:
         positions = [x for x in ledger.open_positions(s, ts.portfolio.id) if x.market == market]
         held = {x.symbol for x in ledger.open_positions(s, ts.portfolio.id)}
+        # 买不起一手的证券不占用候选名额（单标的上限 × 策略净值 < 一手价格）
+        ccy0 = {"MY": "MYR", "US": "USD"}[market]
+        eq0 = ledger.equity_view(s, ts.portfolio.id, ccy0, rt.price_of).equity
+        cap_amt = eq0 * D(ts.params.get("max_position_pct", "1")) if ts.params else None
         cands = []
         for sym in sorted(ts.scope):
             inst = rt.provider.instrument(sym)
             if inst is None or inst.market != market or sym in held:
                 continue
-            bars = rt.provider.daily_bars(sym, now, int(p["bars_lookback"]))
             q = rt.quote(sym)
+            if q is not None and q.last is not None and cap_amt is not None and q.last * inst.lot_size > cap_amt:
+                continue
+            bars = rt.provider.daily_bars(sym, now, int(p["bars_lookback"]))
             f = compute_features(bars, q)
             if q is None or q.last is None or len(bars) < 30:
                 continue

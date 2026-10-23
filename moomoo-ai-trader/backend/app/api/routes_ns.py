@@ -150,6 +150,7 @@ class ScopeBody(BaseModel):
     scope_type: str  # POOL / WHITELIST
     universe_rule_id: int | None = None
     symbols: list[str] = []
+    adopt_latest_risk: bool = False  # 同时改用最新一个已确认的风控版本
     confirm: bool = False
 
 
@@ -172,7 +173,7 @@ def change_run_scope(ns: str, body: ScopeBody, sess=Mutator):
         if p is None or not p.running:
             raise HTTPException(400, "该运行不存在或已结束")
     try:
-        a = change_scope(ns, body.portfolio_id, scope, "user")
+        a = change_scope(ns, body.portfolio_id, scope, "user", adopt_latest_risk=body.adopt_latest_risk)
     except ValueError as e:
         raise HTTPException(400, str(e))
     return {"ok": True, "authorization_id": a.id, "summary": a.summary_text,

@@ -189,9 +189,10 @@ def start_sim_run(*, mode: str = "DEMO", data_source: str = "DEMO_FIXTURE", capi
         return p.id, a.id
 
 
-def change_scope(ns: str, portfolio_id: int, scope: dict, actor: str) -> Authorization:
+def change_scope(ns: str, portfolio_id: int, scope: dict, actor: str, *, adopt_latest_risk: bool = False) -> Authorization:
     """更换当前运行的交易范围，保留持仓：在同一个运行上签发新授权，
-    资金、可承受亏损、策略版本、风控版本、隔夜设置和到期时间都沿用当前授权，只换交易范围。
+    资金、可承受亏损、策略版本、隔夜设置和到期时间都沿用当前授权，只换交易范围。
+    adopt_latest_risk=True 时同时改用最新一个已确认的风控版本（风控版本本身已由用户确认）。
     已有持仓、止损、亏损记录和锁定不受影响（它们属于运行，不属于授权）。
     """
     with write_session(ns) as s:
@@ -208,13 +209,22 @@ def change_scope(ns: str, portfolio_id: int, scope: dict, actor: str) -> Authori
         active = s.execute(select(StrategyVersion).where(StrategyVersion.key == sv.key,
                                                          StrategyVersion.status == "ACTIVE")).scalar_one_or_none()
         sv_id = active.id if active is not None and active.approved_by_user else sv.id
+        rp_id = cur.risk_policy_version_id
+        if adopt_latest_risk:
+            q = select(RiskPolicyVersion).where(RiskPolicyVersion.confirmed_by_user.is_(True))
+            if Mode(p.mode).is_live:
+                q = q.where(RiskPolicyVersion.is_test_seed.is_(False))
+            latest = s.execute(q.order_by(RiskPolicyVersion.version.desc()).limit(1)).scalar_one_or_none()
+            if latest is None:
+                raise ValueError("没有已确认的风控版本")
+            rp_id = latest.id
         now = p.sim_clock or utcnow()  # 业务时间（记账用）；授权有效期按真实时间计
         hours = (cur.expires_at - utcnow()).total_seconds() / 3600
         if hours <= 0:
             raise ValueError("当前授权已到期，请用启动向导重新授权")
         a = create_authorization(s, portfolio=p, capital=cur.capital, max_planned_loss=cur.max_planned_loss, scope=scope,
                                  strategy_version_id=sv_id,
-                                 risk_policy_version_id=cur.risk_policy_version_id, overnight=cur.overnight,
+                                 risk_policy_version_id=rp_id, overnight=cur.overnight,
                                  valid_hours=hours, exit_rules=cur.exit_rules, actor=actor, as_of=now)
         a.expires_at = cur.expires_at  # 到期时间与原授权完全一致
         a.signature = authz.sign(a)

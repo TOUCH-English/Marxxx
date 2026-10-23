@@ -510,6 +510,8 @@ export interface CurrentRunScope {
   authorization_id: number;
   scope: { type: 'POOL' | 'WHITELIST'; universe_rule_id?: number; symbols?: string[] };
   expires_at: string;
+  risk_version: number | null;
+  latest_risk_version: number | null;
 }
 
 export interface UniverseInfo {

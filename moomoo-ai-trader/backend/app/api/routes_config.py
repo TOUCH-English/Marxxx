@@ -177,8 +177,12 @@ def get_universe(ns: str, sess=Viewer):
             a = s.execute(select(Authorization).where(Authorization.portfolio_id == p.id, Authorization.status == "ACTIVE")
                           .order_by(Authorization.id.desc()).limit(1)).scalar_one_or_none()
             if a is not None:
+                rv = s.get(RiskPolicyVersion, a.risk_policy_version_id)
+                latest = s.execute(select(RiskPolicyVersion).where(RiskPolicyVersion.confirmed_by_user.is_(True))
+                                   .order_by(RiskPolicyVersion.version.desc()).limit(1)).scalar_one_or_none()
                 cur = {"portfolio_id": p.id, "mode": p.mode, "authorization_id": a.id, "scope": a.scope,
-                       "expires_at": a.expires_at.isoformat()}
+                       "expires_at": a.expires_at.isoformat(), "risk_version": rv.version if rv else None,
+                       "latest_risk_version": latest.version if latest else None}
         return {"rules": [row(r) for r in rules], "labels": RULE_LABELS, "default_rules": DEFAULT_POOL_RULES,
                 "current_run": cur,
                 "auto_us_rules": AUTO_US_POOL_RULES,

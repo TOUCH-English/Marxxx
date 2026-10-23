@@ -365,6 +365,8 @@ function UniverseTab() {
   const cur = u.data?.current_run;
   const confirmedRules = (u.data?.rules ?? []).filter((r) => r.confirmed_by_user);
   const [scopeChoice, setScopeChoice] = useState<string>('');
+  const [adoptRisk, setAdoptRisk] = useState(false);
+  const newerRisk = !!cur && cur.latest_risk_version !== null && cur.risk_version !== null && cur.latest_risk_version > cur.risk_version;
   const scopeText = (sc?: { type: string; universe_rule_id?: number; symbols?: string[] }) => {
     if (!sc) return '—';
     if (sc.type === 'WHITELIST') return `手动白名单：${(sc.symbols ?? []).join('、')}`;
@@ -375,14 +377,15 @@ function UniverseTab() {
     const isPool = scopeChoice.startsWith('rule:');
     if (!cur) return;
     const body = isPool
-      ? { portfolio_id: cur.portfolio_id, scope_type: 'POOL', universe_rule_id: Number(scopeChoice.slice(5)), confirm: true }
-      : { portfolio_id: cur.portfolio_id, scope_type: 'WHITELIST', symbols: u.data?.whitelist ?? [], confirm: true };
+      ? { portfolio_id: cur.portfolio_id, scope_type: 'POOL', universe_rule_id: Number(scopeChoice.slice(5)), adopt_latest_risk: newerRisk && adoptRisk, confirm: true }
+      : { portfolio_id: cur.portfolio_id, scope_type: 'WHITELIST', symbols: u.data?.whitelist ?? [], adopt_latest_risk: newerRisk && adoptRisk, confirm: true };
     modal.confirm({
       title: '更换当前运行的交易范围？',
       content: (
         <Space direction="vertical">
           <Text>新范围：{isPool ? scopeText({ type: 'POOL', universe_rule_id: Number(scopeChoice.slice(5)) }) : scopeText({ type: 'WHITELIST', symbols: u.data?.whitelist ?? [] })}</Text>
-          <Text>不变：资金、可承受亏损、风控版本、策略、到期时间。</Text>
+          <Text>风控版本：{newerRisk && adoptRisk ? `改用最新已确认的 v${cur.latest_risk_version}（原 v${cur.risk_version}）` : `保持 v${cur.risk_version}`}。</Text>
+          <Text>不变：资金、可承受亏损、策略、到期时间。</Text>
           <Text>已有持仓、止损和亏损记录全部保留；持仓即使不在新范围内，也照常按止损/止盈/持有期限管理。</Text>
         </Space>
       ),
@@ -401,7 +404,12 @@ function UniverseTab() {
       {u.data ? <Explain>{u.data.note} 范围条件改变需要您确认；范围内的例行成员更新无需逐只确认。</Explain> : null}
       {cur ? (
         <Card size="small" title="当前运行的交易范围">
-          <Paragraph>现在：{scopeText(cur.scope)}（运行 #{cur.portfolio_id}「{MODE_LABELS[cur.mode] ?? cur.mode}」，授权 #{cur.authorization_id}）</Paragraph>
+          <Paragraph>现在：{scopeText(cur.scope)}（运行 #{cur.portfolio_id}「{MODE_LABELS[cur.mode] ?? cur.mode}」，授权 #{cur.authorization_id}，风控 v{cur.risk_version}）</Paragraph>
+          {newerRisk ? (
+            <Checkbox checked={adoptRisk} onChange={(e) => setAdoptRisk(e.target.checked)} style={{ marginBottom: 8 }}>
+              同时改用最新已确认的风控 v{cur.latest_risk_version}（当前运行用的是 v{cur.risk_version}）
+            </Checkbox>
+          ) : null}
           <Space wrap>
             <Select
               style={{ minWidth: 320 }}
