@@ -651,6 +651,13 @@ export interface FeeItem {
   min?: string;
   max?: string;
   max_rate_of_value?: string;
+  fixed?: string;
+  rounding?: string;
+  block_fee?: string;
+  block_value?: string;
+  block_currency?: string;
+  fx_rate?: string;
+  block_max?: string;
   [k: string]: unknown;
 }
 

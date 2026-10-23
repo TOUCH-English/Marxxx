@@ -56,8 +56,49 @@ def round_lot_down(qty: int, lot: int) -> int:
     return (int(qty) // lot) * lot
 
 
+FEE_KINDS = ("rate", "per_share", "fixed", "block_fee")
+_FEE_NUMBERS = ("rate", "per_share", "fixed", "min", "max", "max_rate_of_value",
+                "block_fee", "block_value", "block_max", "fx_rate")
+
+
+def validate_fee_items(items: list[dict[str, Any]]) -> list[str]:
+    """费用项必须恰好是一种计费方式，数字合法；否则拒绝保存（以前未知类型会被静默忽略）。"""
+    errs = []
+    for i, it in enumerate(items, 1):
+        name = it.get("name") or f"第 {i} 项"
+        kinds = [k for k in FEE_KINDS if it.get(k) not in (None, "")]
+        if len(kinds) != 1:
+            errs.append(f"{name}：必须且只能填写一种计费方式（费率 / 每股 / 每单固定 / 按金额分档）")
+        for k in _FEE_NUMBERS:
+            if it.get(k) in (None, ""):
+                continue
+            try:
+                if D(it[k]) < 0:
+                    raise ValueError
+            except Exception:
+                errs.append(f"{name}：{k} 不是有效的非负数字")
+        if it.get("side", "BOTH") not in ("BOTH", "BUY", "SELL"):
+            errs.append(f"{name}：适用方向无效")
+        if it.get("rounding", "HALF_UP") not in ("HALF_UP", "UP"):
+            errs.append(f"{name}：取整方式只能是 HALF_UP 或 UP")
+        if kinds == ["block_fee"]:
+            for k in ("block_value", "fx_rate"):
+                try:
+                    if D(it.get(k)) <= 0:
+                        raise ValueError
+                except Exception:
+                    errs.append(f"{name}：按金额分档收费必须填写大于 0 的 {k}")
+    return errs
+
+
 def calc_fees(schedule: dict[str, Any] | None, side: str, qty: int, price: Decimal) -> Decimal | None:
-    """按费用表计算单笔费用。schedule 缺失时返回 None（调用方应拒绝生成买单）。"""
+    """按费用表计算单笔费用（交易币种）。schedule 缺失时返回 None（调用方应拒绝生成买单）。
+
+    计费方式：rate（成交额比例）、per_share（每股）、fixed（每单固定）、
+    block_fee（按金额分档：每满或不足 block_value 收 block_fee，金额按 fx_rate 折成 block_currency 计算，
+    上限 block_max 也以 block_currency 计，最后折回交易币种；例如马来西亚印花税每 1000 马币或不足收 1 马币）。
+    rounding=UP 表示向上取整到分（例如「佣金向上取整到美分」），默认四舍五入。
+    """
     if not schedule or not schedule.get("items"):
         return None
     notional = D(price) * qty
@@ -65,21 +106,28 @@ def calc_fees(schedule: dict[str, Any] | None, side: str, qty: int, price: Decim
     for it in schedule["items"]:
         if it.get("side", "BOTH") not in ("BOTH", side):
             continue
-        if "rate" in it:
+        if it.get("rate") not in (None, ""):
             amt = notional * D(it["rate"])
-        elif "per_share" in it:
+        elif it.get("per_share") not in (None, ""):
             amt = D(it["per_share"]) * qty
-        elif "fixed" in it:
+        elif it.get("fixed") not in (None, ""):
             amt = D(it["fixed"])
+        elif it.get("block_fee") not in (None, ""):
+            fx = D(it["fx_rate"])
+            blocks = (notional * fx / D(it["block_value"])).to_integral_value(rounding=ROUND_CEILING)
+            local = blocks * D(it["block_fee"])
+            if it.get("block_max") not in (None, ""):
+                local = min(local, D(it["block_max"]))
+            amt = local / fx
         else:
             continue
-        if it.get("min") is not None:
+        if it.get("min") not in (None, ""):
             amt = max(amt, D(it["min"]))
-        if it.get("max") is not None:
+        if it.get("max") not in (None, ""):
             amt = min(amt, D(it["max"]))
-        if it.get("max_rate_of_value") is not None:
+        if it.get("max_rate_of_value") not in (None, ""):
             amt = min(amt, notional * D(it["max_rate_of_value"]))
-        total += amt.quantize(CENT, rounding=ROUND_HALF_UP)
+        total += amt.quantize(CENT, rounding=ROUND_CEILING if it.get("rounding") == "UP" else ROUND_HALF_UP)
     return total
 
 

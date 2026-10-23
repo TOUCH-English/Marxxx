@@ -234,6 +234,13 @@ const FEE_FIELDS: { key: keyof FeeItem; label: string }[] = [
   { key: 'min', label: '最低' },
   { key: 'max', label: '最高' },
   { key: 'max_rate_of_value', label: '最高占成交额比例' },
+  { key: 'fixed', label: '每单固定' },
+  { key: 'rounding', label: '取整（UP=向上到分）' },
+  { key: 'block_fee', label: '分档：每档收费' },
+  { key: 'block_value', label: '分档：每满/不足金额' },
+  { key: 'block_currency', label: '分档：计费币种' },
+  { key: 'fx_rate', label: '分档：1 交易币种 = ? 计费币种' },
+  { key: 'block_max', label: '分档：上限（计费币种）' },
 ];
 
 function FeesTab() {

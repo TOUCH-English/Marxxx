@@ -20,7 +20,7 @@ from ..config import get_settings
 from ..core.audit import audit
 from ..core.calendar import get_calendar
 from ..core.enums import Mode
-from ..core.money import calc_fees
+from ..core.money import calc_fees, validate_fee_items
 from ..db.models import (
     AccountBinding,
     BacktestRun,
@@ -316,6 +316,15 @@ def add_watch(ns: str, body: WatchBody, sess=Mutator):
         p = current_portfolio(s, ns)
     prov = _provider(ns, p.data_source if p else None)
     inst = prov.instrument(sym)
+    if inst is None and prov.name != "MOOMOO_REALTIME" and not (p and p.data_source == "HISTORICAL_REPLAY"):
+        # 启动纸上交易前（模拟页仍是演示数据）也允许用真实行情只读核实候选：OpenD 可连接时改用 moomoo 核实
+        from ..broker.moomoo_adapter import tcp_probe
+        from ..market_data.moomoo_quotes import MoomooQuoteProvider
+
+        st = get_settings()
+        if tcp_probe(st.moomoo_opend_host, st.moomoo_opend_port):
+            prov = MoomooQuoteProvider.shared()
+            inst = prov.instrument(sym)
     if inst is None and prov.name == "MOOMOO_REALTIME":
         try:  # 用一次只读快照核对名称与交易单位
             prov.quote(sym, utcnow())
@@ -323,7 +332,7 @@ def add_watch(ns: str, body: WatchBody, sess=Mutator):
         except Exception:
             inst = None
     if inst is None and ns == "sim" and prov.name != "MOOMOO_REALTIME":
-        raise HTTPException(400, "当前数据源中没有这只证券")
+        raise HTTPException(400, "当前数据源中没有这只证券（如要核实真实股票，请先确认 moomoo OpenD 已登录）")
     with write_session(ns) as s:
         w = s.execute(select(Watchlist).where(Watchlist.symbol == sym)).scalar_one_or_none()
         if w is None:
@@ -488,6 +497,9 @@ def set_fees(ns: str, body: FeeBody, sess=Mutator):
     ns_of(ns)
     if body.market not in ("MY", "US"):
         raise HTTPException(400, "市场无效")
+    errs = validate_fee_items(body.items) if body.items else ["费用表不能为空"]
+    if errs:
+        raise HTTPException(400, "；".join(errs))
     if ns == "live":
         security.require_recent_reauth(sess)
     with write_session(ns) as s:

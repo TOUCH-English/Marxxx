@@ -139,3 +139,45 @@ def test_realtime_runtime_verifies_only_real_instruments_and_registers_late_ones
     prov.quote("US.S1", None)  # 运行中第一次取到报价并核实类型
     eng._register_instruments(rt)
     assert rt.adapter.state["instruments"]["US.S1"]["lot"] == 1
+
+
+def _client():
+    from fastapi.testclient import TestClient
+
+    from app.api.app import create_app
+
+    c = TestClient(create_app(), base_url="http://127.0.0.1:8710")
+    c.post("/api/auth/setup", json={"password": "password123"})
+    return c, {"x-csrf-token": c.cookies.get("mt_csrf")}
+
+
+def test_watchlist_verifies_real_stock_before_paper_run_when_opend_is_up(env, monkeypatch, clock):
+    """模拟页还在演示数据时，也能用真实行情只读核实候选并保存类型；OpenD 未连接则照旧拒绝。"""
+    from sqlalchemy import select
+
+    from app.broker import moomoo_adapter
+    from app.db.models import Instrument, Watchlist
+    from app.db.session import read_session
+
+    prov, ctx = _provider()
+    mq.MoomooQuoteProvider._shared = prov
+    c, h = _client()
+
+    monkeypatch.setattr(moomoo_adapter, "tcp_probe", lambda *a, **k: False)
+    r = c.post("/api/sim/watchlist", json={"symbol": "US.S0", "in_whitelist": True}, headers=h)
+    assert r.status_code == 400 and "OpenD" in r.json()["detail"]
+    assert ctx.snapshots == []  # 未连接时不发请求
+
+    monkeypatch.setattr(moomoo_adapter, "tcp_probe", lambda *a, **k: True)
+    r = c.post("/api/sim/watchlist", json={"symbol": "US.S0", "in_whitelist": True}, headers=h)
+    assert r.status_code == 200 and r.json()["instrument"]["sec_type"] == "STOCK"
+    r = c.post("/api/sim/watchlist", json={"symbol": "US.ETF1", "in_whitelist": True}, headers=h)
+    assert r.json()["instrument"]["sec_type"] == "ETF_UNVERIFIED"  # 照实保存，风控会拒绝
+    with read_session("sim") as s:
+        row = s.execute(select(Instrument).where(Instrument.symbol == "US.S0")).scalar_one()
+        assert row.source == "MOOMOO_REALTIME" and row.is_demo is False
+        assert s.execute(select(Watchlist).where(Watchlist.symbol == "US.S0")).scalar_one().in_whitelist
+    # 演示证券仍从演示数据核实，不发真实请求
+    n = len(ctx.snapshots)
+    assert c.post("/api/sim/watchlist", json={"symbol": "US.DMOA"}, headers=h).status_code == 200
+    assert len(ctx.snapshots) == n
