@@ -1,7 +1,7 @@
 # 验收结果（docs/acceptance.md）
 
 测试日期：2026-10-23（云端开发环境，Linux，Python 3.13.16）。
-运行命令：`.venv/bin/python -m pytest`（项目根目录）。结果：**70 passed**（约 80 秒）。前端构建与浏览器冒烟测试见「前端」一节。
+运行命令：`.venv/bin/python -m pytest`（项目根目录）。结果：**74 passed**（约 80 秒）。前端构建与浏览器冒烟测试见「前端」一节。
 
 > 说明：本环境没有 moomoo OpenD、没有您的账户、没有 AI 密钥，也无法访问 openapi.moomoo.com。
 > 因此所有「券商」相关测试使用 **本地模拟撮合器** 或 **伪券商（故障注入）**；凡需要真实账户/行情/模型的项目单独列为「未验证」，
@@ -41,7 +41,8 @@
 
 补充测试：事件触发的额外 AI 复核（限频）、基准策略「AI 可否决」只能否决（`tests/integration/test_strategies_extra.py`）；
 Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_provider.py`）；
-只读诊断子进程输出解析（结果 JSON 前后夹有 SDK 日志，`tests/unit/test_diagnostics.py`）。
+只读诊断子进程输出解析（结果 JSON 前后夹有 SDK 日志）、按市场/币种检查现金字段（假 SDK 跑完整诊断流程，`tests/unit/test_diagnostics.py`）；
+实盘闸门按市场要求现金字段通过（`test_isolation_security.py::test_cash_fields_capability_is_per_market_and_gate_keeps_strict_cash_threshold`）。
 
 ## 前端
 
@@ -74,6 +75,19 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
   修复：从后往前逐行找「是对象且 `items` 为列表」的 JSON；找不到时照旧显示「诊断进程失败」。Mac 上先做了同样的最小修复并通过实测，源码分支已同步并补回归测试。
 - 没有做的事：没有绑定真实账户、没有解锁交易、没有下单、没有发送真实 AI 请求。
 
+### 美股券商模拟账户只读验证（同日，Codex 在用户 Mac 上执行并回报）
+
+- 用户在诊断页选择了美股券商模拟账户（SIMULATE）运行只读诊断；**没有确认绑定、没有解锁交易、没有下单**。
+- `US.AAPL` 行情 **PASS**；美股交易权限 **PASS**；限价单只读探测 **PASS**。
+- 止损限价单 **UNSUPPORTED**（原文 "Paper trading does not support Stop Limit order"）。这只代表模拟环境；
+  本系统的止损由工作进程盯盘后发限价卖单，不依赖原生止损单。真实账户上线前须在真实账户重新探测。
+- 现金字段原判 **FAIL**。补充只读检查（只报告字段是否有值）：`us_cash`、`us_avl_withdrawal_cash` 有值，
+  `my_cash`、`my_avl_withdrawal_cash` 缺失。原因是诊断要求马币和美元两种货币都有值，把与美股账户无关的马币缺失也判为失败。
+- 修复：诊断只检查账户所在市场的结算币种（美股看 USD），失败时列出缺失字段名，结果按市场保存（`cash_fields_US`）；
+  实盘闸门改为按绑定账户的每个市场分别要求通过，旧版不分市场的记录不再被采信。**下单风控不变**：
+  实盘仍按交易币种要求「现金」与「可提现现金」都有值、取二者较小者，从不使用购买力。
+  修复后需在 Mac 上重新运行一次只读诊断，确认 `US 现金与融资区分（USD）` 为 PASS。
+
 ## 可复现示例
 
 `python scripts/demo_e2e.py --ticks 900` → `data/examples/demo_run/`（已提交）：
@@ -86,7 +100,8 @@ Anthropic 适配器响应处理（模拟客户端，`tests/unit/test_anthropic_p
 
 | 项目 | 原因 | 如何验证 |
 | --- | --- | --- |
-| 账户绑定、现金字段、订单类型探测（OpenD 连接与美股行情已实测通过） | 尚未选择账户 | 「连接与权限诊断」页选择账户后运行只读诊断 |
+| 真实账户（REAL）的现金字段、原生止损、交易权限 | 只验证了美股券商模拟账户；模拟环境的结果不代表真实账户 | 启用实盘前在诊断页选择真实账户运行只读诊断 |
+| 券商模拟账户下单、撤单、成交推送、对账（BROKER_PAPER） | 模拟账户已只读验证，但尚未确认绑定、尚未运行 | 用户批准后短期运行 BROKER_PAPER |
 | 券商模拟账户（BROKER_PAPER）下单 | 同上 | 诊断通过并选择 SIMULATE 账户后用向导启动 |
 | 真实下单、撤单、成交推送、对账（LIVE_REVIEW / LIVE_AUTO） | 交付时实盘关闭；仅伪券商故障注入验证 | 完成 README 第三节 C 的全部条件后，小额启用 |
 | 马股实时行情 | 用户 Mac 实测 `MY.1155` 为 NEEDS_PERMISSION（当前账户无马股行情权限） | 开通权限后在诊断页重测；否则马股只用历史回放 |

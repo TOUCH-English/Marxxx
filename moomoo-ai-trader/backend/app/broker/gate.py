@@ -76,9 +76,12 @@ def gate_checks(s: Session, portfolio_id: int | None) -> list[dict]:
                                                        MarketCapability.item == "trade_permission")).scalar_one_or_none()
         add(f"{m} 交易权限", cap is not None and cap.status == "LOCAL_PASSED",
             cap.detail if cap else "尚未验证")
-    cash = s.execute(select(MarketCapability).where(MarketCapability.item == "cash_fields")).scalar_one_or_none()
-    add("现金字段", cash is not None and cash.status == "LOCAL_PASSED",
-        cash.detail if cash else "尚未验证券商是否能区分现金与融资额度")
+    for m in markets or ["MY", "US"]:
+        # 按市场检查（该市场结算币种的现金与可提现现金都必须有值）；旧版不分市场的记录不再被采信
+        cash = s.execute(select(MarketCapability).where(MarketCapability.market == m,
+                                                        MarketCapability.item == "cash_fields")).scalar_one_or_none()
+        add(f"{m} 现金字段", cash is not None and cash.status == "LOCAL_PASSED",
+            cash.detail if cash else "尚未验证该市场能否区分现金与融资额度（请重新运行只读诊断）")
     rp = s.execute(select(RiskPolicyVersion).where(RiskPolicyVersion.confirmed_by_user.is_(True),
                                                    RiskPolicyVersion.is_test_seed.is_(False))
                    .order_by(RiskPolicyVersion.version.desc()).limit(1)).scalar_one_or_none()

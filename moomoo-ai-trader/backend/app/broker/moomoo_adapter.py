@@ -296,11 +296,22 @@ def _num(v) -> Decimal | None:
         return None
 
 
+# 各币种的（现金，可提现现金，购买力）字段名。购买力含融资，只展示，从不用于风控。
+CASH_FIELDS = {"MYR": ("my_cash", "my_avl_withdrawal_cash", "myr_net_cash_power"),
+               "USD": ("us_cash", "us_avl_withdrawal_cash", "usd_net_cash_power")}
+MARKET_CURRENCY = {"MY": "MYR", "US": "USD"}
+
+
+def missing_cash_fields(row: dict, ccy: str) -> list[str]:
+    """判断该币种现金是否可靠所需、但券商没有返回有效值的字段名。"""
+    cash_k, wd_k, _ = CASH_FIELDS[ccy]
+    return [k for k in (cash_k, wd_k) if _num(row.get(k)) is None]
+
+
 def parse_cash(row: dict) -> list[CashInfo]:
     """只使用分币种「现金」与「可提现现金」，不使用购买力（含融资）字段。"""
     out = []
-    for ccy, cash_k, wd_k, pw_k in (("MYR", "my_cash", "my_avl_withdrawal_cash", "myr_net_cash_power"),
-                                    ("USD", "us_cash", "us_avl_withdrawal_cash", "usd_net_cash_power")):
+    for ccy, (cash_k, wd_k, pw_k) in CASH_FIELDS.items():
         cash, wd = _num(row.get(cash_k)), _num(row.get(wd_k))
         reliable = cash is not None and wd is not None
         settled = min(cash, wd) if reliable else None

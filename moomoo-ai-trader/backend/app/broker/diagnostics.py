@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from ..config import get_settings
+from .moomoo_adapter import MARKET_CURRENCY, missing_cash_fields, parse_cash
 
 LOGIN_STEPS = [
     "在这台电脑上打开 moomoo OpenD（官网下载：https://www.moomoo.com/download/OpenAPI）。",
@@ -133,19 +134,24 @@ def _main(params: dict) -> dict:
                 perm = market in matched[0]["markets"]
                 add(f"trade_permission_{market}", f"{market} 交易权限", "PASS" if perm else "NEEDS_PERMISSION",
                     f"账户市场权限：{matched[0]['markets']}", market=market, capability="trade_permission")
+                # 只检查本市场结算币种的现金字段（美股账户看 USD）；其他币种字段缺失与本市场无关。
+                ccy = MARKET_CURRENCY[market]
+                cash_label = f"{market} 现金与融资区分（{ccy}）"
                 r, info = t.accinfo_query(trd_env=envv, acc_id=int(acc_id), refresh_cache=True, currency=m.Currency.MYR)
                 if r == m.RET_OK:
-                    from .moomoo_adapter import parse_cash
-
                     row = info.to_dict("records")[0]
-                    cash = parse_cash(row)
-                    rel = all(c.reliable for c in cash)
-                    add("cash_fields", "现金与融资区分", "PASS" if rel else "FAIL",
-                        "；".join(f"{c.currency} 可用可结算现金 {c.cash}（购买力 {c.buying_power} 仅展示）" for c in cash)
-                        + f"；总资产 {row.get('total_assets')}；账户类型 {matched[0]['acc_type']}", capability="cash_fields",
-                        total_assets=str(row.get("total_assets")))
+                    ci = next(c for c in parse_cash(row) if c.currency == ccy)
+                    if ci.reliable:
+                        detail = (f"{ccy} 可用可结算现金 {ci.cash}（取「现金」与「可提现现金」较小者；"
+                                  f"购买力 {ci.buying_power} 仅展示，不用于风控）")
+                    else:
+                        detail = (f"{ccy} 缺少字段：{', '.join(missing_cash_fields(row, ccy))}。"
+                                  "无法可靠区分现金与融资额度，该市场禁用自动开仓（不会用购买力代替）")
+                    add(f"cash_fields_{market}", cash_label, "PASS" if ci.reliable else "FAIL",
+                        detail + f"；总资产 {row.get('total_assets')}；账户类型 {matched[0]['acc_type']}",
+                        market=market, capability="cash_fields", total_assets=str(row.get("total_assets")))
                 else:
-                    add("cash_fields", "现金与融资区分", "FAIL", str(info), capability="cash_fields")
+                    add(f"cash_fields_{market}", cash_label, "FAIL", str(info), market=market, capability="cash_fields")
                 r, pos = t.position_list_query(trd_env=envv, acc_id=int(acc_id))
                 add(f"positions_{market}", f"{market} 持仓查询", "PASS" if r == m.RET_OK else "FAIL",
                     f"{len(pos)} 条持仓（只读，不会改动您原有的持仓）" if r == m.RET_OK else str(pos))

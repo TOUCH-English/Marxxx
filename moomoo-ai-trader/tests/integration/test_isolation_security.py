@@ -262,3 +262,54 @@ def test_replay_never_calls_paid_model_even_with_key(env, monkeypatch):
         st = eng.tick()
         assert "error" not in st["portfolios"][pid]
     assert eng.runtimes[pid].ai_provider.is_fixture
+
+
+def test_cash_fields_capability_is_per_market_and_gate_keeps_strict_cash_threshold(env, monkeypatch):
+    """诊断按市场保存现金字段结果；实盘闸门按绑定账户的每个市场要求 PASS，旧版不分市场的记录不被采信。"""
+    from app.api.app import create_app
+    from app.broker import diagnostics
+    from app.broker.gate import gate_checks
+    from app.db.models import AccountBinding, MarketCapability
+    from app.services.runs import ensure_seed
+
+    ensure_seed("sim"), ensure_seed("live")
+
+    def all_checks():
+        with read_session("live") as s:
+            return gate_checks(s, None)
+
+    def cash_check(name):
+        return next(c for c in all_checks() if c["name"] == name)
+
+    with write_session("live") as s:
+        s.add(AccountBinding(broker="MOOMOO", trd_env="REAL", acc_id="11112222", acc_id_masked="****2222",
+                             markets=["US"], confirmed_by_user=True))
+        # 旧版（不分市场）的通过记录：不能让 US 现金字段通过
+        s.add(MarketCapability(market="ALL", item="cash_fields", status="LOCAL_PASSED", detail="旧记录"))
+    assert cash_check("US 现金字段")["ok"] is False
+    assert not any(c["name"] == "MY 现金字段" for c in all_checks())
+
+    # 诊断结果通过网页接口保存：US 失败 → 闸门不通过，并写明缺失字段
+    items = [{"key": "cash_fields_US", "label": "US 现金与融资区分（USD）", "status": "FAIL", "market": "US",
+              "capability": "cash_fields", "detail": "USD 缺少字段：us_avl_withdrawal_cash。无法可靠区分现金与融资额度"}]
+    monkeypatch.setattr(diagnostics, "run_diagnostics", lambda *a, **k: {"ok": False, "items": items, "accounts": []})
+    c = TestClient(create_app(), base_url="http://127.0.0.1:8710")
+    c.post("/api/auth/setup", json={"password": "password123"})
+    h = {"x-csrf-token": c.cookies.get("mt_csrf")}
+    body = {"acc_id": "11112222", "trd_env": "REAL", "symbols": ["US.AAPL"]}
+    assert c.post("/api/connection/diagnose", json=body, headers=h).status_code == 200
+    chk = cash_check("US 现金字段")
+    assert chk["ok"] is False and "us_avl_withdrawal_cash" in chk["detail"]
+
+    # US 通过 → 只有 US 现金字段这一项变为通过（其余实盘条件照旧不满足，实盘仍关闭）
+    items[0] |= {"status": "PASS", "detail": "USD 可用可结算现金 900"}
+    assert c.post("/api/connection/diagnose", json=body, headers=h).status_code == 200
+    assert cash_check("US 现金字段")["ok"] is True
+    assert not all(x["ok"] for x in all_checks())
+
+    # 账户同时有马股权限时，MY 也必须单独通过（不因 US 通过而放行）
+    with write_session("live") as s:
+        b = s.execute(select(AccountBinding).where(AccountBinding.acc_id == "11112222")).scalar_one()
+        b.markets = ["US", "MY"]
+    assert cash_check("US 现金字段")["ok"] is True
+    assert cash_check("MY 现金字段")["ok"] is False
