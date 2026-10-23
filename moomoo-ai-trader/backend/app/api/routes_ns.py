@@ -146,6 +146,7 @@ def stop_run(ns: str, sess=Mutator):
 
 
 class ScopeBody(BaseModel):
+    portfolio_id: int  # 必须指明要改哪个运行，避免改到同时存在的其他运行
     scope_type: str  # POOL / WHITELIST
     universe_rule_id: int | None = None
     symbols: list[str] = []
@@ -167,9 +168,11 @@ def change_run_scope(ns: str, body: ScopeBody, sess=Mutator):
     else:
         raise HTTPException(400, "交易范围只能是 POOL 或 WHITELIST")
     with read_session(ns) as s:
-        p = _portfolio(s, ns)
+        p = s.get(Portfolio, body.portfolio_id)
+        if p is None or not p.running:
+            raise HTTPException(400, "该运行不存在或已结束")
     try:
-        a = change_scope(ns, p.id, scope, "user")
+        a = change_scope(ns, body.portfolio_id, scope, "user")
     except ValueError as e:
         raise HTTPException(400, str(e))
     return {"ok": True, "authorization_id": a.id, "summary": a.summary_text,

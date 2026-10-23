@@ -7,7 +7,7 @@ import { useAppState } from '../state/app';
 import { useAction, useApi } from '../state/hooks';
 import { fmtMoney, fmtRatioPct, shiftDecimal } from '../utils/decimal';
 import { fmtMyt, fmtValue } from '../utils/format';
-import { LOCK_KIND_LABELS, LOCK_NOT_RELEASABLE, MARKET_LABELS, RISK_PARAM_HELP, SEC_TYPE_LABELS, isRatioParam } from '../utils/labels';
+import { LOCK_KIND_LABELS, LOCK_NOT_RELEASABLE, MARKET_LABELS, MODE_LABELS, RISK_PARAM_HELP, SEC_TYPE_LABELS, isRatioParam } from '../utils/labels';
 import { MembersTable } from './Wizard';
 
 const { Text, Paragraph } = Typography;
@@ -373,9 +373,10 @@ function UniverseTab() {
   };
   const changeScope = () => {
     const isPool = scopeChoice.startsWith('rule:');
+    if (!cur) return;
     const body = isPool
-      ? { scope_type: 'POOL', universe_rule_id: Number(scopeChoice.slice(5)), confirm: true }
-      : { scope_type: 'WHITELIST', symbols: u.data?.whitelist ?? [], confirm: true };
+      ? { portfolio_id: cur.portfolio_id, scope_type: 'POOL', universe_rule_id: Number(scopeChoice.slice(5)), confirm: true }
+      : { portfolio_id: cur.portfolio_id, scope_type: 'WHITELIST', symbols: u.data?.whitelist ?? [], confirm: true };
     modal.confirm({
       title: '更换当前运行的交易范围？',
       content: (
@@ -400,7 +401,7 @@ function UniverseTab() {
       {u.data ? <Explain>{u.data.note} 范围条件改变需要您确认；范围内的例行成员更新无需逐只确认。</Explain> : null}
       {cur ? (
         <Card size="small" title="当前运行的交易范围">
-          <Paragraph>现在：{scopeText(cur.scope)}（运行 #{cur.portfolio_id}，授权 #{cur.authorization_id}）</Paragraph>
+          <Paragraph>现在：{scopeText(cur.scope)}（运行 #{cur.portfolio_id}「{MODE_LABELS[cur.mode] ?? cur.mode}」，授权 #{cur.authorization_id}）</Paragraph>
           <Space wrap>
             <Select
               style={{ minWidth: 320 }}

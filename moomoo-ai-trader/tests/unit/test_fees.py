@@ -57,3 +57,6 @@ def test_validation_rejects_ambiguous_or_incomplete_items():
     assert validate_fee_items([{"name": "x", "rate": "-0.1"}])
     assert validate_fee_items([{"name": "x", "rate": "0.1", "rounding": "DOWN"}])
     assert validate_fee_items([{"name": "x", "rate": "0.1", "side": "BOTHWAYS"}])
+    assert validate_fee_items([{"name": "x", "fixed": "Infinity"}])  # 会让费用计算崩溃
+    assert validate_fee_items([{"name": "x", "per_share": "1e40"}])
+    assert validate_fee_items([{"name": "x", "rate": "2"}])  # 比例大于 1

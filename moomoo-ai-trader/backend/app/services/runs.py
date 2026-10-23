@@ -203,12 +203,17 @@ def change_scope(ns: str, portfolio_id: int, scope: dict, actor: str) -> Authori
                         .order_by(Authorization.id.desc()).limit(1)).scalar_one_or_none()
         if cur is None:
             raise ValueError("当前运行没有有效授权，请用启动向导重新授权")
+        # 策略版本：用户批准升级后，授权里的旧版本会变成非 ACTIVE；沿用同一策略当前生效的版本（与工作进程一致）
+        sv = s.get(StrategyVersion, cur.strategy_version_ids[0])
+        active = s.execute(select(StrategyVersion).where(StrategyVersion.key == sv.key,
+                                                         StrategyVersion.status == "ACTIVE")).scalar_one_or_none()
+        sv_id = active.id if active is not None and active.approved_by_user else sv.id
         now = p.sim_clock or utcnow()  # 业务时间（记账用）；授权有效期按真实时间计
         hours = (cur.expires_at - utcnow()).total_seconds() / 3600
         if hours <= 0:
             raise ValueError("当前授权已到期，请用启动向导重新授权")
         a = create_authorization(s, portfolio=p, capital=cur.capital, max_planned_loss=cur.max_planned_loss, scope=scope,
-                                 strategy_version_id=cur.strategy_version_ids[0],
+                                 strategy_version_id=sv_id,
                                  risk_policy_version_id=cur.risk_policy_version_id, overnight=cur.overnight,
                                  valid_hours=hours, exit_rules=cur.exit_rules, actor=actor, as_of=now)
         a.expires_at = cur.expires_at  # 到期时间与原授权完全一致

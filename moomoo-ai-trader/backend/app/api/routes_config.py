@@ -371,8 +371,10 @@ def add_watch(ns: str, body: WatchBody, sess=Mutator):
             inst = prov.instrument(sym)
         except Exception:
             inst = None
-    if inst is None and ns == "sim" and prov.name != "MOOMOO_REALTIME":
-        raise HTTPException(400, "当前数据源中没有这只证券（如要核实真实股票，请先确认 moomoo OpenD 已登录）")
+    if inst is None and ns == "sim":
+        raise HTTPException(400, "没能核实这只证券（代码有误、没有行情权限，或 moomoo OpenD 未登录）"
+                            if prov.name == "MOOMOO_REALTIME" else
+                            "当前数据源中没有这只证券（如要核实真实股票，请先确认 moomoo OpenD 已登录）")
     with write_session(ns) as s:
         w = s.execute(select(Watchlist).where(Watchlist.symbol == sym)).scalar_one_or_none()
         if w is None:

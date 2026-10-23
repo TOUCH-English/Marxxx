@@ -177,6 +177,8 @@ def test_watchlist_verifies_real_stock_before_paper_run_when_opend_is_up(env, mo
         row = s.execute(select(Instrument).where(Instrument.symbol == "US.S0")).scalar_one()
         assert row.source == "MOOMOO_REALTIME" and row.is_demo is False
         assert s.execute(select(Watchlist).where(Watchlist.symbol == "US.S0")).scalar_one().in_whitelist
+    r = c.post("/api/sim/watchlist", json={"symbol": "US.NOPE", "in_whitelist": True}, headers=h)
+    assert r.status_code == 400  # OpenD 已连接但核实不到：拒绝，不能把打错的代码放进白名单
     # 演示证券仍从演示数据核实，不发真实请求
     n = len(ctx.snapshots)
     assert c.post("/api/sim/watchlist", json={"symbol": "US.DMOA"}, headers=h).status_code == 200

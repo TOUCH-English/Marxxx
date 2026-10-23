@@ -247,7 +247,8 @@ class TradingEngine:
             rt.started = True
         # 3. 公司行动
         self._corporate_actions(rt)
-        # 4. 本次状态
+        # 4. 本次状态（先在事务外按需更新股票池）
+        self._refresh_pool(rt)
         ts = self._tick_state(rt, wall)
         if recon and recon.get("error"):
             ts.health_blocks.append(recon["error"])
@@ -357,47 +358,71 @@ class TradingEngine:
         return ts
 
     def _scope(self, s, rt: Runtime, auth: Authorization | None) -> set[str]:
+        rt.pool_info = {}
         if auth is None:
             return set()
         sc = auth.scope or {}
         if sc.get("type") == "WHITELIST":
             return set(sc.get("symbols", []))
         if sc.get("type") == "POOL":
+            # 股票池在 _refresh_pool 中（事务外）更新；这里只读取最新快照
             rule = s.get(UniverseRule, sc.get("universe_rule_id"))
             if rule is None or not rule.confirmed_by_user:
                 return set()
-            now = rt.now()
             snap = s.execute(select(UniverseSnapshot).where(UniverseSnapshot.rule_id == rule.id)
                              .order_by(UniverseSnapshot.id.desc()).limit(1)).scalar_one_or_none()
-            # 只做美股的规则按美股交易日更新（马来西亚午夜正处于美股交易时段，不能在盘中换池）
-            mk = "US" if rule.rules.get("markets") == ["US"] else "MY"
-            day = rt.calendar.local_date(mk, now)
-            due = snap is None or rt.calendar.local_date(mk, snap.as_of) != day
-            if due and (rt.pool_retry_at is None or now >= rt.pool_retry_at):
-                try:
-                    members, excluded, stats = screen(rt.provider, rule.rules, now)
-                except Exception as e:
-                    # 失败时沿用上一份股票池（没有就为空，只是不开新仓；已有持仓照常保护），30 分钟后再试
-                    rt.pool_retry_at = now + timedelta(minutes=30)
-                    audit(s, "UNIVERSE", "SNAPSHOT_FAILED", f"股票池更新失败，沿用上一份：{e}", actor="worker",
-                          portfolio_id=rt.portfolio_id, as_of=now)
-                    notify(s, "warn", "股票池今日更新失败", f"已沿用上一份股票池，30 分钟后重试。原因：{e}"[:500],
-                           dedupe_key=f"pool-fail:{rule.id}:{day}")
-                else:
-                    rt.pool_retry_at = None
-                    snap = UniverseSnapshot(rule_id=rule.id, as_of=now, members=members, excluded=excluded,
-                                            data_source=rt.data_source, stats=stats)
-                    s.add(snap)
-                    scanned = f"扫描 {stats['matched_total']} 只符合条件的美股中成交额前 {stats['fetched']} 只，" \
-                        if "matched_total" in stats else ""
-                    audit(s, "UNIVERSE", "SNAPSHOT",
-                          f"授权股票池例行更新：{scanned}{len(members)} 个成员（规则 v{rule.version}，无需逐只确认）",
-                          actor="worker", portfolio_id=rt.portfolio_id, as_of=now)
             if snap is None:
                 return set()
             rt.pool_info = {m["symbol"]: m for m in snap.members}
             return {m["symbol"] for m in snap.members}
         return set()
+
+    def _refresh_pool(self, rt: Runtime) -> None:
+        """需要时更新授权股票池。筛选（可能有网络请求）在任何数据库事务之外进行，避免长时间占用写锁。"""
+        now = rt.now()
+        with read_session(self.ns) as s:
+            auth = self._active_auth(s, rt.portfolio_id)
+            sc = (auth.scope or {}) if auth is not None and auth.status == "ACTIVE" else {}
+            if sc.get("type") != "POOL":
+                return
+            rule = s.get(UniverseRule, sc.get("universe_rule_id"))
+            if rule is None or not rule.confirmed_by_user:
+                return
+            rule_id, rules, version = rule.id, dict(rule.rules), rule.version
+            last = s.execute(select(UniverseSnapshot.as_of).where(UniverseSnapshot.rule_id == rule_id)
+                             .order_by(UniverseSnapshot.id.desc()).limit(1)).scalar_one_or_none()
+        # 只做美股的规则按美股交易日更新（马来西亚午夜正处于美股交易时段，不能在盘中换池）
+        mk = "US" if rules.get("markets") == ["US"] else "MY"
+        day = rt.calendar.local_date(mk, now)
+        if last is not None and rt.calendar.local_date(mk, last) == day:
+            return
+        retry = rt.pool_retry.get(rule_id)
+        if retry is not None and now < retry:
+            return
+        try:
+            members, excluded, stats = screen(rt.provider, rules, now)
+        except Exception as e:
+            # 失败时沿用上一份股票池（没有就为空，只是不开新仓；已有持仓照常保护），30 分钟后再试
+            rt.pool_retry[rule_id] = now + timedelta(minutes=30)
+            with write_session(self.ns) as s:
+                audit(s, "UNIVERSE", "SNAPSHOT_FAILED", f"股票池更新失败，沿用上一份：{e}", actor="worker",
+                      portfolio_id=rt.portfolio_id, as_of=now)
+                notify(s, "warning", "股票池今日更新失败", f"已沿用上一份股票池，30 分钟后重试。原因：{e}"[:500],
+                       dedupe_key=f"pool-fail:{rule_id}:{day}")
+            return
+        rt.pool_retry.pop(rule_id, None)
+        with write_session(self.ns) as s:
+            cur = s.execute(select(UniverseSnapshot.as_of).where(UniverseSnapshot.rule_id == rule_id)
+                            .order_by(UniverseSnapshot.id.desc()).limit(1)).scalar_one_or_none()
+            if cur is not None and rt.calendar.local_date(mk, cur) == day:
+                return  # 期间已有其他进程写入当天快照
+            s.add(UniverseSnapshot(rule_id=rule_id, as_of=now, members=members, excluded=excluded,
+                                   data_source=rt.data_source, stats=stats))
+            scanned = (f"扫描 {stats['matched_total']} 只符合条件的美股中成交额前 {stats['fetched']} 只，"
+                       if "matched_total" in stats else "")
+            audit(s, "UNIVERSE", "SNAPSHOT",
+                  f"授权股票池例行更新：{scanned}{len(members)} 个成员（规则 v{version}，无需逐只确认）",
+                  actor="worker", portfolio_id=rt.portfolio_id, as_of=now)
 
     def _corporate_actions(self, rt: Runtime) -> None:
         get_all = getattr(rt.provider, "all_corporate_actions", None)

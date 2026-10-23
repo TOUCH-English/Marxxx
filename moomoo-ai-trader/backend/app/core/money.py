@@ -73,10 +73,11 @@ def validate_fee_items(items: list[dict[str, Any]]) -> list[str]:
             if it.get(k) in (None, ""):
                 continue
             try:
-                if D(it[k]) < 0:
+                v = D(it[k])
+                if not v.is_finite() or v < 0 or v > (1 if k in ("rate", "max_rate_of_value") else 1_000_000):
                     raise ValueError
             except Exception:
-                errs.append(f"{name}：{k} 不是有效的非负数字")
+                errs.append(f"{name}：{k} 不是合理的非负数字（比例不超过 1，金额不超过 100 万）")
         if it.get("side", "BOTH") not in ("BOTH", "BUY", "SELL"):
             errs.append(f"{name}：适用方向无效")
         if it.get("rounding", "HALF_UP") not in ("HALF_UP", "UP"):

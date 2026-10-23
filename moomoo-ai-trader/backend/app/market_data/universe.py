@@ -104,6 +104,9 @@ def screen_scan(provider, rules: dict[str, Any], now: datetime) -> tuple[list[di
                "change_20d_pct": c20, "change_60d_pct": c60, "change_ytd_pct": r.get("change_ytd_pct"),
                "pe_ttm": r.get("pe_ttm"), "rank_score": score}
         (excluded.append(row | {"reasons": reasons}) if reasons else members.append(row))
+    if rows and verified < max(1, len(rows) // 2):
+        # 券商资料大面积查不到，多半是查询失败而不是真没有：抛出异常，沿用上一份股票池并稍后重试
+        raise RuntimeError(f"券商资料只核实了 {verified}/{len(rows)} 只，可能查询失败")
     members.sort(key=lambda x: (x["rank_score"] is not None, x["rank_score"] or 0), reverse=True)
     n = int(rules.get("max_members", 20))
     for extra in members[n:]:

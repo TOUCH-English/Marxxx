@@ -53,9 +53,13 @@ class FakeCtx:
         self.filters, self.klines, self.basic = [], [], []
         self.remain, self.seen = remain, set()
         self.fail_filter = False
+        self.fail_basic = False
+        self.on_filter = None
 
     def get_stock_filter(self, market, filter_list, begin=0, num=200):
         self.filters.append((market, len(filter_list), begin, num))
+        if self.on_filter:
+            self.on_filter()
         if self.fail_filter:
             return m.RET_ERROR, "busy"
         items = [_Item(c, v) for c, v in sorted(UNIVERSE.items(), key=lambda kv: -kv[1][2])]
@@ -63,6 +67,8 @@ class FakeCtx:
 
     def get_stock_basicinfo(self, market, stock_type, code_list):
         self.basic.append(list(code_list))
+        if self.fail_basic:
+            return m.RET_ERROR, "timeout"
         return m.RET_OK, _Rows([{"code": c, "name": c + " Inc", "lot_size": 1, "stock_type": UNIVERSE[c][5],
                                   "exchange_type": UNIVERSE[c][6], "delisting": False}
                                  for c in code_list if c in UNIVERSE and UNIVERSE[c][6]])
@@ -226,11 +232,13 @@ def test_scope_api_requires_confirmation_and_validates_rules(env):
     c = TestClient(create_app(), base_url="http://127.0.0.1:8710")
     c.post("/api/auth/setup", json={"password": "password123"})
     h = {"x-csrf-token": c.cookies.get("mt_csrf")}
-    setup_run("sim", "LOCAL_PAPER", symbols=["US.AAA"])
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.AAA"])
     r = c.post("/api/sim/universe/rules/auto-us", headers=h)
     assert r.status_code == 200 and r.json()["rules"]["source"] == "MOOMOO_SCAN" and not r.json()["confirmed_by_user"]
     rid = r.json()["id"]
-    body = {"scope_type": "POOL", "universe_rule_id": rid}
+    assert c.post("/api/sim/control/scope", json={"scope_type": "POOL", "universe_rule_id": rid, "confirm": True},
+                  headers=h).status_code == 422  # 必须指明运行
+    body = {"portfolio_id": pid, "scope_type": "POOL", "universe_rule_id": rid}
     assert c.post("/api/sim/control/scope", json=body, headers=h).status_code == 400  # 未勾选确认
     r = c.post("/api/sim/control/scope", json=body | {"confirm": True}, headers=h)
     assert r.status_code == 400 and "未确认" in r.json()["detail"]
@@ -239,3 +247,69 @@ def test_scope_api_requires_confirmation_and_validates_rules(env):
     assert r.status_code == 200 and "保留" in r.json()["note"] and "股票池" in r.json()["summary"]
     bad = c.post("/api/sim/universe/rules", json={"rules": {"source": "MOOMOO_SCAN", "markets": ["MY", "US"]}}, headers=h)
     assert bad.status_code == 400 and "美股" in bad.json()["detail"]
+
+
+def test_broker_verification_failure_does_not_save_empty_pool_and_retries(env):
+    ctx = FakeCtx()
+    ctx.fail_basic = True
+    prov = _prov(ctx)
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.AAA"])
+    change_scope("sim", pid, {"type": "POOL", "universe_rule_id": _auto_rule()}, "user")
+    clock = ManualClock(US_OPEN)
+    eng, _ = make_engine("sim", prov, clock)
+    eng.tick()
+    with read_session("sim") as s:
+        assert list(s.execute(select(UniverseSnapshot)).scalars()) == []  # 不保存空股票池
+        assert s.execute(select(AuditEvent).where(AuditEvent.action == "SNAPSHOT_FAILED")).first()
+    ctx.fail_basic = False
+    clock.advance(minutes=31)
+    prov._type_try.clear()  # 证券资料的重试节流按真实时间计；测试里只推进了业务时钟
+    eng.tick()
+    with read_session("sim") as s:
+        snap = s.execute(select(UniverseSnapshot)).scalar_one()
+        assert len(snap.members) == 4
+
+
+def test_scan_runs_outside_the_database_write_lock(env):
+    """扫描（网络请求）期间，其他写操作（例如网页上的紧急停止）不能被卡住。"""
+    from sqlalchemy import text
+
+    ctx = FakeCtx()
+    waited = []
+
+    def concurrent_write():
+        t0 = time.monotonic()
+        with write_session("sim") as s:
+            s.execute(text("select 1"))
+        waited.append(time.monotonic() - t0)
+
+    ctx.on_filter = concurrent_write
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.AAA"])
+    change_scope("sim", pid, {"type": "POOL", "universe_rule_id": _auto_rule()}, "user")
+    eng, _ = make_engine("sim", _prov(ctx), ManualClock(US_OPEN))
+    eng.tick()
+    assert waited and waited[0] < 1.0
+
+
+def test_change_scope_follows_upgraded_strategy_and_clears_pool_info(env):
+    from app.db.models import StrategyVersion
+
+    ctx = FakeCtx()
+    pid, aid = setup_run("sim", "LOCAL_PAPER", symbols=["US.AAA"])
+    with write_session("sim") as s:
+        old = s.execute(select(StrategyVersion).where(StrategyVersion.key == "AI_AUTONOMOUS",
+                                                      StrategyVersion.status == "ACTIVE")).scalar_one()
+        old.status = "INACTIVE"
+        new = StrategyVersion(key="AI_AUTONOMOUS", version="v2", params=old.params, prompt_version=old.prompt_version,
+                              status="ACTIVE", approved_by_user=True)
+        s.add(new)
+        s.flush()
+        new_id = new.id
+    a = change_scope("sim", pid, {"type": "POOL", "universe_rule_id": _auto_rule()}, "user")
+    assert a.strategy_version_ids == [new_id]
+    eng, _ = make_engine("sim", _prov(ctx), ManualClock(US_OPEN))
+    eng.tick()
+    assert eng.runtimes[pid].pool_info
+    change_scope("sim", pid, {"type": "WHITELIST", "symbols": ["US.AAA"]}, "user")
+    eng.tick()
+    assert eng.runtimes[pid].pool_info == {}  # 回到白名单后不再附带旧股票池数据
