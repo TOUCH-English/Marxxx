@@ -381,3 +381,71 @@ def test_turnover_divisor_converts_server_value_and_filter_threshold(env, monkey
     aaa = next(x for x in members if x["symbol"] == "US.AAA")
     assert aaa["avg_turnover_20d"] == str(round(9e9 / 20))
     assert stats["turnover_divisor"] == 20
+
+
+def _waiting_buy(sym, target="0.25"):
+    """AI 提案：价格回落到 entry_price 以下才买（条件单，先进入 WAITING_PRICE）。"""
+    from integration.test_ai_safety import ScriptedAI, _buy
+
+    return ScriptedAI(lambda p: _buy(p, entry_type="LIMIT_AT_OR_BELOW", entry_price="100.00", max_buy_price="100.00",
+                                     stop_loss_price="94.00", target_position_pct=target)
+                      if p["candidates"] else _buy(p))
+
+
+def _waiting_setup(symbols, risk):
+    from app.db.models import Decision
+    from helpers import StaticProvider, trend
+
+    prov = StaticProvider()
+    for sym in symbols:
+        prov.add(sym, trend(80, 100, 0.05), "104")
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=symbols, capital={"USD": "2448"}, max_loss={"USD": "122"}, risk=risk)
+    clock = ManualClock(US_OPEN)
+    eng, fb = make_engine("sim", prov, clock, ai=_waiting_buy(symbols[0]))
+    fb.callback_before_return = fb.fill_immediately = True
+    for _ in range(3):
+        eng.tick()
+        time.sleep(0.05)
+    with read_session("sim") as s:
+        d = s.execute(select(Decision).where(Decision.outcome == "WAITING_PRICE")).scalars().first()
+    assert d is not None, "应先产生一个等待价格的买入提案"
+    return prov, pid, clock, eng, d.id, d.symbol
+
+
+def test_waiting_proposal_is_rechecked_against_new_scope_after_change(env):
+    """旧白名单下等待中的买入提案：换成不含该股的新范围后，价格条件满足也不能买。"""
+    from app.db.models import Decision, OrderIntent
+
+    prov, pid, clock, eng, did, sym = _waiting_setup(["US.W1", "US.W2"], {"max_position_pct": "0.25"})
+    other = "US.W2" if sym == "US.W1" else "US.W1"
+    change_scope("sim", pid, {"type": "WHITELIST", "symbols": [other]}, "user")
+    prov.set_quote(sym, "99.50")  # 价格条件满足
+    clock.advance(minutes=1)
+    eng.tick()
+    with read_session("sim") as s:
+        d = s.get(Decision, did)
+        assert d.outcome == "RISK_BLOCKED" and "授权范围" in d.outcome_reason
+        assert not s.execute(select(OrderIntent).where(OrderIntent.symbol == sym)).first()
+
+
+def test_waiting_proposal_uses_new_risk_version_after_change(env):
+    """同一只股票仍在范围内时，按新授权的风控 v3（单只 15%）重新计算数量，不沿用旧的 25%。"""
+    from app.db.models import Decision, OrderIntent, RiskPolicyVersion
+    from app.risk.policy import SEED_RISK_PARAMS
+
+    risk = {"max_position_pct": "0.25", "max_total_exposure_pct": "0.60", "risk_per_trade_pct": "0.02",
+            "daily_loss_pct": "0.10", "max_stop_distance_pct": "0.20"}
+    prov, pid, clock, eng, did, sym = _waiting_setup(["US.W1"], risk)
+    with write_session("sim") as s:
+        s.add(RiskPolicyVersion(version=600, params=dict(SEED_RISK_PARAMS) | risk | {"max_position_pct": "0.15",
+                                "max_total_exposure_pct": "0.45"}, confirmed_by_user=True, is_test_seed=False))
+    change_scope("sim", pid, {"type": "WHITELIST", "symbols": ["US.W1"]}, "user", adopt_latest_risk=True)
+    prov.set_quote(sym, "99.50")
+    clock.advance(minutes=1)
+    eng.tick()
+    with read_session("sim") as s:
+        d = s.get(Decision, did)
+        it = s.execute(select(OrderIntent).where(OrderIntent.symbol == sym)).scalar_one()
+    assert d.outcome == "AUTO_EXECUTED"
+    assert it.qty * it.limit_price <= Decimal("2448") * Decimal("0.15")  # 不超过 v3 的 15%
+    assert it.risk_policy_version != 0 and it.authorization_id != None
