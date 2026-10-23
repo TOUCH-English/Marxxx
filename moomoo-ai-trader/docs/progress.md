@@ -13,7 +13,7 @@
 | D 实盘离线验证 | LIVE_AUTO/LIVE_REVIEW、实盘闸门、伪券商故障注入、启动向导 | 完成（伪券商）；**真实下单未验证（按要求关闭）** |
 
 ## 验证结果
-- 后端：`.venv/bin/python -m pytest` → 74 passed（覆盖规格验收 1–27）。
+- 后端：`.venv/bin/python -m pytest` → 80 passed（覆盖规格验收 1–27）。
 - 前端：`npm run build` 通过；Playwright 浏览器冒烟 1 passed，无控制台错误。
 - 可复现示例：`scripts/demo_e2e.py` → `data/examples/demo_run/`。
 详见 `docs/acceptance.md`。
@@ -28,7 +28,8 @@
 - 美股券商模拟账户只读诊断：行情、美股交易权限、限价单探测 PASS；止损限价单在模拟环境 UNSUPPORTED（系统止损本来就是程序盯盘）；
   现金字段因诊断同时要求马币字段而误判 FAIL，已改为按市场/币种检查并列出缺失字段（实际下单风控不变）。
   修复版 `0bc7b1a` 已在 Mac 复验：`cash_fields_US` PASS（命令行与网页两种方式一致）。
-- LOCAL_PAPER 启动前准备清单见 `docs/runbook.md`「LOCAL_PAPER 启动前准备」；尚未启动。
+- LOCAL_PAPER 启动前准备清单见 `docs/runbook.md`「LOCAL_PAPER 启动前准备」。清单 A 的三项代码问题（快照限频、证券类型、演示证券）已修复并测试，待 Mac 复验；尚未启动。
+- 用户已同意 Codex 运行免费的模型可用性检查（Models API + count_tokens，不产生费用）。
 - 下一步建议（待用户批准，未启动）：先 LOCAL_PAPER（只做美股，真实行情 + 真实 Claude + 本机模拟成交），再短期 BROKER_PAPER 验证下单链路。
 - **当前停在这里**。纸上自动交易、实盘、权限变更、部署都等用户决定，在 Mac 上协助操作。
 

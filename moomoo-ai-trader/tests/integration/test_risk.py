@@ -105,12 +105,13 @@ def test_rejections(env):
     prov.add("US.HALT", trend(80, 50, 0.05), "54")
     prov.add("US.WIDE", trend(80, 50, 0.05), "54")
     prov.add("US.LEV", trend(80, 50, 0.05), "54", leveraged=True)
+    prov.add("US.ETFU", trend(80, 50, 0.05), "54", sec_type="ETF_UNVERIFIED")  # 实时行情里未确认非杠杆的 ETF
     prov.add("US.CCY", trend(80, 50, 0.05), "54", currency="MYR")
     prov.add("MY.LOT", trend(80, 2, 0.001), "2.10", market="MY", lot=100)
     prov.set_quote("US.STALE", "54", age_s=120)
     prov.set_quote("US.HALT", "54", suspended=True)
     prov.set_quote("US.WIDE", "54", bid="50", ask="58")
-    scope = ["US.OK", "US.STALE", "US.HALT", "US.WIDE", "US.LEV", "US.CCY", "MY.LOT"]
+    scope = ["US.OK", "US.STALE", "US.HALT", "US.WIDE", "US.LEV", "US.ETFU", "US.CCY", "MY.LOT"]
     pid, _ = setup_run("live", "LIVE_AUTO", symbols=scope, capital={"USD": "10000", "MYR": "300"})
     ctx = _ctx("live", pid, prov, US_OPEN, scope)
 
@@ -125,6 +126,7 @@ def test_rejections(env):
     assert "停牌" in reasons("US.HALT")[1]
     assert "买卖价差" in reasons("US.WIDE")[1]
     assert "杠杆" in reasons("US.LEV")[1]
+    assert "证券类型 ETF_UNVERIFIED 不允许" in reasons("US.ETFU")[1]
     assert "币种" in reasons("US.CCY")[1]
     # 休市（美股收盘后）
     assert "交易时段" in reasons("US.OK", now=US_OPEN + timedelta(hours=8))[1]

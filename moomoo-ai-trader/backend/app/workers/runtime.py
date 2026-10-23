@@ -43,6 +43,7 @@ class Runtime:
     quotes: dict[str, Quote | None] = field(default_factory=dict)
     last_quote_store: datetime | None = None
     last_baseline_eval: dict[str, str] = field(default_factory=dict)
+    adapter_instruments: set[str] = field(default_factory=set)  # 已登记到执行通道（本地模拟）的证券
     started: bool = False
 
     def now(self) -> datetime:

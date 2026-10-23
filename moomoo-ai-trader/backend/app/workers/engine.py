@@ -116,9 +116,6 @@ class TradingEngine:
                 clock = WallClock()
         if adapter is None:
             adapter = self._make_adapter(p, binding, fees)
-        if hasattr(adapter, "register_instrument"):
-            for inst in provider.instruments():
-                adapter.register_instrument(inst.symbol, inst.market, inst.currency, inst.lot_size)
         if "ai_provider" in self.overrides:
             ai = self.overrides["ai_provider"]()
         elif not provider.is_realtime and not st.ai_in_replay:
@@ -131,8 +128,18 @@ class TradingEngine:
         rt = Runtime(ns=self.ns, portfolio_id=pid, mode=mode, provider=provider, clock=clock, adapter=adapter, om=om,
                      calendar=self.calendar, fee_schedules=fees, data_source=data_source,
                      account_id=binding.acc_id if binding else "", ai_provider=ai)
+        self._register_instruments(rt)
         self._sync_sim_funding(rt)
         return rt
+
+    def _register_instruments(self, rt: Runtime) -> None:
+        """把行情源已核实的证券登记到本地模拟券商。实时行情的证券是运行中陆续核实的，因此每轮都检查新增。"""
+        if not hasattr(rt.adapter, "register_instrument"):
+            return
+        for inst in rt.provider.instruments():
+            if inst.symbol not in rt.adapter_instruments:
+                rt.adapter.register_instrument(inst.symbol, inst.market, inst.currency, inst.lot_size)
+                rt.adapter_instruments.add(inst.symbol)
 
     def _make_provider(self, p: Portfolio):
         from ..market_data.replay import ReplayProvider
@@ -144,14 +151,13 @@ class TradingEngine:
                                   prefix="import")
         if p.data_source == "MOOMOO_REALTIME":
             from ..db.models import Instrument
-            from ..market_data.base import InstrumentInfo
             from ..market_data.moomoo_quotes import MoomooQuoteProvider
 
             prov = MoomooQuoteProvider.shared()
             with read_session(self.ns) as s:
-                for i in s.execute(select(Instrument)).scalars():
-                    prov.register(InstrumentInfo(i.symbol, i.market, i.name, i.sec_type, i.currency, i.lot_size,
-                                                 is_leveraged=i.is_leveraged))
+                # 只登记真实证券（演示用的虚构证券不进入实时模式），类型与每手股数一律向券商核实，不沿用本地记录
+                syms = [i.symbol for i in s.execute(select(Instrument).where(Instrument.is_demo.is_(False))).scalars()]
+            prov.ensure_instruments(syms)
             return prov
         raise RuntimeError(f"未知数据源 {p.data_source}")
 
@@ -222,6 +228,7 @@ class TradingEngine:
         rt = self.runtime(pid)
         rt.reset_tick()
         now = rt.now()
+        self._register_instruments(rt)
         # 1. 撮合与推送
         rt.adapter.on_market_tick(now, rt.provider)
         rt.om.process_events()

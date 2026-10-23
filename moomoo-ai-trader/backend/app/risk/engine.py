@@ -179,7 +179,8 @@ def evaluate_entry(s: Session, ctx: RiskContext, req: EntryRequest) -> EntryResu
     market = inst.market
     ccy = inst.currency
     add("证券类型", inst.sec_type in ("STOCK", "ETF") and not inst.is_leveraged,
-        "股票/普通ETF" if not inst.is_leveraged else "杠杆/反向产品不允许")
+        "杠杆/反向产品不允许" if inst.is_leveraged else
+        ("股票/普通ETF" if inst.sec_type in ("STOCK", "ETF") else f"证券类型 {inst.sec_type} 不允许"))
     add("币种", MARKET_CURRENCY.get(market) == ccy, f"{market} 市场以 {ccy} 交易（不自动换汇）")
     add("交易单位", inst.lot_size > 0, f"每手 {inst.lot_size}")
     # 6. 时段
