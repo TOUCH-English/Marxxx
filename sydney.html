@@ -1,0 +1,2294 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>悉尼十四日</title>
+<meta name="description" content="悉尼 14 天自驾行程：逐日时间表、住宿候选、费用明细与待办清单。">
+<meta name="theme-color" content="#14547E">
+<style>
+/* ═══ 配色。三态主题：跟系统 / 强制浅 / 强制深 ═══ */
+:root{
+  --bg:#F5F7FA; --card:#FFFFFF; --card-2:#FAFBFC;
+  --ink:#1B2430; --ink-soft:#5E6B7E; --ink-faint:#94A0B1;
+  --line:#E4E9EF; --line-soft:#EEF2F6;
+  --accent:#0E7C9B; --accent-2:#0A5E76; --accent-soft:#E2F2F7; --on-accent:#fff;
+  --warn:#C2410C; --warn-soft:#FFF0E8;
+  /* 悉尼港的黄昏：深海蓝 → 紫 → 暖橘 */
+  --hero-grad:linear-gradient(140deg,#14547E 0%,#2B6E96 32%,#8A5B9E 64%,#E08455 100%);
+  --shadow-sm:0 2px 8px rgba(27,36,48,.05), 0 8px 22px -14px rgba(27,36,48,.22);
+  --shadow:0 4px 16px rgba(27,36,48,.07), 0 16px 40px -20px rgba(27,36,48,.28);
+  --shadow-lg:0 24px 64px -18px rgba(27,36,48,.4), 0 6px 16px rgba(27,36,48,.13);
+  --c-fly:#5B8DEF;   --c-fly-bg:#EDF3FE;
+  --c-stay:#9B7BD8;  --c-stay-bg:#F4EFFC;
+  --c-eat:#E8762F;   --c-eat-bg:#FFF1E6;
+  --c-see:#2E9E7A;   --c-see-bg:#E6F6F1;
+  --c-go:#1E90B0;    --c-go-bg:#E3F3F8;
+  --c-buy:#D9568F;   --c-buy-bg:#FCEDF3;
+  --c-wild:#C98A1E;  --c-wild-bg:#FDF3DE;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#11161C; --card:#1A2029; --card-2:#1F2630;
+    --ink:#ECEFF4; --ink-soft:#9FAAB9; --ink-faint:#76828F;
+    --line:#2A323D; --line-soft:#242B35;
+    --accent:#3FB6D4; --accent-2:#6FCCE4; --accent-soft:#113039; --on-accent:#06222B;
+    --warn:#F0834F; --warn-soft:#33200F;
+    --shadow-sm:0 2px 8px rgba(0,0,0,.3), 0 8px 22px -14px rgba(0,0,0,.6);
+    --shadow:0 4px 16px rgba(0,0,0,.36), 0 16px 40px -20px rgba(0,0,0,.7);
+    --shadow-lg:0 24px 64px -18px rgba(0,0,0,.8), 0 6px 16px rgba(0,0,0,.5);
+    --c-fly:#8DAFF5; --c-fly-bg:#1E2738;
+    --c-stay:#B99FE4; --c-stay-bg:#282134;
+    --c-eat:#F0A062; --c-eat-bg:#352618;
+    --c-see:#5EC4A0; --c-see-bg:#152E26;
+    --c-go:#55BBD6; --c-go-bg:#132E37;
+    --c-buy:#EC8AB3; --c-buy-bg:#34202A;
+    --c-wild:#E0B355; --c-wild-bg:#332911;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11161C; --card:#1A2029; --card-2:#1F2630;
+  --ink:#ECEFF4; --ink-soft:#9FAAB9; --ink-faint:#76828F;
+  --line:#2A323D; --line-soft:#242B35;
+  --accent:#3FB6D4; --accent-2:#6FCCE4; --accent-soft:#113039; --on-accent:#06222B;
+  --warn:#F0834F; --warn-soft:#33200F;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3), 0 8px 22px -14px rgba(0,0,0,.6);
+  --shadow:0 4px 16px rgba(0,0,0,.36), 0 16px 40px -20px rgba(0,0,0,.7);
+  --shadow-lg:0 24px 64px -18px rgba(0,0,0,.8), 0 6px 16px rgba(0,0,0,.5);
+  --c-fly:#8DAFF5; --c-fly-bg:#1E2738;
+  --c-stay:#B99FE4; --c-stay-bg:#282134;
+  --c-eat:#F0A062; --c-eat-bg:#352618;
+  --c-see:#5EC4A0; --c-see-bg:#152E26;
+  --c-go:#55BBD6; --c-go-bg:#132E37;
+  --c-buy:#EC8AB3; --c-buy-bg:#34202A;
+  --c-wild:#E0B355; --c-wild-bg:#332911;
+}
+
+/* ⚠️ 全局兜底。作者写的 display 会盖掉浏览器自带的 [hidden]，
+   重庆那个页面为这件事踩过两次坑，这里一开始就堵死 */
+[hidden]{display:none!important}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB",
+              "Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+svg.i{width:1em;height:1em;display:inline-block;vertical-align:-.13em;flex:0 0 auto}
+button{font:inherit;color:inherit}
+b{font-weight:700}
+em{font-style:normal;color:var(--accent);font-weight:700}
+
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+
+/* ═══ 封面 ═══ */
+.mast{position:relative;margin:0 -16px;padding:26px 20px 30px;color:#fff;
+  background:var(--hero-grad);overflow:hidden}
+.mast::after{content:"";position:absolute;right:-70px;top:-70px;width:260px;height:260px;
+  border-radius:50%;background:rgba(255,255,255,.09)}
+.mast::before{content:"";position:absolute;left:-50px;bottom:-110px;width:220px;height:220px;
+  border-radius:50%;background:rgba(255,255,255,.07)}
+.m-kicker{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+  letter-spacing:.04em;background:rgba(255,255,255,.18);padding:5px 12px;border-radius:999px;
+  position:relative;z-index:1}
+.m-title{font-size:34px;line-height:1.12;font-weight:800;margin:12px 0 4px;
+  letter-spacing:-.02em;position:relative;z-index:1}
+.m-sub{font-size:14px;opacity:.9;margin-bottom:14px;position:relative;z-index:1}
+.m-chips{display:flex;flex-wrap:wrap;gap:7px;position:relative;z-index:1}
+.m-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;
+  background:rgba(255,255,255,.17);padding:5px 11px;border-radius:999px}
+
+/* ═══ 四个分页 ═══ */
+.secbar{position:sticky;top:0;z-index:40;margin:0 -16px;padding:9px 16px;
+  background:color-mix(in srgb,var(--bg) 90%,transparent);
+  backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);
+  transition:box-shadow .2s,border-color .2s;border-bottom:1px solid transparent}
+.secbar.stuck{border-bottom-color:var(--line);box-shadow:0 6px 18px -14px rgba(0,0,0,.4)}
+.secs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:4px;box-shadow:var(--shadow-sm)}
+.secbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:9px 4px;border:0;border-radius:11px;background:none;cursor:pointer;
+  font-size:13px;font-weight:700;color:var(--ink-faint);transition:background .15s,color .15s}
+.secbtn svg.i{font-size:15px}
+.secbtn.on{background:var(--ink);color:var(--bg)}
+
+/* ═══ 日期条 ═══ */
+.daybar{display:flex;gap:7px;overflow-x:auto;padding:12px 0 4px;margin:0 -16px;
+  padding-left:16px;padding-right:16px;scrollbar-width:none;scroll-snap-type:x proximity}
+.daybar::-webkit-scrollbar{display:none}
+.dtab{flex:0 0 auto;min-width:62px;padding:8px 11px;border-radius:14px;cursor:pointer;
+  background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-sm);
+  text-align:center;scroll-snap-align:center;transition:background .15s,border-color .15s}
+.dtab .n{display:block;font-size:10px;font-weight:800;letter-spacing:.07em;color:var(--ink-faint)}
+.dtab .d{display:block;font-size:15px;font-weight:800;line-height:1.25;
+  font-variant-numeric:tabular-nums;color:var(--ink)}
+.dtab .w{display:block;font-size:10.5px;line-height:1.3;color:var(--ink-faint)}
+.dtab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);box-shadow:var(--shadow)}
+.dtab[aria-selected="true"] .n,.dtab[aria-selected="true"] .d,.dtab[aria-selected="true"] .w{color:var(--bg)}
+.dtab.is-now .n{color:var(--accent)}
+.dtab[aria-selected="true"].is-now .n{color:var(--bg);opacity:.95}
+
+/* ═══ 每天的头 ═══ */
+.dh{padding:18px 0 12px}
+.dh-when{display:flex;align-items:baseline;gap:9px}
+.dh-date{font-size:27px;font-weight:800;color:var(--accent);letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.dh-dow{font-size:13px;color:var(--ink-faint);font-weight:600}
+.dh-title{font-size:21px;font-weight:800;margin:3px 0 10px;line-height:1.3;letter-spacing:-.01em}
+.dh-chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;
+  padding:4px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-2)}
+.chip.b-area{background:var(--accent-soft);color:var(--accent-2)}
+.chip.b-chg{background:var(--c-eat-bg);color:var(--c-eat)}
+.chip.b-keep{background:var(--card);color:var(--ink-faint);border:1px solid var(--line)}
+.chip.b-go{background:var(--c-go-bg);color:var(--c-go)}
+.chip.b-wx{background:var(--card);color:var(--ink-soft);border:1px solid var(--line)}
+.chip.tappable{cursor:pointer}
+.wx-more{opacity:.5;font-size:12px;margin-left:1px}
+
+/* ═══ 时间轴 ═══ */
+.rail{list-style:none;margin:0;padding:0}
+.ev{display:flex;gap:13px;position:relative;padding-bottom:13px}
+.ev-rail{display:flex;flex-direction:column;align-items:center;width:48px;flex:0 0 48px}
+.ev-node{
+  --ic:var(--c-see); --ic-bg:var(--c-see-bg);
+  width:44px;height:44px;border-radius:15px;flex:0 0 auto;
+  display:grid;place-items:center;font-size:21px;
+  box-shadow:var(--shadow-sm);position:relative;z-index:1;
+  background:var(--ic-bg);color:var(--ic);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.ev-node[data-ic="food"],.ev-node[data-ic="fish"]{--ic:var(--c-eat);--ic-bg:var(--c-eat-bg)}
+.ev-node[data-ic="shop"]{--ic:var(--c-buy);--ic-bg:var(--c-buy-bg)}
+.ev-node[data-ic="plane"]{--ic:var(--c-fly);--ic-bg:var(--c-fly-bg)}
+.ev-node[data-ic="car"],.ev-node[data-ic="metro"],.ev-node[data-ic="bus"],
+.ev-node[data-ic="tram"],.ev-node[data-ic="ferry"],.ev-node[data-ic="walk"],
+.ev-node[data-ic="cable"]{--ic:var(--c-go);--ic-bg:var(--c-go-bg)}
+.ev-node[data-ic="hotel"],.ev-node[data-ic="rest"],.ev-node[data-ic="bed"],
+.ev-node[data-ic="pool"]{--ic:var(--c-stay);--ic-bg:var(--c-stay-bg)}
+.ev-node[data-ic="zoo"],.ev-node[data-ic="koala"],.ev-node[data-ic="whale"],
+.ev-node[data-ic="sand"]{--ic:var(--c-wild);--ic-bg:var(--c-wild-bg)}
+
+.ev.past .ev-node{opacity:.42;box-shadow:none}
+.ev.past .ev-card{opacity:.66}
+.ev.now .ev-node{
+  transform:scale(1.14) translateY(-3px);
+  box-shadow:0 10px 22px -8px color-mix(in srgb,var(--ic) 55%,transparent),var(--shadow);
+  animation:pop 2.6s ease-in-out infinite}
+@keyframes pop{0%,100%{transform:scale(1.14) translateY(-3px)}50%{transform:scale(1.18) translateY(-5px)}}
+.ev.now .ev-node::after{content:"";position:absolute;inset:-5px;border-radius:19px;
+  border:2px solid var(--ic);opacity:.35;animation:ring 2.6s ease-out infinite}
+@keyframes ring{0%{transform:scale(.95);opacity:.45}70%{transform:scale(1.22);opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .ev.now .ev-node{animation:none;transform:scale(1.14)}
+  .ev.now .ev-node::after{animation:none}}
+.ev.now .ev-card{border-color:color-mix(in srgb,var(--accent) 42%,var(--line));
+  box-shadow:var(--shadow)}
+.ev.now .ev-t{background:var(--accent-soft);color:var(--accent-2)}
+.now-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;
+  letter-spacing:.06em;color:var(--accent);margin-left:6px;vertical-align:middle}
+.now-badge .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);
+  animation:bl 1.6s ease-in-out infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.now-badge .pulse{animation:none}}
+
+/* 连接线 + 「到下一站」小标 */
+.ev-link{flex:1;display:flex;flex-direction:column;align-items:center;width:100%;
+  margin-top:7px;min-height:10px}
+.ev-line{flex:1;width:2px;border-radius:2px;background:var(--line);min-height:6px}
+.ev:last-child .ev-link{display:none}
+.ev-leg{display:flex;flex-direction:column;align-items:center;gap:1px;width:100%;
+  margin:3px 0;padding:4px 1px 5px;border-radius:11px;background:var(--bg);
+  font-size:9.5px;font-weight:800;line-height:1.15;text-align:center;
+  color:var(--ink-faint);white-space:nowrap;letter-spacing:-.01em}
+.ev-leg svg.i{font-size:12px;opacity:.85}
+.ev-leg b{font-weight:800;font-variant-numeric:tabular-nums}
+.ev-leg em{font-style:normal;font-weight:700;font-size:8.5px;opacity:.72;color:inherit}
+.ev-leg[data-m="walk"]{color:var(--c-see);background:var(--c-see-bg)}
+.ev-leg[data-m="car"],.ev-leg[data-m="metro"],.ev-leg[data-m="bus"],.ev-leg[data-m="tram"],
+.ev-leg[data-m="ferry"],.ev-leg[data-m="boat"],.ev-leg[data-m="cable"]{color:var(--c-go);background:var(--c-go-bg)}
+.ev-leg[data-m="plane"]{color:var(--c-fly);background:var(--c-fly-bg)}
+.ev.past .ev-leg{opacity:.4}
+
+.ev-card{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);
+  border-radius:19px;padding:13px 16px 14px;box-shadow:var(--shadow-sm);position:relative}
+.ev-t{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+  color:var(--ink-soft);background:var(--bg);border-radius:999px;padding:3px 10px;
+  margin-bottom:7px;font-variant-numeric:tabular-nums;vertical-align:middle}
+.ev-t svg.i{font-size:12px;opacity:.7}
+.ev-stay{display:inline-flex;align-items:center;margin-left:6px;margin-bottom:7px;
+  padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;line-height:1.6;
+  background:var(--c-see-bg);color:var(--c-see);vertical-align:middle;white-space:nowrap}
+.ev-wx{display:inline-flex;align-items:center;margin-left:6px;margin-bottom:7px;
+  padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;line-height:1.6;
+  font-variant-numeric:tabular-nums;white-space:nowrap;vertical-align:middle;
+  background:var(--bg);color:var(--ink-faint)}
+.ev-wx.cool{background:var(--c-go-bg);color:var(--c-go)}
+.ev-wx.cold{background:var(--c-fly-bg);color:var(--c-fly)}
+.ev.past .ev-stay,.ev.past .ev-wx{opacity:.5}
+.ev-b{font-size:15px;line-height:1.62}
+.sub{display:block;margin-top:6px;padding-top:7px;border-top:1px dashed var(--line);
+  font-size:12.5px;line-height:1.65;color:var(--ink-soft)}
+
+.ev-head{display:block}
+/* 有导航按钮时，上面那排胶囊要让开，否则「停留 船上 2.5 小时」会被压住 */
+.ev-card:has(.go-mini) .ev-head{padding-right:34px}
+
+/* 卡片右上角的导航按钮 */
+.go-mini{position:absolute;top:11px;right:12px;width:30px;height:30px;border-radius:10px;
+  display:grid;place-items:center;font-size:14px;text-decoration:none;
+  background:var(--bg);color:var(--ink-faint);border:1px solid var(--line);
+  transition:background .15s,color .15s}
+.go-mini:active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.ev.past .go-mini{opacity:.5}
+
+/* ═══ 提示框 ═══ */
+.note{display:flex;gap:11px;margin:14px 0 4px;padding:14px 15px;border-radius:17px;
+  background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.note.risk{background:var(--warn-soft);
+  border-color:color-mix(in srgb,var(--warn) 30%,var(--line))}
+.note-ic{flex:0 0 auto;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
+  font-size:15px;background:var(--card);color:var(--ink-faint)}
+.note.risk .note-ic{background:var(--warn);color:#fff}
+.note-b{flex:1;min-width:0}
+.note-lbl{font-size:10.5px;font-weight:800;letter-spacing:.07em;color:var(--ink-faint);
+  margin-bottom:4px}
+.note.risk .note-lbl{color:var(--warn)}
+.note-t{font-size:13.5px;line-height:1.72;color:var(--ink-soft)}
+.note-t b{color:var(--ink)}
+
+/* ═══ 住宿页 ═══ */
+.seg{margin:22px 0 0}
+.seg-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:6px}
+.seg-name{font-size:20px;font-weight:800;letter-spacing:-.01em}
+.seg-meta{font-size:12.5px;color:var(--ink-faint);font-weight:700}
+.seg-note{font-size:13.5px;line-height:1.72;color:var(--ink-soft);margin:0 0 14px}
+.stay{background:var(--card);border:1px solid var(--line);border-radius:19px;
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.stay.pick-yes{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 22%,transparent),var(--shadow-sm)}
+.stay.pick-no{opacity:.72}
+.stay-top{display:flex;align-items:flex-start;gap:9px;margin-bottom:3px}
+.stay-name{flex:1;font-size:16.5px;font-weight:800;line-height:1.35}
+.stay-flag{flex:0 0 auto;font-size:10.5px;font-weight:800;letter-spacing:.05em;
+  padding:3px 9px;border-radius:999px}
+.pick-yes .stay-flag{background:var(--accent);color:var(--on-accent)}
+.pick-alt .stay-flag{background:var(--card-2);color:var(--ink-faint);border:1px solid var(--line)}
+.pick-no .stay-flag{background:var(--warn-soft);color:var(--warn)}
+.stay-area{font-size:12.5px;color:var(--ink-faint);font-weight:700;margin-bottom:9px}
+.stay-rows{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px}
+.stay-row{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+  padding:4px 10px;border-radius:999px;background:var(--bg);color:var(--ink-soft)}
+.stay-row.price{background:var(--c-see-bg);color:var(--c-see)}
+.pros,.cons,.asks{margin:0 0 10px;padding:0;list-style:none}
+.pros li,.cons li,.asks li{position:relative;padding-left:20px;font-size:13px;line-height:1.7;
+  color:var(--ink-soft);margin-bottom:3px}
+.pros li::before{content:"";position:absolute;left:3px;top:.62em;width:7px;height:7px;
+  border-radius:50%;background:var(--c-see)}
+.cons li::before{content:"";position:absolute;left:3px;top:.62em;width:7px;height:7px;
+  border-radius:50%;background:var(--warn)}
+.asks li::before{content:"";position:absolute;left:3px;top:.62em;width:7px;height:7px;
+  border-radius:2px;border:1.5px solid var(--accent)}
+.ask-head{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--accent);
+  margin:12px 0 6px;display:flex;align-items:center;gap:5px}
+.stay-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.slink{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;
+  padding:7px 12px;border-radius:11px;text-decoration:none;
+  background:var(--bg);color:var(--ink-soft);border:1px solid var(--line)}
+.slink:active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+
+/* ═══ 费用页 ═══ */
+.cost-g{margin:20px 0 0}
+.cost-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  margin-bottom:8px}
+.cost-h h3{font-size:16px;font-weight:800;margin:0}
+.cost-h .sum{font-size:13px;font-weight:800;color:var(--accent);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.cost-t{background:var(--card);border:1px solid var(--line);border-radius:17px;
+  overflow:hidden;box-shadow:var(--shadow-sm)}
+.cost-r{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;
+  border-bottom:1px solid var(--line-soft)}
+.cost-r:last-child{border-bottom:0}
+.cost-n{flex:1;min-width:0;font-size:13.5px;line-height:1.55}
+.cost-n small{display:block;font-size:11.5px;color:var(--ink-faint);line-height:1.6;margin-top:2px}
+.cost-v{flex:0 0 auto;font-size:13.5px;font-weight:800;color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.total{margin:22px 0 10px;padding:18px;border-radius:19px;
+  background:var(--hero-grad);color:#fff;box-shadow:var(--shadow)}
+.total-l{font-size:11.5px;font-weight:800;letter-spacing:.07em;opacity:.85}
+.total-v{font-size:32px;font-weight:800;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;line-height:1.2;margin:3px 0 2px}
+.total-s{font-size:12.5px;opacity:.88;line-height:1.6}
+
+/* ═══ 待办页 ═══ */
+.todo-g{margin:20px 0 0}
+.todo-h{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.todo-h h3{font-size:16px;font-weight:800;margin:0;flex:1}
+.todo-h .cnt{font-size:11.5px;font-weight:800;color:var(--ink-faint);
+  font-variant-numeric:tabular-nums}
+.todo{display:flex;gap:11px;padding:14px 15px;border-radius:17px;margin-bottom:9px;
+  background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-sm);
+  cursor:pointer;transition:opacity .2s,background .2s}
+.todo.u-urgent{border-color:color-mix(in srgb,var(--warn) 32%,var(--line))}
+.todo.done{opacity:.5;background:var(--card-2);box-shadow:none}
+.todo.done .todo-t{text-decoration:line-through;text-decoration-thickness:1.5px}
+.todo-box{flex:0 0 auto;width:22px;height:22px;border-radius:7px;margin-top:1px;
+  border:2px solid var(--line);display:grid;place-items:center;
+  color:transparent;font-size:12px;transition:background .15s,border-color .15s,color .15s}
+.todo.u-urgent .todo-box{border-color:color-mix(in srgb,var(--warn) 55%,var(--line))}
+.todo.done .todo-box{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.todo-b{flex:1;min-width:0}
+.todo-t{font-size:14.5px;font-weight:700;line-height:1.45;margin-bottom:4px}
+.todo.u-urgent .todo-t{color:var(--warn)}
+.todo-d{font-size:12.5px;line-height:1.7;color:var(--ink-soft)}
+.todo-reset{display:block;width:100%;margin:18px 0 6px;padding:11px;border-radius:13px;
+  background:var(--card);border:1px solid var(--line);color:var(--ink-faint);
+  font-size:12.5px;font-weight:700;cursor:pointer}
+
+/* ═══ 弹窗 ═══ */
+.scrim{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;
+  justify-content:center;background:rgba(10,16,22,.5);opacity:0;transition:opacity .22s;
+  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.scrim[hidden]{display:none}
+.scrim.open{opacity:1}
+.sheet{width:100%;max-width:720px;max-height:86vh;display:flex;flex-direction:column;
+  background:var(--card);border-radius:24px 24px 0 0;box-shadow:var(--shadow-lg);
+  transform:translateY(16px);transition:transform .26s cubic-bezier(.22,1,.36,1);
+  padding-bottom:env(safe-area-inset-bottom)}
+.scrim.open .sheet{transform:none}
+.sheet-h{display:flex;align-items:flex-start;gap:10px;padding:18px 18px 10px;
+  border-bottom:1px solid var(--line)}
+.sheet-hb{flex:1;min-width:0}
+.sheet-t{font-size:19px;font-weight:800;line-height:1.3}
+.sheet-a{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink-faint);
+  font-weight:700;margin-top:3px}
+.closeb{flex:0 0 auto;width:32px;height:32px;border-radius:11px;border:1px solid var(--line);
+  background:var(--bg);color:var(--ink-faint);display:grid;place-items:center;cursor:pointer}
+.sheet-body{flex:1;overflow-y:auto;padding:16px 18px;-webkit-overflow-scrolling:touch}
+.sheet-body .para{font-size:14.5px;line-height:1.8;margin:0 0 12px;color:var(--ink-soft)}
+.sheet-foot{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px 18px;
+  border-top:1px solid var(--line)}
+.lnk{display:inline-flex;align-items:center;gap:6px;padding:11px 15px;border-radius:13px;
+  font-size:13.5px;font-weight:700;text-decoration:none;cursor:pointer;
+  background:var(--bg);color:var(--ink-soft);border:1px solid var(--line)}
+.lnk.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.foot-note{flex:1 1 100%;font-size:11.5px;line-height:1.65;color:var(--ink-faint);margin-top:2px}
+
+/* 天气弹窗 */
+.wx-sum{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:17px;font-weight:800}
+.wx-sum svg.i{font-size:26px;color:var(--accent)}
+.wx-sum-r{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:15px}
+.wx-hours{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
+.wx-h{display:flex;align-items:center;gap:9px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.wx-h-t{width:42px;color:var(--ink-faint);font-weight:700}
+.wx-h-bar{flex:1;height:7px;border-radius:4px;background:var(--bg);overflow:hidden}
+.wx-h-bar i{display:block;height:100%;border-radius:4px;background:var(--accent);opacity:.6}
+.wx-h.cold .wx-h-bar i{background:var(--c-fly)}
+.wx-h-d{width:72px;text-align:right;font-weight:700;color:var(--ink-soft)}
+.wx-h-d em{font-size:11px;color:var(--c-go)}
+.wx-note{font-size:12px;line-height:1.7;color:var(--ink-faint);
+  background:var(--bg);padding:11px 13px;border-radius:13px;margin:0}
+
+/* 右下角常驻按钮 */
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:50;
+  display:inline-flex;align-items:center;gap:7px;padding:12px 17px;border-radius:999px;
+  border:0;cursor:pointer;font-size:13.5px;font-weight:800;
+  background:var(--ink);color:var(--bg);box-shadow:var(--shadow-lg)}
+.fab svg.i{font-size:16px}
+.fab.to-airport{background:var(--c-fly);color:#fff}
+
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));
+  transform:translate(-50%,10px);z-index:95;max-width:84vw;
+  background:var(--ink);color:var(--bg);font-size:13px;font-weight:700;
+  padding:11px 17px;border-radius:999px;box-shadow:var(--shadow-lg);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+.foot{padding:26px 0 90px;text-align:center;font-size:12px;line-height:1.8;color:var(--ink-faint)}
+.foot b{color:var(--ink-soft)}
+</style>
+</head>
+<body>
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+<defs>
+<symbol id="i-plane" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 14l-9-3V5.5a1.5 1.5 0 0 0-3 0V11l-9 3v2l9-2v3.5L6.5 19v1.5l4.5-1 4.5 1V19L13 17.5V14l8 2z"/></symbol>
+<symbol id="i-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15h14M6.5 15V9.5l1.7-3.2A2 2 0 0 1 10 5.2h4a2 2 0 0 1 1.8 1.1L17.5 9.5V15M4 15v3M20 15v3M3 9.5h18"/><circle cx="7.5" cy="15" r="1.6"/><circle cx="16.5" cy="15" r="1.6"/></symbol>
+<symbol id="i-bus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="13" rx="2.5"/><path d="M4 11h16M7.5 20v-3M16.5 20v-3M9 4v7M15 4v7"/><circle cx="8" cy="14.5" r="1"/><circle cx="16" cy="14.5" r="1"/></symbol>
+<symbol id="i-metro" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="13" rx="3"/><path d="M5 11h14M8 20l2-3.5M16 20l-2-3.5M6.5 20h11"/><circle cx="9" cy="13.8" r="1"/><circle cx="15" cy="13.8" r="1"/></symbol>
+<symbol id="i-tram" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4" width="13" height="13" rx="2.5"/><path d="M5.5 11h13M12 4V1.5M8 20l1.5-3M16 20l-1.5-3"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></symbol>
+<symbol id="i-ferry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19.5c1.6 0 1.6-1.2 3.2-1.2s1.6 1.2 3.2 1.2 1.6-1.2 3.2-1.2 1.6 1.2 3.2 1.2 1.6-1.2 3.2-1.2"/><path d="M5 15.5L6.5 9h11L19 15.5M9 9V5.5h6V9M12 5.5V3"/></symbol>
+<symbol id="i-walk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="1.8"/><path d="M11 21l1.5-6-2.5-2V9.5l3-1.5 2.5 1.5 2 2.5M10 12.5L8 15M14 15l2 6"/></symbol>
+<symbol id="i-cable" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5h18M12 5.5v3"/><rect x="6.5" y="8.5" width="11" height="9" rx="2"/><path d="M6.5 13h11M9 17.5v2M15 17.5v2"/></symbol>
+<symbol id="i-food" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2.5 2.5 0 0 0 5 0V3M8.5 3v18M17 3c-1.5 1-2 3-2 5s.5 3 2 3 2-1 2-3-.5-4-2-5zM17 11v10"/></symbol>
+<symbol id="i-fish" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c3.5-4.5 8-6 12-6 2.5 0 4.5 1.2 6 2.5-1.5 1.3-2 2.3-2 3.5s.5 2.2 2 3.5c-1.5 1.3-3.5 2.5-6 2.5-4 0-8.5-1.5-12-6z"/><circle cx="16.5" cy="10.5" r=".9" fill="currentColor" stroke="none"/><path d="M8 9.5c1.5 1.5 1.5 3.5 0 5"/></symbol>
+<symbol id="i-hotel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6M4 11h16v9M20 20V11M8 11V8.5h5.5a2.5 2.5 0 0 1 0 5H8z"/><circle cx="8" cy="8" r="0"/></symbol>
+<symbol id="i-bed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19v-9M3 14h18v5M21 19v-5M7 10.5h4a2 2 0 0 1 2 2V14H5v-1.5a2 2 0 0 1 2-2z"/></symbol>
+<symbol id="i-rest" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></symbol>
+<symbol id="i-pool" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.5c1.6 0 1.6-1.3 3.2-1.3s1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3 1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3M3 21c1.6 0 1.6-1.3 3.2-1.3s1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3 1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3"/><path d="M8 16V5.5a2 2 0 0 1 4 0M16 16V5.5a2 2 0 0 0-4 0M8 9h8"/></symbol>
+<symbol id="i-sight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+<symbol id="i-tower" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5v19M9 21.5h6M9.5 9.5h5M8 14h8M10 6h4"/><circle cx="12" cy="7" r="3.2"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7l1.3-2.5h4.4L15.5 7"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
+<symbol id="i-mountain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 19.5l6-10 4 6 2.5-3.5 6.5 7.5z"/><path d="M8.5 9.5L6 13.5"/></symbol>
+<symbol id="i-waterfall" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5h16M7 3.5v9.5a2 2 0 1 0 4 0V3.5M13 3.5v9.5a2 2 0 1 0 4 0V3.5"/><path d="M3 19.5c1.6 0 1.6-1.3 3.2-1.3s1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3 1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3"/></symbol>
+<symbol id="i-beach" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20.5c1.6 0 1.6-1.3 3.2-1.3s1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3 1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3"/><path d="M12 16.5V9M5 9h14a7 7 0 0 0-14 0z"/></symbol>
+<symbol id="i-park" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-5"/><path d="M12 16c-3.6 0-6.5-2.7-6.5-6S8.4 3.5 12 3.5 18.5 6.7 18.5 10s-2.9 6-6.5 6z"/><path d="M9 21h6"/></symbol>
+<symbol id="i-sand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 18.5c3-6 6-9 9.5-9s6.5 3 9.5 9z"/><path d="M8 21.5h8"/><circle cx="17" cy="5.5" r="2.5"/></symbol>
+<symbol id="i-shop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 12H5.2L4 8z"/><path d="M8.5 8V6a3.5 3.5 0 1 1 7 0v2"/></symbol>
+<symbol id="i-zoo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="5.5"/><path d="M7.5 8.5L5.5 5M16.5 8.5L18.5 5"/><circle cx="6" cy="4.5" r="1.8"/><circle cx="18" cy="4.5" r="1.8"/><circle cx="10" cy="12" r=".9" fill="currentColor" stroke="none"/><circle cx="14" cy="12" r=".9" fill="currentColor" stroke="none"/><path d="M10.5 15.5h3"/></symbol>
+<symbol id="i-koala" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="5.5"/><circle cx="5" cy="9" r="3"/><circle cx="19" cy="9" r="3"/><circle cx="10" cy="12" r=".9" fill="currentColor" stroke="none"/><circle cx="14" cy="12" r=".9" fill="currentColor" stroke="none"/><ellipse cx="12" cy="15.3" rx="1.6" ry="1.1"/></symbol>
+<symbol id="i-whale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 15c0-3.6 3.8-6.5 8.5-6.5s8.5 2.9 8.5 6.5c0 .9-.3 1.8-.8 2.5H3.3c-.5-.7-.8-1.6-.8-2.5z"/><path d="M19.5 15c1 0 1.5-1 1.5-2.5M11 8.5V5.5M11 5.5c-1 -1.2-.5-2.5 1-2.5M11 5.5c1-1.2.5-2.5-1-2.5"/><circle cx="7" cy="13" r=".9" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-wx-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></symbol>
+<symbol id="i-wx-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5h10a4 4 0 0 0 .4-8 6 6 0 0 0-11.5 1.6A3.3 3.3 0 0 0 7 18.5z"/></symbol>
+<symbol id="i-wx-rain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15.5h10a4 4 0 0 0 .4-8A6 6 0 0 0 5.9 9.1 3.3 3.3 0 0 0 7 15.5z"/><path d="M8.5 18.5l-1 2.5M12.5 18.5l-1 2.5M16.5 18.5l-1 2.5"/></symbol>
+<symbol id="i-wx-storm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 14.5h10a4 4 0 0 0 .4-8A6 6 0 0 0 5.9 8.1 3.3 3.3 0 0 0 7 14.5z"/><path d="M13 16.5l-3 3.5h3l-1 3"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></symbol>
+<symbol id="i-nav" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3L3 10.5l7.5 3L13.5 21z"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5L21.5 20H2.5L12 3.5z"/><path d="M12 10v4.5M12 17.2v.2"/></symbol>
+<symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 18h5M10 21h4"/><path d="M12 2.5a6 6 0 0 0-3.5 10.9c.6.5 1 1.3 1 2.1h5c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2.5z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></symbol>
+<symbol id="i-money" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.8"/><path d="M6 10v4M18 10v4"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.2M4.5 12h.2M4.5 17.5h.2"/></symbol>
+<symbol id="i-route" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5.5" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="M6 8v4.5a4 4 0 0 0 4 4h5.5"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 15.8v.2"/></symbol>
+</defs>
+</svg>
+
+<div class="wrap">
+  <header class="mast">
+    <span class="m-kicker"><svg class="i" aria-hidden="true"><use href="#i-cal"/></svg>2027 年 5 月 23 日 – 6 月 5 日</span>
+    <h1 class="m-title">悉尼十四日</h1>
+    <div class="m-sub">两大两小 · 市区七晚不开车，郊外六晚自驾</div>
+    <div class="m-chips">
+      <span class="m-chip"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg>去 SQ261 · 5/23 11:35</span>
+      <span class="m-chip"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg>回 SQ262 · 6/5 22:55</span>
+      <span class="m-chip"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>WSI 进出</span>
+    </div>
+  </header>
+
+  <div class="secbar">
+    <div class="secs" role="tablist">
+      <button class="secbtn on" type="button" data-sec="plan"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>行程</button>
+      <button class="secbtn" type="button" data-sec="stay"><svg class="i" aria-hidden="true"><use href="#i-bed"/></svg>住宿</button>
+      <button class="secbtn" type="button" data-sec="cost"><svg class="i" aria-hidden="true"><use href="#i-money"/></svg>费用</button>
+      <button class="secbtn" type="button" data-sec="todo"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg>待办</button>
+    </div>
+  </div>
+
+  <main>
+    <section data-pane="plan">
+      <div class="daybar" id="daybar" role="tablist"></div>
+      <article class="day" id="d1" data-day="0" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">5/23</span><span class="dh-dow">周日</span></div>
+    <h2 class="dh-title">抵达悉尼</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>WSI → 市区</span><span class="chip b-chg">落地日</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>预订接送 · 今天不租车</span><span class="chip b-wx" data-wx-day="0" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="11:35">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="plane" title="到下一站：飞约 约8小时（机上）"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg><b>约8小时</b><em>机上</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:35</span></div>
+        <div class="ev-b">新加坡樟宜 T3 起飞 <b>SQ261</b><span class="sub">空中巴士 A350-900，白天航班，孩子不用熬夜</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="21:15" data-map="Western Sydney International Airport">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 1小时（过关提行李）"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>1小时</b><em>过关提行李</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>21:15</span><span class="ev-stay">停留 过关约 1 小时</span></div>
+        <div class="ev-b"><b>WSI 落地</b>（Western Sydney International）<span class="sub"><em>不是大家熟的旧机场。</em>这是 2026 年 10 月才开的新机场，在市区<b>西边约 45 公里</b>。悉尼比新加坡<b>快 2 小时</b>，手机会自动调</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="22:30" data-map="Meriton Suites World Tower Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 45–60分（进城）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>45–60分</b><em>进城</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>22:30</span></div>
+        <div class="ev-b">上<b>预订好的接送车</b>进市区<span class="sub"><em>这一程一定要出发前就订。</em>WSI 没有机场火车（地铁要 2027 年底才通），也没有 CBD 固定封顶车资，四个人带行李临场叫车很被动</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="23:15" data-map="Meriton Suites World Tower Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>23:15</span></div>
+        <div class="ev-b"><b>到公寓，直接睡</b><span class="sub"><em>明天千万别排早。</em>今天从早上出门到现在已经十八个小时</span></div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note risk">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
+    <div class="note-b"><div class="note-lbl">今天唯一要做对的事</div><div class="note-t"><b>接送车出发前 2–4 周订好。</b>21:15 落地、过关提行李出来差不多 22:30，四个人加行李要叫大车。接送 shuttle 单程约 A$55（<b>要问清楚是按人算还是按车算</b>）；的士和 Uber 在 WSI <b>没有封顶价</b>，45 公里开下来不便宜也不可控。</div></div>
+  </aside>
+</article>
+<article class="day" id="d2" data-day="1" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">5/24</span><span class="dh-dow">周一</span></div>
+    <h2 class="dh-title">环形码头 · 歌剧院</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>渝中…不，CBD 北端</span><span class="chip b-keep">慢日</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>全程走路 + 火车 3 站</span><span class="chip b-wx" data-wx-day="1" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:30">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span><span class="ev-stay">停留 不赶</span></div>
+        <div class="ev-b">公寓自己弄早餐<span class="sub"><em>第一天慢慢来。</em>楼下就有超市，昨晚没买的话今早买齐这几天的早餐</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:30" data-map="Town Hall Station Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="metro"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：火车约 10分（3站）"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>10分</b><em>3站</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:30</span></div>
+        <div class="ev-b">Town Hall 站搭火车去环形码头<span class="sub">走到 Town Hall 约 5 分钟，火车 3 站</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="11:00" data-map="Circular Quay Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="ferry"><svg class="i" aria-hidden="true"><use href="#i-ferry"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:00</span><span class="ev-stay">停留 约 30 分</span></div>
+        <div class="ev-b"><b>环形码头</b> Circular Quay<span class="sub">渡轮、火车、商店都在这里。<em>这是你们这几天的交通中心</em>，先认一下路</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="11:30" data-map="Sydney Opera House">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:30</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>悉尼歌剧院</b>（外观）<span class="sub">不用买票进去也值得绕一圈。<em>贝壳屋顶其实是一百多万块瓷砖拼的</em>，走近看才看得出来</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="12:30" data-map="Royal Botanic Garden Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="park"><svg class="i" aria-hidden="true"><use href="#i-park"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 15分（园内）"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>15分</b><em>园内</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>皇家植物园</b> Royal Botanic Garden<span class="sub">免费，紧挨着歌剧院。冬天的悉尼反而好走——不晒，草地可以让孩子跑</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="14:00" data-map="Mrs Macquaries Chair">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="camera"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 25分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>25分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span><span class="ev-stay">停留 约 30 分</span></div>
+        <div class="ev-b"><b>Mrs Macquarie's Chair</b> 机位<span class="sub"><em>把歌剧院和大桥拍进同一张的那个点就是这里。</em>下午光线从西边来，正合适</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:00" data-map="The Rocks Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：火车约 10分"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>The Rocks</b> 老城区<span class="sub">悉尼最早的街区，石板路和老酒馆。<em>周末有市集，平日安静</em></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="17:00" data-map="Meriton Suites World Tower Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b">回公寓歇一下<span class="sub">今天走得不少，晚饭前躺一下</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:30" data-map="Chinatown Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span></div>
+        <div class="ev-b"><b>唐人街</b>晚餐<span class="sub">就在楼下这一带。<em>马来西亚餐馆不少</em>，第一晚吃点熟悉的</span></div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg></div>
+    <div class="note-b"><div class="note-lbl">今天的目的是「认路」</div><div class="note-t">第一天不要排满。环形码头是接下来几天去 Taronga 动物园和 Manly 的渡轮起点，今天先走一遍，后面几天就不会慌。</div></div>
+  </aside>
+</article>
+<article class="day" id="d3" data-day="2" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">5/25</span><span class="dh-dow">周二</span></div>
+    <h2 class="dh-title">Taronga 动物园</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>渡轮 · 北岸</span><span class="chip b-keep">重头戏</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>渡轮往返 · Opal 刷卡</span><span class="chip b-wx" data-wx-day="2" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="08:30">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：火车约 10分"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span></div>
+        <div class="ev-b">公寓早餐<span class="sub">今天要坐船，别吃太撑</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="09:30" data-map="Circular Quay Wharf 2">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="ferry"><svg class="i" aria-hidden="true"><use href="#i-ferry"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="ferry" title="到下一站：渡轮约 12分（过港）"><svg class="i" aria-hidden="true"><use href="#i-ferry"/></svg><b>12分</b><em>过港</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span></div>
+        <div class="ev-b">环形码头 <b>2 号码头</b>搭渡轮<span class="sub"><em>买「Zoo Express」套票更划算</em>——含往返渡轮 + 缆车 + 门票</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:00" data-map="Taronga Zoo Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="zoo"><svg class="i" aria-hidden="true"><use href="#i-zoo"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="ferry" title="到下一站：渡轮约 12分"><svg class="i" aria-hidden="true"><use href="#i-ferry"/></svg><b>12分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span><span class="ev-stay">停留 约 4 小时</span></div>
+        <div class="ev-b"><b>Taronga 动物园</b><span class="sub"><em>下船先坐缆车上到山顶，再一路往下逛。</em>这样全程下坡，而且山顶那段正对着港湾和歌剧院——<b>全悉尼最好的免费机位之一</b></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="14:30" data-map="Circular Quay Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="ferry"><svg class="i" aria-hidden="true"><use href="#i-ferry"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 20分（沿海边）"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>20分</b><em>沿海边</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span></div>
+        <div class="ev-b">渡轮回环形码头</div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:30" data-map="Darling Harbour Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:30</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b">走到 <b>Darling Harbour</b><span class="sub">沿着海边走回来，路过 Barangaroo 新区</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:00" data-map="Darling Harbour Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span></div>
+        <div class="ev-b">晚餐<span class="sub">Darling Harbour 一圈餐厅，或走回唐人街</span></div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg></div>
+    <div class="note-b"><div class="note-lbl">省钱和省力的一条</div><div class="note-t"><b>Taronga 的套票（Zoo Express）把渡轮、缆车、门票包在一起</b>，比分开买便宜，而且不用在码头和售票处排两次队。<br><br>⚠️ <b>一定要先坐缆车上山顶。</b>很多人从下面往上爬，爬到一半孩子就不想走了。</div></div>
+  </aside>
+</article>
+<article class="day" id="d4" data-day="3" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">5/26</span><span class="dh-dow">周三</span></div>
+    <h2 class="dh-title">Bondi 海岸步道</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>东郊海岸</span><span class="chip b-keep">户外日</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>火车 + 巴士</span><span class="chip b-wx" data-wx-day="3" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:00">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span></div>
+        <div class="ev-b">公寓早餐<span class="sub">今天走路多，穿好走的鞋</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:00" data-map="Bondi Junction Station">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="metro"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="bus" title="到下一站：巴士约 40分（含转车）"><svg class="i" aria-hidden="true"><use href="#i-bus"/></svg><b>40分</b><em>含转车</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span></div>
+        <div class="ev-b">火车到 <b>Bondi Junction</b>，转巴士<span class="sub">火车约 12 分钟，巴士 333 或 380 约 15 分钟</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="11:00" data-map="Bondi Beach">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="beach"><svg class="i" aria-hidden="true"><use href="#i-beach"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>Bondi Beach</b><span class="sub"><em>冬天不下水，但这是悉尼最有名的海滩。</em>冲浪的人一年四季都在</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="12:00" data-map="Bondi to Coogee Coastal Walk">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="bus" title="到下一站：巴士约 15分"><svg class="i" aria-hidden="true"><use href="#i-bus"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:00</span><span class="ev-stay">停留 约 2.5 小时</span></div>
+        <div class="ev-b"><b>Bondi → Coogee 海岸步道</b><span class="sub"><em>全程约 6 公里，沿着崖边走，一路都是海。</em>中间经过 Bronte 和 Clovelly 两个小海湾，走不动可以在那里结束。<b>冬天走正好</b>——夏天这条路晒得受不了</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:00" data-map="Coogee Beach">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="bus"><svg class="i" aria-hidden="true"><use href="#i-bus"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="bus" title="到下一站：巴士约 20分"><svg class="i" aria-hidden="true"><use href="#i-bus"/></svg><b>20分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:00</span></div>
+        <div class="ev-b">Coogee 搭巴士回 Bondi Junction</div>
+      </div>
+    </li>
+    <li class="ev" data-time="16:00" data-map="Westfield Bondi Junction">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：火车约 15分"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>Westfield Bondi Junction</b> 逛街<span class="sub">悉尼东郊最大的商场，就在车站楼上</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:30" data-map="Chinatown Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span></div>
+        <div class="ev-b">回市区晚餐</div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note risk">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
+    <div class="note-b"><div class="note-lbl">今天看天气决定</div><div class="note-t">⚠️ <b>这一天是全程最靠天吃饭的一天。</b>悉尼 5–6 月平均每月十二天有雨，海岸步道下雨天风大又湿滑，不适合带孩子走。<br><br><b>下雨的话把今天和 5/27 对调</b>——水族馆和动物园都在室内，完全不受影响。</div></div>
+  </aside>
+</article>
+<article class="day" id="d5" data-day="4" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">5/27</span><span class="dh-dow">周四</span></div>
+    <h2 class="dh-title">Darling Harbour · 鱼市场</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>CBD 西侧</span><span class="chip b-keep">室内日</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>走路 + 轻轨</span><span class="chip b-wx" data-wx-day="4" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:30">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span></div>
+        <div class="ev-b">公寓早餐</div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:30" data-map="Darling Harbour Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 3分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>3分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:30</span></div>
+        <div class="ev-b">走到 <b>Darling Harbour</b><span class="sub">从 World Square 走过去约 10 分钟，一路下坡</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="11:00" data-map="SEA LIFE Sydney Aquarium">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="fish"><svg class="i" aria-hidden="true"><use href="#i-fish"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 2分（隔壁）"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>2分</b><em>隔壁</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:00</span><span class="ev-stay">停留 约 2 小时</span></div>
+        <div class="ev-b"><b>SEA LIFE 水族馆</b><span class="sub"><em>儒艮和大堡礁展区是招牌。</em>海底隧道里有鲨鱼从头顶游过</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="13:00" data-map="WILD LIFE Sydney Zoo">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="koala"><svg class="i" aria-hidden="true"><use href="#i-koala"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="tram" title="到下一站：轻轨约 10分"><svg class="i" aria-hidden="true"><use href="#i-tram"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>WILD LIFE 悉尼动物园</b><span class="sub">就在水族馆隔壁，<em>考拉和袋鼠在这里能看得很近</em>。组合票比分开买便宜</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="14:30" data-map="Sydney Fish Market">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="tram"><svg class="i" aria-hidden="true"><use href="#i-tram"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 2分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>2分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span></div>
+        <div class="ev-b">轻轨去 <b>悉尼鱼市场</b><span class="sub">Light Rail 直接到</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:00" data-map="Sydney Fish Market">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="tram" title="到下一站：轻轨约 15分"><svg class="i" aria-hidden="true"><use href="#i-tram"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>鱼市场</b>吃海鲜<span class="sub"><em>南半球最大的鱼市场。</em>生蚝、龙虾、大虾现点现做，比餐厅便宜很多。<b>海鸥很凶，东西端好别放桌上</b></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="17:00" data-map="Meriton Suites World Tower Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b">回公寓歇脚</div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg></div>
+    <div class="note-b"><div class="note-lbl">组合票怎么买</div><div class="note-t">SEA LIFE 和 WILD LIFE 是同一家公司（Merlin）的，<b>两馆组合票比分开买省不少</b>，再加 Sydney Tower 和蜡像馆的四合一票更便宜。<br><br><b>一定要网上提前买</b>——现场买贵一截，还要排队。</div></div>
+  </aside>
+</article>
+<article class="day" id="d6" data-day="5" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">5/28</span><span class="dh-dow">周五</span></div>
+    <h2 class="dh-title">逛街日</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>CBD 购物区</span><span class="chip b-chg">你们家的主场</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>全程走路</span><span class="chip b-wx" data-wx-day="5" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:30">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 12分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>12分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span></div>
+        <div class="ev-b">公寓早餐</div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:30" data-map="Queen Victoria Building">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 3分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>3分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:30</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>QVB 维多利亚女王大厦</b><span class="sub"><em>1898 年的建筑，本身就值得看。</em>中庭那座吊钟每小时会演一次英国国王的故事</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="11:30" data-map="Pitt Street Mall">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:30</span><span class="ev-stay">停留 约 2 小时</span></div>
+        <div class="ev-b"><b>Pitt Street Mall</b> 步行街<span class="sub">悉尼最热闹的一条购物街，两边是 Westfield 和各大百货</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="13:30" data-map="Westfield Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b">午餐<span class="sub">商场里选择很多</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:00" data-map="Paddys Markets Haymarket">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 12分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>12分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>Paddy's Market + Market City</b><span class="sub"><em>就在公寓附近。</em>楼下是市集（纪念品、水果便宜），楼上是商场。<b>买手信在这里最划算</b></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="17:00" data-map="Sydney Tower Eye">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="tower"><svg class="i" aria-hidden="true"><use href="#i-tower"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 12分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>12分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>Sydney Tower Eye</b> 看日落<span class="sub"><em>309 米，悉尼最高点。</em>六月日落大约 16:55，<b>提前半小时上去</b>，看得到白天转夜景</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:30" data-map="Chinatown Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span></div>
+        <div class="ev-b">唐人街晚餐</div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg></div>
+    <div class="note-b"><div class="note-lbl">今天全程不用交通工具</div><div class="note-t">从 World Square 出发，QVB、Pitt Street、Paddy's Market、Sydney Tower <b>全部走得到，最远的也就十二分钟</b>。<br><br>⚠️ <b>六月日落很早（约 16:55）</b>，比新加坡早一个多小时。想看日落的话 16:30 就要上塔。</div></div>
+  </aside>
+</article>
+<article class="day" id="d7" data-day="6" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">5/29</span><span class="dh-dow">周六</span></div>
+    <h2 class="dh-title">Manly 渡轮</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>北海滩</span><span class="chip b-keep">最后一天在市区</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>渡轮往返</span><span class="chip b-wx" data-wx-day="6" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="08:30">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：火车约 10分"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span></div>
+        <div class="ev-b">公寓早餐</div>
+      </div>
+    </li>
+    <li class="ev" data-time="09:30" data-map="Circular Quay Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="ferry"><svg class="i" aria-hidden="true"><use href="#i-ferry"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="ferry" title="到下一站：渡轮约 30分（过港）"><svg class="i" aria-hidden="true"><use href="#i-ferry"/></svg><b>30分</b><em>过港</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span></div>
+        <div class="ev-b">环形码头搭渡轮去 <b>Manly</b><span class="sub"><em>这班船本身就是景点。</em>30 分钟全程在港湾里开，<b>歌剧院和大桥从海上看是另一回事</b>。刷 Opal 就能上，不用买观光船票</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:30" data-map="Manly Beach">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="beach"><svg class="i" aria-hidden="true"><use href="#i-beach"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:30</span><span class="ev-stay">停留 约 2 小时</span></div>
+        <div class="ev-b"><b>Manly 海滩 + The Corso</b><span class="sub">下船就是一条步行街直通海滩，两边都是店</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="12:30" data-map="The Corso Manly">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 20分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>20分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b">Manly 午餐<span class="sub">海滩边的 fish & chips 是经典</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="14:00" data-map="Shelly Beach Manly">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="ferry" title="到下一站：渡轮约 30分"><svg class="i" aria-hidden="true"><use href="#i-ferry"/></svg><b>30分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>Shelly Beach</b> 海边步道<span class="sub"><em>从 Manly 沿海边走过去约 20 分钟</em>，是个被礁石围起来的小湾，比 Manly 安静很多</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="16:00" data-map="Circular Quay Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="ferry"><svg class="i" aria-hidden="true"><use href="#i-ferry"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span></div>
+        <div class="ev-b">渡轮回环形码头</div>
+      </div>
+    </li>
+    <li class="ev" data-time="17:00" data-map="The Rocks Markets">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="metro" title="到下一站：火车约 10分"><svg class="i" aria-hidden="true"><use href="#i-metro"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>The Rocks 周末市集</b><span class="sub"><em>只有周末才有。</em>手工艺品和小吃，买手信比 Paddy's Market 精致一点</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:30" data-map="Chinatown Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span></div>
+        <div class="ev-b">晚餐，回去<b>收行李</b><span class="sub"><em>今晚一定要把行李收好。</em>明天一早取车出城</span></div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note risk">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
+    <div class="note-b"><div class="note-lbl">今晚要做的三件事</div><div class="note-t"><b>一、收行李。</b>明天 09:30 取车，早上没时间慢慢弄。<br><br><b>二、确认明天的租车点周日几点开门。</b>很多 CBD 租车点周日不开或只开半天——⚠️ <b>这是整趟最容易出事的一个环节</b>，今晚打个电话确认。<br><br><b>三、把公寓冰箱清空。</b>吃不完的带走路上吃。</div></div>
+  </aside>
+</article>
+<article class="day" id="d8" data-day="7" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">5/30</span><span class="dh-dow">周日</span></div>
+    <h2 class="dh-title">取车北上 Port Stephens</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>CBD → 海边</span><span class="chip b-chg">自驾开始</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>自驾 2.5 小时</span><span class="chip b-wx" data-wx-day="7" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="08:30" data-map="Meriton Suites World Tower Sydney">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>08:30</span></div>
+        <div class="ev-b">公寓早餐，<b>退房</b><span class="sub">行李先寄前台，取了车再回来拿</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="09:30">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分（回公寓拿行李）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b><em>回公寓拿行李</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span><span class="ev-stay">停留 约 30 分</span></div>
+        <div class="ev-b"><b>取车</b>（CBD 租车点）<span class="sub"><em>⚠️ 周日营业时间昨晚已经确认过了吧。</em>取车时检查：油表、有没有刮痕（拍照存证）、<b>e-Tag 装了没有</b></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:30" data-map="Nelson Bay NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 2.5小时（M1 北上）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>2.5小时</b><em>M1 北上</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:30</span></div>
+        <div class="ev-b">装好行李，<b>上路北上</b><span class="sub">走 M1 高速。<em>悉尼全部电子收费，租来的车一般自带 e-Tag</em>，过路费直接记到信用卡</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="13:00" data-map="Nelson Bay NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 5分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>Nelson Bay</b> 到，先吃午餐<span class="sub">码头一带餐厅很多</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="14:30" data-map="Halifax Holiday Park Nelson Bay">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:30</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>入住 Halifax Holiday Park</b><span class="sub"><em>小木屋，有厨房。</em>安顿好先去超市买这三天的菜——<b>镇上的 Woolworths 开到晚上</b></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="16:00" data-map="dAlbora Marinas Nelson Bay">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="sight"><svg class="i" aria-hidden="true"><use href="#i-sight"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>Nelson Bay 码头</b>散步<span class="sub">认一下明后天观鲸船在哪里上，顺便看日落</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:00" data-map="Nelson Bay NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span></div>
+        <div class="ev-b">晚餐（自己煮或镇上）</div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note risk">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
+    <div class="note-b"><div class="note-lbl">取车当天的三个检查</div><div class="note-t"><b>一、拍照存证。</b>取车前绕一圈把每一道刮痕拍下来，还车时才有依据。<br><br><b>二、确认 e-Tag。</b>悉尼的收费路全部电子化、不收现金，没有 e-Tag 的话过路费会变成罚款。<br><br><b>三、确认保险自付额（excess）。</b>基本保险的自付额通常很高（A$4,000–5,000），要不要加钱降下来，现在决定。</div></div>
+  </aside>
+</article>
+<article class="day" id="d9" data-day="8" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">5/31</span><span class="dh-dow">周一</span></div>
+    <h2 class="dh-title">滑沙 · Stockton 沙丘</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>Anna Bay</span><span class="chip b-keep">孩子的主场</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>自驾 20 分钟</span><span class="chip b-wx" data-wx-day="8" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:00">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 20分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>20分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span></div>
+        <div class="ev-b">小木屋自己弄早餐</div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:00" data-map="Birubi Point Anna Bay">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span></div>
+        <div class="ev-b">开车去 <b>Anna Bay</b></div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:30" data-map="Birubi Point Anna Bay">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="sand"><svg class="i" aria-hidden="true"><use href="#i-sand"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:30</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>4WD 沙丘 + 无限滑沙</b><span class="sub"><em>南半球最大的流动沙丘，绵延 32 公里。</em>四驱车直接开上沙丘，然后拿着滑沙板从坡上冲下来，<b>想滑几次滑几次</b>。十岁十二岁正是最好玩的年纪</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="12:30" data-map="Birubi Beach">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 20分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>20分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>Birubi Beach</b> 午餐<span class="sub">沙丘旁边就有餐厅</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="14:00" data-map="Halifax Holiday Park Nelson Bay">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b">回 Nelson Bay，歇一下<span class="sub">上午玩沙很耗体力</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:30" data-map="Tomaree Head Summit Walk">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="mountain"><svg class="i" aria-hidden="true"><use href="#i-mountain"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:30</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>Tomaree Head 登高</b>（可选）<span class="sub"><em>爬上去约 30 分钟，顶上能看到整个港湾和外海的岛。</em><b>孩子累了就跳过</b>，在营地游乐场玩也一样</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:00" data-map="Nelson Bay NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span></div>
+        <div class="ev-b">晚餐</div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg></div>
+    <div class="note-b"><div class="note-lbl">滑沙要带什么</div><div class="note-t"><b>换洗衣服一定要带。</b>沙子会进到每一个地方——鞋里、口袋里、头发里。车上备一条毛巾和一个装脏衣服的袋子。<br><br><b>太阳镜也要带。</b>冬天太阳低，沙面反光很刺眼。</div></div>
+  </aside>
+</article>
+<article class="day" id="d10" data-day="9" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">6/1</span><span class="dh-dow">周二</span></div>
+    <h2 class="dh-title">出海观鲸</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>Nelson Bay</span><span class="chip b-chg">季节限定</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>走路到码头</span><span class="chip b-wx" data-wx-day="9" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:00">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 15分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span></div>
+        <div class="ev-b">早餐<span class="sub"><em>⚠️ 容易晕船的人别吃太饱</em>，但也别空腹。晕船药提前半小时吃</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="09:40" data-map="dAlbora Marinas Nelson Bay">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:40</span><span class="ev-stay">停留 排队上船</span></div>
+        <div class="ev-b">走到 <b>d'Albora 码头</b><span class="sub">从营地走过去约 15 分钟，也可以开车</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:00" data-map="dAlbora Marinas Nelson Bay">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="whale"><svg class="i" aria-hidden="true"><use href="#i-whale"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span><span class="ev-stay">停留 船上 2.5 小时</span></div>
+        <div class="ev-b"><b>观鲸船出海</b>（2.5 小时）<span class="sub"><em>座头鲸北迁季正好 5 月下旬开始。</em>这个阶段的鲸鱼很活跃，<b>跃身和拍尾巴看得到</b>（9 月之后是母鲸带幼崽，慢但更近）。一上船就去上层甲板</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="12:30" data-map="Nelson Bay NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b">回港，码头边午餐</div>
+      </div>
+    </li>
+    <li class="ev" data-time="14:00" data-map="Shoal Bay NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="beach"><svg class="i" aria-hidden="true"><use href="#i-beach"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>14:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>Shoal Bay</b> 海滩散步<span class="sub">旁边的海湾，比 Nelson Bay 安静，沙很白</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="16:00" data-map="Halifax Holiday Park Nelson Bay">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span></div>
+        <div class="ev-b">回营地，<b>收行李</b><span class="sub">明天是全程唯一的长途</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:00" data-map="Nelson Bay NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:00</span></div>
+        <div class="ev-b">晚餐</div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note risk">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
+    <div class="note-b"><div class="note-lbl">观鲸这件事要灵活</div><div class="note-t"><b>这三天里挑天气最好的一天出海，不一定是今天。</b>风浪大的时候船会很颠，带孩子不值得硬上。<br><br><b>订票时问清楚：看不到鲸鱼能不能改期或退款。</b>大多数船公司有「看不到免费再来一次」的政策，但要事先确认。<br><br><b>穿暖一点。</b>六月海上风很大，体感比岸上低五六度，防风外套比厚毛衣有用。</div></div>
+  </aside>
+</article>
+<article class="day" id="d11" data-day="10" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">6/2</span><span class="dh-dow">周三</span></div>
+    <h2 class="dh-title">开去蓝山</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>海边 → 山上</span><span class="chip b-chg">全程唯一长途</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>自驾 3.5 小时</span><span class="chip b-wx" data-wx-day="10" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:00" data-map="Halifax Holiday Park Nelson Bay">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 1.5小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>1.5小时</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span></div>
+        <div class="ev-b">早餐，<b>退房</b></div>
+      </div>
+    </li>
+    <li class="ev" data-time="09:30" data-map="Katoomba NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 1.5小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>1.5小时</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:30</span></div>
+        <div class="ev-b"><b>上路往蓝山</b><span class="sub"><em>这是全程唯一一段长途，约 3.5 小时。</em>安排在中间不是最后一天，就是为了不在赶飞机那天开长途</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="11:30">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="rest"><svg class="i" aria-hidden="true"><use href="#i-rest"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 2小时"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>2小时</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>11:30</span><span class="ev-stay">停留 约 30 分</span></div>
+        <div class="ev-b"><b>中途停一次</b><span class="sub">随便找个镇休息、上厕所、让孩子下车走走。<em>别一口气开完</em></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="13:30" data-map="Katoomba NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>蓝山到</b>，先吃午餐<span class="sub">Katoomba 或 Leura 镇上</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:00" data-map="Fairmont Resort Blue Mountains Leura">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>入住 Fairmont Resort</b><span class="sub"><em>在 Leura。</em>安顿好，⚠️ <b>先确认房间暖气怎么开</b>——今晚会掉到 3–8 度</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="16:00" data-map="Echo Point Lookout Katoomba">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="mountain"><svg class="i" aria-hidden="true"><use href="#i-mountain"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>Echo Point 看三姐妹峰</b><span class="sub"><em>六月日落约 16:55，现在上去正好。</em>看台免费，站上去就是整条峡谷</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:30" data-map="Leura NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span></div>
+        <div class="ev-b">晚餐</div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note risk">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
+    <div class="note-b"><div class="note-lbl">上山之后第一件事：确认暖气</div><div class="note-t"><b>蓝山海拔一千米，六月夜里 3–8°C，可能结霜。</b>这是整趟最冷的三晚，比市区冷一大截。<br><br><b>进房间先把暖气打开</b>，让它暖一个小时再睡。另外：山上日夜温差很大，白天可能十五六度，太阳一下山就掉到个位数——<b>外套要随身带着，不要留在车上</b>。</div></div>
+  </aside>
+</article>
+<article class="day" id="d12" data-day="11" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">6/3</span><span class="dh-dow">周四</span></div>
+    <h2 class="dh-title">Scenic World</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>Katoomba</span><span class="chip b-keep">重头戏</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>自驾 15 分钟</span><span class="chip b-wx" data-wx-day="11" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:00">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span></div>
+        <div class="ev-b">酒店早餐</div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:00" data-map="Scenic World Katoomba">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="cable"><svg class="i" aria-hidden="true"><use href="#i-cable"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span><span class="ev-stay">停留 约 3.5 小时</span></div>
+        <div class="ev-b"><b>Scenic World</b><span class="sub"><em>三种交通工具一张票，无限次坐：</em><br>· <b>Scenic Railway</b>——52 度，<b>全世界最陡的客运斜坡铁路</b>，座椅还能调角度<br>· <b>Scenic Skyway</b>——玻璃地板缆车横跨峡谷<br>· <b>Scenic Cableway</b>——南半球最陡的缆车<br>谷底还有一圈<b>雨林木栈道</b>，走完约 50 分钟</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="13:30" data-map="Katoomba Street Katoomba">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>13:30</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b">午餐<span class="sub">Katoomba 镇上</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:00" data-map="Katoomba Falls">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="walk"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:00</span><span class="ev-stay">停留 约 1 小时</span></div>
+        <div class="ev-b"><b>Katoomba Falls</b> 短步道（可选）<span class="sub">就在 Scenic World 旁边，走一圈约 40 分钟</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="16:30" data-map="Fairmont Resort Blue Mountains Leura">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="pool"><svg class="i" aria-hidden="true"><use href="#i-pool"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:30</span><span class="ev-stay">停留 约 2 小时</span></div>
+        <div class="ev-b"><b>回酒店：室内恒温泳池 + 游戏室</b><span class="sub"><em>这就是为什么订这家。</em>山上天黑得早、外面冷，<b>室内有地方让孩子放电</b>比什么都重要</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:30" data-map="Leura NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span></div>
+        <div class="ev-b">晚餐</div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg></div>
+    <div class="note-b"><div class="note-lbl">Scenic World 怎么玩才不浪费</div><div class="note-t"><b>票是一日无限次的，所以不要只坐一趟。</b>建议顺序：<b>Railway 下去（最刺激的放第一个）→ 谷底雨林栈道走一圈 → Cableway 上来 → 再坐 Skyway 横跨峡谷</b>。<br><br><b>网上提前买票</b>，现场贵一些。另外山上雾大，<b>雾起来什么都看不到</b>——早上通常比下午清楚。</div></div>
+  </aside>
+</article>
+<article class="day" id="d13" data-day="12" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">6/4</span><span class="dh-dow">周五</span></div>
+    <h2 class="dh-title">瀑布步道 · Leura 小镇</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>蓝山</span><span class="chip b-keep">松日</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>自驾 15 分钟</span><span class="chip b-wx" data-wx-day="12" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:00">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span></div>
+        <div class="ev-b">酒店早餐</div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:00" data-map="Wentworth Falls Lookout">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="waterfall"><svg class="i" aria-hidden="true"><use href="#i-waterfall"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 15分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>15分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span><span class="ev-stay">停留 约 2 小时</span></div>
+        <div class="ev-b"><b>Wentworth Falls</b> 步道<span class="sub"><em>蓝山最好看的瀑布之一。</em>有好几条长短不同的路线，<b>带孩子走短的那条（约 1 小时往返）就够</b>，看台上就能看到全貌</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="12:30" data-map="Leura Mall Leura">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span><span class="ev-stay">停留 约 2 小时</span></div>
+        <div class="ev-b"><b>Leura 小镇</b>午餐 + 逛街<span class="sub"><em>一条街全是小店</em>——手工巧克力、二手书、古董店。比 Katoomba 精致，<b>买手信在这里</b></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:00" data-map="Everglades House and Gardens Leura">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="park"><svg class="i" aria-hidden="true"><use href="#i-park"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b"><b>Everglades 花园</b>（可选）<span class="sub">1930 年代的庄园花园，六月有秋色。<em>孩子不感兴趣就直接回酒店泳池</em></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="17:00" data-map="Fairmont Resort Blue Mountains Leura">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="pool"><svg class="i" aria-hidden="true"><use href="#i-pool"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>17:00</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b">回酒店，泳池 / 游戏室</div>
+      </div>
+    </li>
+    <li class="ev" data-time="18:30" data-map="Leura NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>18:30</span></div>
+        <div class="ev-b">晚餐，<b>收行李</b><span class="sub"><em>今晚收好</em>——明天退房之后一整天行李都在车上</span></div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg></div>
+    <div class="note-b"><div class="note-lbl">今天可以很松</div><div class="note-t">明天是十三个小时的长日子（退房到起飞），<b>今天别排满</b>。下雨或者孩子累了，整个下午待在酒店泳池也完全没问题——这三晚的房钱里有一部分就是买这个。</div></div>
+  </aside>
+</article>
+<article class="day" id="d14" data-day="13" hidden>
+  <header class="dh">
+    <div class="dh-when"><span class="dh-date">6/5</span><span class="dh-dow">周六</span></div>
+    <h2 class="dh-title">下山 → Penrith → 机场</h2>
+    <div class="dh-chips"><span class="chip b-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>蓝山 → WSI</span><span class="chip b-chg">回家</span><span class="chip b-go"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg>自驾 · 傍晚还车</span><span class="chip b-wx" data-wx-day="13" hidden></span></div>
+  </header>
+  <ol class="rail">
+    <li class="ev" data-time="09:00">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>09:00</span></div>
+        <div class="ev-b">酒店早餐<span class="sub">最后一顿含早</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:00" data-map="Fairmont Resort Blue Mountains Leura">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="hotel"><svg class="i" aria-hidden="true"><use href="#i-hotel"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 10分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:00</span></div>
+        <div class="ev-b"><b>退房，行李全部上车</b><span class="sub"><em>⚠️ 今天不会再回酒店。</em>需要用的东西（外套、充电宝、证件）现在就拿到随身包里</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="10:30" data-map="Leura Mall Leura">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>10:30</span><span class="ev-stay">停留 约 2 小时</span></div>
+        <div class="ev-b"><b>Leura 小镇再逛一次</b><span class="sub"><em>周六早上有市集。</em>昨天没买完的手信今天补齐——<b>之后一路到机场都没有像样的店</b></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="12:30" data-map="Leura NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="food"><svg class="i" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 1小时（下山）"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>1小时</b><em>下山</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>12:30</span><span class="ev-stay">停留 约 1.5 小时</span></div>
+        <div class="ev-b">Leura 午餐</div>
+      </div>
+    </li>
+    <li class="ev" data-time="15:00" data-map="Penrith NSW">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 5分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>5分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>15:00</span></div>
+        <div class="ev-b"><b>下山往 Penrith</b><span class="sub"><em>WSI 在西边，Penrith 正好在回机场的路上</em></span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="16:00" data-map="Westfield Penrith">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="car" title="到下一站：车约 25分"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg><b>25分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>16:00</span><span class="ev-stay">停留 约 3.5 小时</span></div>
+        <div class="ev-b"><b>Westfield Penrith</b>：吃晚饭 + 消磨<span class="sub"><em>这一站是刻意安排的。</em>退房到起飞中间有十三个小时，<b>与其在新机场坐五个钟头，不如在有空调、有吃的、有厕所的商场待着</b>。离机场只有 25 分钟</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="19:30" data-map="Western Sydney International Airport">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="car"><svg class="i" aria-hidden="true"><use href="#i-car"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="walk" title="到下一站：步行约 10分"><svg class="i" aria-hidden="true"><use href="#i-walk"/></svg><b>10分</b></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>19:30</span></div>
+        <div class="ev-b">开去 <b>WSI 还车</b><span class="sub"><em>还车前记得加满油</em>——机场附近加油站比市区贵，但没加满会被收高价</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="20:00" data-map="Western Sydney International Airport">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>20:00</span><span class="ev-stay">停留 值机 + 过关</span></div>
+        <div class="ev-b"><b>还车，进航站楼</b><span class="sub">还车时绕一圈再拍一次照，和取车时的对比</span></div>
+      </div>
+    </li>
+    <li class="ev" data-time="22:55">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span><span class="ev-leg" data-m="plane" title="到下一站：飞约 约8小时（机上）"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg><b>约8小时</b><em>机上</em></span><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>22:55</span></div>
+        <div class="ev-b"><b>SQ262 起飞</b></div>
+      </div>
+    </li>
+    <li class="ev" data-time="05:15" data-map="Singapore Changi Airport">
+      <div class="ev-rail">
+        <span class="ev-node" data-ic="plane"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg></span>
+        <span class="ev-link"><span class="ev-line"></span></span>
+      </div>
+      <div class="ev-card">
+        <div class="ev-head"><span class="ev-t"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>05:15</span></div>
+        <div class="ev-b"><b>新加坡落地</b>（6/6 周日）</div>
+      </div>
+    </li>
+  </ol>
+  <aside class="note risk">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
+    <div class="note-b"><div class="note-lbl">今天这样排的理由</div><div class="note-t"><b>退房 10:00，起飞 22:55，中间十三个小时。</b>这是整趟最容易过得难受的一天。<br><br><b>Penrith 这一站是捡来的便宜</b>——因为 WSI 在西边，从蓝山下来正好路过。商场里有空调、有吃的、有厕所、孩子有地方走动，<b>比在机场干等强太多</b>。<br><br>⚠️ <b>行李一整天都在车上。</b>停车时不要让行李露在外面，贵重物品随身带。</div></div>
+  </aside>
+  <aside class="note">
+    <div class="note-ic"><svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg></div>
+    <div class="note-b"><div class="note-lbl">还车前的三件事</div><div class="note-t"><b>一、加满油。</b>不加满会被按高价扣。<br><b>二、拍照。</b>和取车时拍的对比，防止被赖刮痕。<br><b>三、清空车厢。</b>手机支架、充电线、孩子的东西，坐垫底下也翻一遍。</div></div>
+  </aside>
+</article>
+    </section>
+
+    <section data-pane="stay" hidden>
+      <section class="seg">
+  <div class="seg-head"><span class="seg-name">悉尼市区</span><span class="seg-meta">7 晚 · 5/23 – 5/29</span></div>
+  <p class="seg-note">市区不租车，所以<b>走得到车站</b>最重要。目标：走路 5–7 分钟到 Town Hall 或 Central，同时 10 分钟内走得到 Darling Harbour。</p>
+  <div class="stay pick-yes">
+    <div class="stay-top"><div class="stay-name">Meriton Suites World Tower</div><span class="stay-flag">建议</span></div>
+    <div class="stay-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg> World Square, CBD</div>
+    <div class="stay-rows"><span class="stay-row price"><svg class="i" aria-hidden="true"><use href="#i-money"/></svg>A$200–260 / 晚（一房 + 沙发床）</span><span class="stay-row"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>TripAdvisor 4.6/5 · 约 4,650 条；Booking 另有 3,953 条</span></div>
+    <ul class="pros"><li>评价量最大、分数最高，四家里唯一证据够硬的</li><li>走到 Town Hall 约 5 分钟、Gadigal 地铁约 5 分钟</li><li>唐人街 5 分钟，Darling Harbour 约 10 分钟</li><li><b>楼里就有超市</b>——自己弄早餐太方便</li><li>有两房户型，也有一房 + 客厅</li></ul>
+    <ul class="cons"><li><b>电梯慢</b>，有住客遇到停用</li><li>浴室偏旧，「斑驳」的评价不少</li><li>清洁不是每天（服务式公寓的常态，约三四天一次）</li><li>空调机在房内，有人嫌吵</li></ul>
+    <div class="ask-head"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>订之前要问清楚</div>
+    <ul class="asks"><li>指定<b>高楼层</b>，避开 Liverpool 街那一侧</li><li>问清楚<b>房间翻新过没有</b></li><li>确认是 <b>1 Bedroom</b>（有独立客厅）不是 Studio</li><li>确认<b>房内</b>有洗衣机 + 烘干机</li></ul>
+    <div class="stay-links"><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=Meriton%20Suites%20World%20Tower%20World%20Square,%20CBD+reviews"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>看评价</a><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=Meriton%20Suites%20World%20Tower%20World%20Square,%20CBD"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>看位置</a></div>
+  </div>
+  <div class="stay pick-alt">
+    <div class="stay-top"><div class="stay-name">Adina Apartment Hotel Darling Harbour</div><span class="stay-flag">备选</span></div>
+    <div class="stay-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg> Sussex St</div>
+    <div class="stay-rows"><span class="stay-row price"><svg class="i" aria-hidden="true"><use href="#i-money"/></svg>起价约 A$280 / 晚</span><span class="stay-row"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>TripAdvisor 4.5/5 · <b>但只有 13 条</b></span></div>
+    <ul class="pros"><li><b>刚翻新过</b>，住客说「翻新得很漂亮」</li><li>一房两房都有<b>全套厨房 + 洗衣机</b></li><li><b>恒温室内泳池</b></li><li>走几分钟到 Darling Harbour</li></ul>
+    <ul class="cons"><li><b>评价太少，这个分数参考价值有限</b></li><li>四家里最贵</li><li>离车站稍远（Town Hall 约 8–10 分钟）</li></ul>
+    <div class="ask-head"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>订之前要问清楚</div>
+    <ul class="asks"><li>确认泳池开放时间</li><li>确认房型含不含洗衣机</li></ul>
+    <div class="stay-links"><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=Adina%20Apartment%20Hotel%20Darling%20Harbour%20Sussex%20St+reviews"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>看评价</a><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=Adina%20Apartment%20Hotel%20Darling%20Harbour%20Sussex%20St"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>看位置</a></div>
+  </div>
+  <div class="stay pick-alt">
+    <div class="stay-top"><div class="stay-name">Meriton Suites Campbell Street</div><span class="stay-flag">备选</span></div>
+    <div class="stay-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg> Haymarket</div>
+    <div class="stay-rows"><span class="stay-row price"><svg class="i" aria-hidden="true"><use href="#i-money"/></svg>A$190–250 / 晚</span><span class="stay-row"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>各平台 8.4–9.2 / 10</span></div>
+    <ul class="pros"><li><b>位置最合你们</b>——Paddy's Market 楼下、唐人街 0 分钟</li><li>Central 站约 5 分钟</li><li>厨房齐全，<b>房内有洗衣机烘干机</b></li></ul>
+    <ul class="cons"><li>⚠️ <b>有住客反映房间有虫、下水道爬出蟑螂</b></li><li>设施偏旧</li><li>这一区最吵</li></ul>
+    <div class="ask-head"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>订之前要问清楚</div>
+    <ul class="asks"><li>直接问最近有没有做过虫害处理</li><li>指定高楼层</li></ul>
+    <div class="stay-links"><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=Meriton%20Suites%20Campbell%20Street%20Haymarket+reviews"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>看评价</a><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=Meriton%20Suites%20Campbell%20Street%20Haymarket"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>看位置</a></div>
+  </div>
+  <div class="stay pick-no">
+    <div class="stay-top"><div class="stay-name">Oaks Sydney Goldsbrough Suites</div><span class="stay-flag">不建议</span></div>
+    <div class="stay-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg> Pyrmont</div>
+    <div class="stay-rows"><span class="stay-row price"><svg class="i" aria-hidden="true"><use href="#i-money"/></svg>A$180–230 / 晚</span><span class="stay-row"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><b>TripAdvisor 3.5/5 · 5,105 条</b></span></div>
+    <ul class="pros"><li>老羊毛仓库改建，房间大</li><li>便宜</li></ul>
+    <ul class="cons"><li><b>五千条评价只有 3.5 分——这不是噪音，是信号</b></li><li>位置偏（在 Pyrmont，不在 CBD）</li></ul>
+    <div class="stay-links"><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=Oaks%20Sydney%20Goldsbrough%20Suites%20Pyrmont+reviews"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>看评价</a><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=Oaks%20Sydney%20Goldsbrough%20Suites%20Pyrmont"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>看位置</a></div>
+  </div>
+</section>
+<section class="seg">
+  <div class="seg-head"><span class="seg-name">Port Stephens</span><span class="seg-meta">3 晚 · 5/30 – 6/1</span></div>
+  <p class="seg-note">有车了，不用管车站。改成看<b>暖气、停车、离景点多远</b>。住 <b>Nelson Bay</b> 最实际——观鲸的船从这里的码头开，走得到；滑沙开过去二十分钟。</p>
+  <div class="stay pick-yes">
+    <div class="stay-top"><div class="stay-name">Halifax Holiday Park</div><span class="stay-flag">建议</span></div>
+    <div class="stay-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg> Nelson Bay</div>
+    <div class="stay-rows"><span class="stay-row price"><svg class="i" aria-hidden="true"><use href="#i-money"/></svg>A$150–190 / 晚（小木屋）</span><span class="stay-row"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>TripAdvisor 4.5/5 · 565 条</span></div>
+    <ul class="pros"><li>评价多、分数高</li><li>住客说浴室「现代、一尘不染」</li><li><b>有儿童游乐场</b></li><li>走到 Nelson Bay 镇上约 2 公里</li></ul>
+    <ul class="cons"><li>不在海滩正对面</li></ul>
+    <div class="ask-head"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>订之前要问清楚</div>
+    <ul class="asks"><li>⚠️ <b>小木屋里有没有暖气</b>（不是所有 cabin 都有）</li><li>⚠️ <b>房内有没有洗衣机烘干机</b></li><li>泳池是室内还是露天（<b>六月露天泳池没法用</b>）</li></ul>
+    <div class="stay-links"><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=Halifax%20Holiday%20Park%20Nelson%20Bay+reviews"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>看评价</a><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=Halifax%20Holiday%20Park%20Nelson%20Bay"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>看位置</a></div>
+  </div>
+  <div class="stay pick-alt">
+    <div class="stay-top"><div class="stay-name">Shoal Bay Holiday Park</div><span class="stay-flag">备选</span></div>
+    <div class="stay-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg> Shoal Bay</div>
+    <div class="stay-rows"><span class="stay-row price"><svg class="i" aria-hidden="true"><use href="#i-money"/></svg>A$150–200 / 晚</span><span class="stay-row"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>TripAdvisor 4.4/5 · 389 条</span></div>
+    <ul class="pros"><li><b>就在海滩边</b>，位置最好</li><li>离 Nelson Bay 约 3 公里</li></ul>
+    <ul class="cons"><li>有住客反映<b>小木屋没有洗碗机和洗衣机</b></li><li>有人提到吵闹的团体客、BBQ 区维修慢</li><li>有评价说娱乐区在施工</li></ul>
+    <div class="ask-head"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>订之前要问清楚</div>
+    <ul class="asks"><li>同上三条</li><li>问娱乐区施工完了没有</li></ul>
+    <div class="stay-links"><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=Shoal%20Bay%20Holiday%20Park%20Shoal%20Bay+reviews"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>看评价</a><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=Shoal%20Bay%20Holiday%20Park%20Shoal%20Bay"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>看位置</a></div>
+  </div>
+</section>
+<section class="seg">
+  <div class="seg-head"><span class="seg-name">蓝山</span><span class="seg-meta">3 晚 · 6/2 – 6/4</span></div>
+  <p class="seg-note">⚠️ <b>六月夜里 3–8°C，可能结霜。暖气不是舒适问题，是能不能睡的问题。</b><br>另外这三天如果连着下雨，山上<b>没有商场可以躲</b>——所以「室内有没有地方让孩子放电」是这一段的决定性条件。</p>
+  <div class="stay pick-yes">
+    <div class="stay-top"><div class="stay-name">Fairmont Resort Blue Mountains</div><span class="stay-flag">建议</span></div>
+    <div class="stay-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg> Leura</div>
+    <div class="stay-rows"><span class="stay-row price"><svg class="i" aria-hidden="true"><use href="#i-money"/></svg>A$250–350 / 晚</span><span class="stay-row"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>TripAdvisor 评价两极，但家庭向的评价多</span></div>
+    <ul class="pros"><li>✅ <b>室内恒温泳池</b>——住客说「暖和的泳池 + 冒蒸汽的按摩池，开了一天车正需要」</li><li>✅ <b>游戏室</b>，有住客提到室内溜冰场和保龄球道</li><li>✅ <b>它在 Leura</b>——最后一天上午正好要逛 Leura，起床就在</li><li>下雨天有地方待，这一段最关键的一条</li></ul>
+    <ul class="cons"><li>评价两极：有人嫌<b>维护和清洁</b></li><li>有住客说「餐厅是小酒馆水准却收五星价钱」</li><li>大型会议酒店，<b>不安静</b></li><li>⚠️ <b>儿童活动（小火车、迷你电动车、骑小马）只在周末和学校假期</b>——你们住周三四五多半碰不上，<b>但周六早上退房前赶得上</b></li></ul>
+    <div class="ask-head"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>订之前要问清楚</div>
+    <ul class="asks"><li>确认<b>室内泳池</b>当周开放（有过维修关闭的记录）</li><li>确认游戏室开放时间</li><li>问有没有会议团占楼</li></ul>
+    <div class="stay-links"><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=Fairmont%20Resort%20Blue%20Mountains%20Leura+reviews"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>看评价</a><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=Fairmont%20Resort%20Blue%20Mountains%20Leura"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>看位置</a></div>
+  </div>
+  <div class="stay pick-alt">
+    <div class="stay-top"><div class="stay-name">Katoomba / Leura 独立小屋</div><span class="stay-flag">备选</span></div>
+    <div class="stay-area"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg> Katoomba 或 Leura</div>
+    <div class="stay-rows"><span class="stay-row price"><svg class="i" aria-hidden="true"><use href="#i-money"/></svg>A$180–280 / 晚</span><span class="stay-row"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>有一家 4.73/5 · 35 条（样本小）</span></div>
+    <ul class="pros"><li>有带<b>柴火壁炉</b>的，没见过的孩子会很新鲜</li><li>比 Fairmont 便宜 A$300–500（三晚）</li><li>安静、有厨房</li></ul>
+    <ul class="cons"><li>⚠️ <b>很多只写「有壁炉」，不说另外有没有暖气</b>——光靠壁炉，半夜灭了会很冷</li><li>评价样本普遍很小，不好判断</li><li><b>下雨天孩子没地方去</b></li></ul>
+    <div class="ask-head"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>订之前要问清楚</div>
+    <ul class="asks"><li>⚠️ <b>除了壁炉，有没有电暖或燃气暖气？</b>这一条必问</li><li>柴火供应是免费还是另收费</li></ul>
+    <div class="stay-links"><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=Katoomba%20/%20Leura%20独立小屋%20Katoomba%20或%20Leura+reviews"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>看评价</a><a class="slink" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=Katoomba%20/%20Leura%20独立小屋%20Katoomba%20或%20Leura"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>看位置</a></div>
+  </div>
+</section>
+    </section>
+
+    <section data-pane="cost" hidden>
+      <div class="total"><div class="total-l">四个人 · 13 晚 · 不含机票</div><div class="total-v">A$6,630–9,190</div><div class="total-s">按「省着走 → 宽松走」的区间估。滑沙、观鲸、Scenic World、签证是查到的<b>实价</b>；住宿和吃是估的，会随订得早晚浮动。</div></div><div class="cost-g">
+  <div class="cost-h"><h3>手续与保险</h3><span class="sum">A$330–540</span></div>
+  <div class="cost-t">
+    <div class="cost-r"><div class="cost-n">ETA 电子签证 ×4<small>官方「Australian ETA」App，每人 A$20。<b>马来西亚护照适用</b></small></div><div class="cost-v">A$80</div></div>
+    <div class="cost-r"><div class="cost-n">旅游保险（家庭，两周）<small>订住宿时一起买，晚买不保行程取消</small></div><div class="cost-v">A$250–400</div></div>
+    <div class="cost-r"><div class="cost-n">国际驾照 IDP<small>法律上不强制，但<b>租车公司可能要</b></small></div><div class="cost-v">A$0–60</div></div>
+  </div>
+</div>
+<div class="cost-g">
+  <div class="cost-h"><h3>住宿 13 晚</h3><span class="sum">A$2,600–3,440</span></div>
+  <div class="cost-t">
+    <div class="cost-r"><div class="cost-n">悉尼 7 晚（一房 + 沙发床）<small>Meriton World Tower</small></div><div class="cost-v">A$1,400–1,820</div></div>
+    <div class="cost-r"><div class="cost-n">Port Stephens 3 晚（小木屋）<small>Halifax Holiday Park</small></div><div class="cost-v">A$450–570</div></div>
+    <div class="cost-r"><div class="cost-n">蓝山 3 晚（度假村）<small>Fairmont Resort，买的是「下雨天的保险」</small></div><div class="cost-v">A$750–1,050</div></div>
+  </div>
+</div>
+<div class="cost-g">
+  <div class="cost-h"><h3>交通</h3><span class="sum">A$1,030–1,700</span></div>
+  <div class="cost-t">
+    <div class="cost-r"><div class="cost-n">机场接送（到达，单程）<small>四人要大车。<b>一定要预订</b></small></div><div class="cost-v">A$150–250</div></div>
+    <div class="cost-r"><div class="cost-n">市区 Opal 7 天 ×4 人<small>火车渡轮轻轨通用，刷信用卡也行</small></div><div class="cost-v">A$180–250</div></div>
+    <div class="cost-r"><div class="cost-n">租车 6 天（5/30–6/5）<small>含基本保险。CBD 取、WSI 还</small></div><div class="cost-v">A$500–800</div></div>
+    <div class="cost-r"><div class="cost-n">异地还车费<small>⚠️ <b>订的时候一定要问</b></small></div><div class="cost-v">A$0–100</div></div>
+    <div class="cost-r"><div class="cost-n">汽油（约 800 公里）<small>悉尼 U91 约 2.25–2.40 元/升</small></div><div class="cost-v">A$150–180</div></div>
+    <div class="cost-r"><div class="cost-n">过路费<small>全电子收费，租车自带 e-Tag</small></div><div class="cost-v">A$50–80</div></div>
+    <div class="cost-r"><div class="cost-n">郊外停车<small>营地和度假村一般免费</small></div><div class="cost-v">A$0–40</div></div>
+  </div>
+</div>
+<div class="cost-g">
+  <div class="cost-h"><h3>门票与活动</h3><span class="sum">A$1,070–1,410</span></div>
+  <div class="cost-t">
+    <div class="cost-r"><div class="cost-n">Taronga 动物园 + 往返渡轮<small>买 Zoo Express 套票更划算</small></div><div class="cost-v">A$180–220</div></div>
+    <div class="cost-r"><div class="cost-n">SEA LIFE + WILD LIFE 组合票<small><b>网上提前买</b>，现场贵一截</small></div><div class="cost-v">A$200–260</div></div>
+    <div class="cost-r"><div class="cost-n">Sydney Tower Eye<small>可选。六月日落约 16:55</small></div><div class="cost-v">A$100–140</div></div>
+    <div class="cost-r"><div class="cost-n">Scenic World 一日无限次<small>大人 A$64 / 小孩 A$38.40 ×4</small></div><div class="cost-v">A$205</div></div>
+    <div class="cost-r"><div class="cost-n">4WD 沙丘 + 无限滑沙<small><b>家庭票实价</b>，含国家公园费和 GST</small></div><div class="cost-v">A$175</div></div>
+    <div class="cost-r"><div class="cost-n">观鲸 2.5 小时<small><b>家庭票实价</b>（大人 85 / 小孩 40）</small></div><div class="cost-v">A$210</div></div>
+    <div class="cost-r"><div class="cost-n">杂项（市集、小门票）</div><div class="cost-v">A$0–200</div></div>
+  </div>
+</div>
+<div class="cost-g">
+  <div class="cost-h"><h3>吃</h3><span class="sum">A$1,600–2,100</span></div>
+  <div class="cost-t">
+    <div class="cost-r"><div class="cost-n">13 天 ×4 人<small>早餐自己弄 + 午餐简单 + 晚餐馆子。<b>有厨房是关键</b></small></div><div class="cost-v">A$1,600–2,100</div></div>
+  </div>
+</div>
+    </section>
+
+    <section data-pane="todo" hidden>
+      <div class="todo-g">
+  <div class="todo-h"><h3>现在就能做（2026 年内）</h3><span class="cnt"></span></div>
+  <div class="todo u-urgent" data-k="t1"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">办 ETA 电子签证 ×4</div><div class="todo-d">只能用官方「<b>Australian ETA</b>」手机 App，每人 <b>A$20</b>，<b>两个孩子也要各办一张</b>。有效期一年、可多次入境。<br>⚠️ <b>小心山寨网站</b>——中介收 USD 50–100，办的是同一张签证。<br>官方建议至少提前四周，因为少数会被转人工审核。</div></div></div>
+  <div class="todo u-urgent" data-k="t2"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">订住宿（三段都订，选可免费取消的）</div><div class="todo-d">现在离出发还有七个月，<b>这是价格和房型最好的时候</b>。先各锁一间免费取消的，中间看到更好的随时换。<br>三段的候选名单和「订之前要问什么」在「住宿」那一页。</div></div></div>
+  <div class="todo u-soon" data-k="t3"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">查护照有效期</div><div class="todo-d">四本都要查，<b>至少留六个月</b>。要换的话现在换还来得及。</div></div></div>
+  <div class="todo u-soon" data-k="t4"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">订租车（免费取消）</div><div class="todo-d">CBD 取车、WSI 还车。<b>订的时候必须问清楚三件事</b>：<br>① <b>异地还车费</b>多少 ② <b>周日营业时间</b>（5/30 要取车）③ 保险<b>自付额</b>多少</div></div></div>
+</div>
+<div class="todo-g">
+  <div class="todo-h"><h3>2027 年 1–3 月</h3><span class="cnt"></span></div>
+  <div class="todo u-soon" data-k="t5"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">买旅游保险</div><div class="todo-d">订了住宿和车之后买，这样才保「行程取消」。家庭保单两周约 A$250–400。</div></div></div>
+  <div class="todo u-later" data-k="t6"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">办国际驾照 IDP</div><div class="todo-d">法律上新加坡/马来西亚驾照在 NSW 可用六个月，<b>但租车公司的要求可能更严</b>。几十块的事，别在取车柜台被卡。</div></div></div>
+  <div class="todo u-later" data-k="t7"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">网上买门票</div><div class="todo-d">SEA LIFE + WILD LIFE 组合票、Taronga Zoo Express、Scenic World。<b>全部网上买比现场便宜</b>，而且不用排队。</div></div></div>
+</div>
+<div class="todo-g">
+  <div class="todo-h"><h3>出发前 2–4 周</h3><span class="cnt"></span></div>
+  <div class="todo u-urgent" data-k="t8"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">订机场接送（到达那程）</div><div class="todo-d">⚠️ <b>这是整趟最不能临场的一件事。</b>21:15 落地、四个人带行李，WSI 没有机场火车也没有封顶车资。<br>接送 shuttle 单程约 A$55——<b>问清楚是按人算还是按车算</b>。</div></div></div>
+  <div class="todo u-soon" data-k="t9"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">订观鲸船</div><div class="todo-d">挑 5/30–6/1 这三天里天气最好的一天。<b>订票时问：看不到鲸鱼能不能改期或退款。</b></div></div></div>
+  <div class="todo u-soon" data-k="t10"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">订 4WD 滑沙</div><div class="todo-d">家庭票 A$175，含国家公园费。</div></div></div>
+  <div class="todo u-later" data-k="t11"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">跟酒店确认暖气和泳池</div><div class="todo-d">蓝山那三晚<b>确认暖气</b>；Port Stephens 确认<b>小木屋有没有暖气和洗衣机</b>；Fairmont 确认<b>室内泳池当周开放</b>。</div></div></div>
+</div>
+<div class="todo-g">
+  <div class="todo-h"><h3>出发前一周</h3><span class="cnt"></span></div>
+  <div class="todo u-urgent" data-k="t12"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">确认 5/30 周日租车点开门时间</div><div class="todo-d">⚠️ <b>很多 CBD 租车点周日不开或只开半天。</b>取不到的话：周六下午先提车（多付一晚停车），或把出城改成周一。</div></div></div>
+  <div class="todo u-soon" data-k="t13"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">下载离线地图</div><div class="todo-d">Google Maps 把悉尼、Port Stephens、蓝山三块<b>下载成离线地图</b>。蓝山山里有些路段没信号。</div></div></div>
+  <div class="todo u-soon" data-k="t14"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">准备衣服</div><div class="todo-d"><b>白天 17–21°C，早晚 8–13°C，蓝山夜里 3–8°C。</b><br>每人：长袖 + 薄毛衣 + <b>防风防雨外套</b> + 好走的鞋。蓝山那三晚还要<b>再加一层</b>。雨伞或雨衣必备（这个季节每月约十二天有雨）。</div></div></div>
+  <div class="todo u-later" data-k="t15"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">备晕船药和晕车药</div><div class="todo-d">观鲸出海 2.5 小时，去蓝山的山路也弯。</div></div></div>
+</div>
+<div class="todo-g">
+  <div class="todo-h"><h3>登机前 / 落地时</h3><span class="cnt"></span></div>
+  <div class="todo u-urgent" data-k="t16"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">入境申报——澳洲生物安检极严</div><div class="todo-d"><b>任何食物、肉干、水果、坚果、种子、中药都要申报。</b>不确定的一律申报，申报了最多被没收；<b>不申报被查到罚款很重</b>。<br>飞机上会发申报表，老实填。</div></div></div>
+  <div class="todo u-soon" data-k="t17"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">取车时拍照存证</div><div class="todo-d">绕车一圈把每一道刮痕拍下来。<b>还车时再拍一次</b>，防止被赖。</div></div></div>
+  <div class="todo u-soon" data-k="t18"><div class="todo-box"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div><div class="todo-b"><div class="todo-t">确认租来的车有 e-Tag</div><div class="todo-d">悉尼收费路全电子化、不收现金。没有 e-Tag 过路费会变罚款。</div></div></div>
+</div>
+<button class="todo-reset" type="button" id="todoReset">清空所有勾选</button>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <b>悉尼十四日</b><br>
+    价钱是 2026 年 10 月查到的，<b>2027 年会有变动</b><br>
+    行程、住宿、费用都还能改——哪里不对跟我说
+  </footer>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-h">
+      <div class="sheet-hb">
+        <div class="sheet-t" id="sheetTitle"></div>
+        <div class="sheet-a" id="sheetArea"></div>
+      </div>
+      <button class="closeb" type="button" id="closeBtn" aria-label="关闭"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+    <div class="sheet-foot" id="sheetFoot"></div>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+var YEAR=2027;
+var DAYS_META=[{"d": "5/23", "w": "周日", "mo": 5, "dd": 23, "loc": "sydney", "iso": "2027-05-23"}, {"d": "5/24", "w": "周一", "mo": 5, "dd": 24, "loc": "sydney", "iso": "2027-05-24"}, {"d": "5/25", "w": "周二", "mo": 5, "dd": 25, "loc": "sydney", "iso": "2027-05-25"}, {"d": "5/26", "w": "周三", "mo": 5, "dd": 26, "loc": "sydney", "iso": "2027-05-26"}, {"d": "5/27", "w": "周四", "mo": 5, "dd": 27, "loc": "sydney", "iso": "2027-05-27"}, {"d": "5/28", "w": "周五", "mo": 5, "dd": 28, "loc": "sydney", "iso": "2027-05-28"}, {"d": "5/29", "w": "周六", "mo": 5, "dd": 29, "loc": "sydney", "iso": "2027-05-29"}, {"d": "5/30", "w": "周日", "mo": 5, "dd": 30, "loc": "portstephens", "iso": "2027-05-30"}, {"d": "5/31", "w": "周一", "mo": 5, "dd": 31, "loc": "portstephens", "iso": "2027-05-31"}, {"d": "6/1", "w": "周二", "mo": 6, "dd": 1, "loc": "portstephens", "iso": "2027-06-01"}, {"d": "6/2", "w": "周三", "mo": 6, "dd": 2, "loc": "katoomba", "iso": "2027-06-02"}, {"d": "6/3", "w": "周四", "mo": 6, "dd": 3, "loc": "katoomba", "iso": "2027-06-03"}, {"d": "6/4", "w": "周五", "mo": 6, "dd": 4, "loc": "katoomba", "iso": "2027-06-04"}, {"d": "6/5", "w": "周六", "mo": 6, "dd": 5, "loc": "katoomba", "iso": "2027-06-05"}];
+var BASES=[{"name": "Meriton Suites World Tower（悉尼）", "map": "Meriton Suites World Tower Sydney", "from": 0, "to": 6}, {"name": "Halifax Holiday Park（Nelson Bay）", "map": "Halifax Holiday Park Nelson Bay", "from": 7, "to": 9}, {"name": "Fairmont Resort（Leura）", "map": "Fairmont Resort Blue Mountains Leura", "from": 10, "to": 13}];
+var CLIMATE={"sydney": {"hi": 19, "lo": 11, "note": "悉尼五月平均 12–21°C，六月更冷一些；五月降雨约 123mm、六月约 113mm，平均每月十二天左右有雨。", "wear": "白天长袖 + 薄毛衣够用，<b>早晚一定要加防风外套</b>。这个季节雨多，折叠伞或雨衣随身带。"}, "portstephens": {"hi": 19, "lo": 10, "note": "海边，白天和悉尼差不多，但<b>海上风大</b>——观鲸出海时体感会比岸上低五六度。", "wear": "出海那天<b>防风外套比厚毛衣有用</b>。滑沙要带换洗衣服和太阳镜（沙面反光刺眼）。"}, "katoomba": {"hi": 12, "lo": 4, "note": "海拔约一千米，<b>比市区冷一大截</b>。六月夜里 3–8°C，可能结霜。", "wear": "⚠️ <b>这是全程最冷的三晚。</b>市区那套再加一层：厚外套、帽子、手套。白天十来度、太阳一下山就掉到个位数，<b>外套随身带，别留在车上</b>。"}};
+var TRIP_FROM="2027-05-23";
+var TRIP_TO="2027-06-06";
+
+
+/* ════════════ 共用小工具 ════════════ */
+function ic(n){return '<svg class="i" aria-hidden="true"><use href="#i-'+n+'"/></svg>';}
+function toast(m){var t=document.getElementById('toast');if(!t)return;
+  t.textContent=m;t.classList.add('show');clearTimeout(t.__h);
+  t.__h=setTimeout(function(){t.classList.remove('show');},2600);}
+
+/* Google Maps。澳洲没有墙，直接用官方的 directions 链接——
+   它会自己拿当前位置当起点，比 search 好用。 */
+function gmap(q){
+  return 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(q);
+}
+
+var scrim=document.getElementById('scrim');
+var sheet={t:document.getElementById('sheetTitle'),a:document.getElementById('sheetArea'),
+           b:document.getElementById('sheetBody'),f:document.getElementById('sheetFoot')};
+function openSheet(){scrim.hidden=false;
+  requestAnimationFrame(function(){scrim.classList.add('open');});
+  document.body.style.overflow='hidden';sheet.b.scrollTop=0;
+  var c=document.getElementById('closeBtn');if(c)c.focus();}
+function closeSheet(){scrim.classList.remove('open');
+  setTimeout(function(){scrim.hidden=true;},240);document.body.style.overflow='';}
+document.getElementById('closeBtn').addEventListener('click',closeSheet);
+scrim.addEventListener('click',function(e){if(e.target===scrim)closeSheet();});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&!scrim.hidden)closeSheet();});
+
+
+/* ════════════ 四个分页 ════════════ */
+(function(){
+  var btns=[].slice.call(document.querySelectorAll('.secbtn'));
+  var panes={};
+  [].forEach.call(document.querySelectorAll('[data-pane]'),function(p){
+    panes[p.getAttribute('data-pane')]=p;});
+  function show(k){
+    btns.forEach(function(b){b.classList.toggle('on',b.getAttribute('data-sec')===k);});
+    Object.keys(panes).forEach(function(n){panes[n].hidden=(n!==k);});
+    try{localStorage.setItem('syd.sec',k);}catch(e){}
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+  btns.forEach(function(b){b.addEventListener('click',function(){
+    show(b.getAttribute('data-sec'));});});
+  var saved='plan';try{saved=localStorage.getItem('syd.sec')||'plan';}catch(e){}
+  if(!panes[saved])saved='plan';
+  show(saved);
+  // 日期条吸顶时给分页条加个底
+  var bar=document.querySelector('.secbar');
+  if(bar&&'IntersectionObserver' in window){
+    var s=document.createElement('div');s.setAttribute('aria-hidden','true');
+    s.style.cssText='height:1px';bar.parentNode.insertBefore(s,bar);
+    new IntersectionObserver(function(es){bar.classList.toggle('stuck',!es[0].isIntersecting);},
+      {threshold:0}).observe(s);
+  }
+})();
+
+
+/* ════════════ 行程：换天 + 「现在在这一站」 ════════════ */
+var SCHED=[];
+(function(){
+  var arts=[].slice.call(document.querySelectorAll('.day'));
+  var bar=document.getElementById('daybar');
+  var tabs=[];
+  var now=new Date();
+  var todayIdx=-1;
+  DAYS_META.forEach(function(m,i){
+    if(now.getFullYear()===YEAR&&now.getMonth()+1===m.mo&&now.getDate()===m.dd)todayIdx=i;
+  });
+
+  DAYS_META.forEach(function(m,i){
+    var b=document.createElement('button');
+    b.type='button';b.className='dtab'+(i===todayIdx?' is-now':'');
+    b.setAttribute('role','tab');
+    b.setAttribute('aria-label','第 '+(i+1)+' 天，'+m.d+' '+m.w+(i===todayIdx?'，今天':''));
+    b.innerHTML='<span class="n">D'+(i+1)+'</span><span class="d">'+m.d+'</span>'+
+                '<span class="w">'+m.w+'</span>';
+    b.addEventListener('click',function(){show(i,true);});
+    bar.appendChild(b);tabs.push(b);
+  });
+
+  var cur=0;
+  function show(i,scroll){
+    cur=i;
+    arts.forEach(function(a){a.hidden=(parseInt(a.getAttribute('data-day'),10)!==i);});
+    tabs.forEach(function(t,k){t.setAttribute('aria-selected',k===i?'true':'false');});
+    try{history.replaceState(null,'','#d'+(i+1));}catch(e){}
+    var t=tabs[i];if(t&&t.scrollIntoView)t.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+    if(scroll)window.scrollTo({top:0,behavior:'smooth'});
+    markNow();
+  }
+
+  /* 把每条行程算成真实时间。跨午夜：同一天里时间比上一条小就 +1 天
+     （5/23 的 11:35 → 21:15 不跨，6/5 的 22:55 → 次日 05:15 要跨） */
+  arts.forEach(function(art){
+    var di=parseInt(art.getAttribute('data-day'),10);
+    var m=DAYS_META[di];var off=0;var prev=-1;
+    [].forEach.call(art.querySelectorAll('.ev[data-time]'),function(li){
+      var hm=li.getAttribute('data-time');if(!hm)return;
+      var p=hm.split(':');var mins=(+p[0])*60+(+p[1]);
+      if(prev>=0&&mins<prev)off++;
+      prev=mins;
+      var t=new Date(YEAR,m.mo-1,m.dd+off,+p[0],+p[1],0,0);
+      li.setAttribute('data-hour',t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+
+        ('0'+t.getDate()).slice(-2)+'T'+('0'+t.getHours()).slice(-2)+':00');
+      SCHED.push({at:t,el:li,day:di});
+    });
+  });
+  SCHED.sort(function(a,b){return a.at-b.at;});
+
+  function markNow(){
+    var n=new Date();var idx=-1;
+    for(var i=0;i<SCHED.length;i++){if(SCHED[i].at<=n)idx=i;else break;}
+    SCHED.forEach(function(s,i){
+      s.el.classList.toggle('past',i<idx);
+      s.el.classList.toggle('now',i===idx);
+      var old=s.el.querySelector('.now-badge');if(old)old.remove();
+      if(i===idx){
+        var t=s.el.querySelector('.ev-t');
+        if(t){var sp=document.createElement('span');sp.className='now-badge';
+          sp.innerHTML='<span class="pulse"></span>现在';t.after(sp);}
+      }
+    });
+    if(idx>=0&&idx<SCHED.length)window.__nowEv=SCHED[idx];else window.__nowEv=null;
+    if(typeof refreshFab==='function')refreshFab();
+  }
+  window.__showDay=show;window.__markNow=markNow;
+
+  // 开页时：今天在行程里就跳到今天，否则第一天
+  var start=todayIdx>=0?todayIdx:0;
+  var h=(location.hash||'').match(/^#d(\d+)$/);
+  if(h){var k=parseInt(h[1],10)-1;if(k>=0&&k<arts.length)start=k;}
+  show(start,false);
+  setInterval(markNow,30000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)markNow();});
+})();
+
+
+/* ════════════ 每张卡片的导航按钮 ════════════ */
+(function(){
+  [].forEach.call(document.querySelectorAll('.ev[data-map]'),function(li){
+    var d=li.getAttribute('data-map');if(!d)return;
+    var card=li.querySelector('.ev-card');if(!card)return;
+    var a=document.createElement('a');
+    a.className='go-mini';a.href=gmap(d);a.target='_blank';a.rel='noopener noreferrer';
+    a.title='Google 地图导航到 '+d;a.setAttribute('aria-label','导航到 '+d);
+    a.innerHTML=ic('nav');
+    card.appendChild(a);
+  });
+})();
+
+
+/* ════════════ 右下角常驻按钮：回住处 / 去机场 ════════════ */
+var refreshFab;
+(function(){
+  var fab=document.createElement('button');
+  fab.type='button';fab.className='fab';
+  document.body.appendChild(fab);
+
+  function target(){
+    var ev=window.__nowEv;
+    var di=ev?ev.day:(function(){
+      var a=document.querySelector('.day:not([hidden])');
+      return a?parseInt(a.getAttribute('data-day'),10):0;})();
+    var hm=ev?ev.el.getAttribute('data-time'):'12:00';
+    var mins=0;if(hm){var p=hm.split(':');mins=(+p[0])*60+(+p[1]);}
+    // 最后一天 19:30 之后 → 去机场
+    if(di===13&&(mins>=19*60+30||mins<6*60))
+      return {mode:'air',name:'Western Sydney International Airport',label:'去机场'};
+    for(var i=0;i<BASES.length;i++){
+      if(di>=BASES[i].from&&di<=BASES[i].to)
+        return {mode:'bed',name:BASES[i].map,label:'回住处',disp:BASES[i].name};
+    }
+    return {mode:'bed',name:BASES[0].map,label:'回住处',disp:BASES[0].name};
+  }
+  refreshFab=function(){
+    var t=target();
+    fab.innerHTML=ic(t.mode==='air'?'plane':'bed')+'<span>'+t.label+'</span>';
+    fab.classList.toggle('to-airport',t.mode==='air');
+  };
+  refreshFab();
+
+  fab.addEventListener('click',function(){
+    var t=target();
+    sheet.t.textContent=t.label;
+    sheet.a.innerHTML=ic('pin')+'<span>'+(t.mode==='air'?'回程 SQ262 · 22:55 起飞':'今晚住这里')+'</span>';
+    sheet.b.innerHTML='<div style="font-size:19px;font-weight:800;line-height:1.4;'+
+      'padding:14px;border-radius:14px;background:var(--bg)">'+(t.disp||t.name)+'</div>'+
+      '<p class="para" style="margin-top:12px">'+
+      (t.mode==='air'
+        ? '还车前<b>把油加满</b>，并且<b>绕车拍一圈照片</b>和取车时的对比。'+
+          '国际航班一般起飞前 3 小时开柜。'
+        : '点下面的导航直接开过去。打车的话把上面这个名字给司机看，或者复制下来贴进叫车软件。')+
+      '</p>';
+    sheet.f.innerHTML=
+      '<a class="lnk primary" target="_blank" rel="noopener noreferrer" href="'+gmap(t.name)+'">'+
+      ic('nav')+'Google 地图导航</a>'+
+      '<button class="lnk" type="button" id="cpName">'+ic('list')+'复制名称</button>';
+    document.getElementById('cpName').addEventListener('click',function(){
+      var txt=t.name;
+      try{
+        if(navigator.clipboard&&window.isSecureContext)
+          navigator.clipboard.writeText(txt).then(function(){toast('已复制「'+txt+'」');});
+        else throw 0;
+      }catch(e){
+        var ta=document.createElement('textarea');ta.value=txt;
+        ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+        document.body.appendChild(ta);ta.select();
+        try{document.execCommand('copy');}catch(e2){}
+        document.body.removeChild(ta);toast('已复制「'+txt+'」');
+      }
+    });
+    openSheet();
+  });
+  setInterval(refreshFab,30000);
+})();
+
+
+/* ════════════ 待办打勾（存在这台手机上） ════════════ */
+(function(){
+  var KEY='syd.todo';
+  function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){return {};}}
+  function write(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+  var done=read();
+  function paintCounts(){
+    [].forEach.call(document.querySelectorAll('.todo-g'),function(g){
+      var all=g.querySelectorAll('.todo');
+      var n=g.querySelectorAll('.todo.done').length;
+      var c=g.querySelector('.cnt');
+      if(c)c.textContent=n+' / '+all.length;
+    });
+  }
+  [].forEach.call(document.querySelectorAll('.todo'),function(el){
+    var k=el.getAttribute('data-k');
+    if(done[k])el.classList.add('done');
+    el.setAttribute('role','checkbox');
+    el.setAttribute('aria-checked',done[k]?'true':'false');
+    el.setAttribute('tabindex','0');
+    function flip(){
+      var on=!el.classList.contains('done');
+      el.classList.toggle('done',on);
+      el.setAttribute('aria-checked',on?'true':'false');
+      if(on)done[k]=1;else delete done[k];
+      write(done);paintCounts();
+    }
+    el.addEventListener('click',flip);
+    el.addEventListener('keydown',function(e){
+      if(e.key===' '||e.key==='Enter'){e.preventDefault();flip();}});
+  });
+  paintCounts();
+  var r=document.getElementById('todoReset');
+  if(r)r.addEventListener('click',function(){
+    if(!confirm('把所有勾都清掉？'))return;
+    done={};write(done);
+    [].forEach.call(document.querySelectorAll('.todo'),function(el){
+      el.classList.remove('done');el.setAttribute('aria-checked','false');});
+    paintCounts();toast('已清空');
+  });
+})();
+
+
+/* ════════════ 天气 ════════════
+   Open-Meteo，免费免注册。两层：
+     1. 行程里先写死「历史平均」——现在离出发还有七个月，
+        预报根本拿不到，但页面不能是空的
+     2. 到了出发前两周，实时预报拿得到了就自动盖掉平均值
+   拉不到就安静留着平均值，其他功能完全不受影响。          */
+(function(){
+  'use strict';
+  /* 新加坡人的体感：常年 26–32°C。
+     ≤12 标「冷」，≤18 标「凉」。觉得不准改这两个数字就行。 */
+  var COLD=12, COOL=18;
+
+  var LOC={
+    sydney:      {lat:-33.87, lon:151.21, name:'悉尼市区'},
+    portstephens:{lat:-32.72, lon:152.15, name:'Port Stephens'},
+    katoomba:    {lat:-33.71, lon:150.31, name:'蓝山 Katoomba'}
+  };
+  function kind(c){
+    if(c===0)return{ic:'wx-sun',t:'晴'};
+    if(c<=3)return{ic:'wx-cloud',t:'多云'};
+    if(c===45||c===48)return{ic:'wx-cloud',t:'雾'};
+    if(c>=95)return{ic:'wx-storm',t:'雷雨'};
+    if(c>=51)return{ic:'wx-rain',t:'雨'};
+    return{ic:'wx-cloud',t:'多云'};
+  }
+  var DATA=null;
+
+  function tone(t){return t<=COLD?' cold':(t<=COOL?' cool':'');}
+  function label(t){return t<=COLD?' 冷':(t<=COOL?' 凉':'');}
+
+  /* 先用历史平均把每条行程的温度标填上 */
+  function fillAvg(){
+    [].forEach.call(document.querySelectorAll('.ev[data-hour]'),function(li){
+      var art=li.closest('.day');if(!art)return;
+      var di=parseInt(art.getAttribute('data-day'),10);
+      var loc=DAYS_META[di].loc;
+      var hm=li.getAttribute('data-time');if(!hm)return;
+      var h=parseInt(hm.split(':')[0],10);
+      var a=CLIMATE[loc];if(!a)return;
+      // 粗略日变化：6 点最低，15 点最高
+      var span=a.hi-a.lo;
+      var frac=Math.cos((h-15)/24*2*Math.PI)*0.5+0.5;
+      var t=Math.round(a.lo+span*frac);
+      put(li,t,null,true);
+    });
+  }
+  function put(li,t,rain,isAvg){
+    var old=li.querySelector('.ev-wx');if(old)old.remove();
+    var el=document.createElement('span');
+    el.className='ev-wx'+tone(t);
+    el.innerHTML=(isAvg?'≈':'')+t+'°'+label(t)+
+      (rain!=null&&rain>=50?' · 雨'+rain+'%':'');
+    el.title=(isAvg?'历史平均值，出发前两周会换成实时预报。':'')+
+      (t<=COLD?'这个时段很冷，外套 + 内搭':(t<=COOL?'这个时段偏凉，要外套':''));
+    var tp=li.querySelector('.ev-t');
+    if(tp&&tp.parentNode){
+      var after=tp.nextElementSibling;
+      if(after&&after.classList.contains('now-badge'))tp=after;
+      tp.after(el);
+    }
+  }
+
+  function fillChips(){
+    DAYS_META.forEach(function(m,di){
+      var chip=document.querySelector('[data-wx-day="'+di+'"]');
+      if(!chip)return;
+      var date=m.iso;
+      var live=null;
+      if(DATA&&DATA[m.loc]){
+        var L=DATA[m.loc];var i=L.time.indexOf(date);
+        if(i>=0)live={k:kind(L.code[i]),hi:Math.round(L.tmax[i]),lo:Math.round(L.tmin[i]),
+                      rain:L.rain&&L.rain[i]!=null?Math.round(L.rain[i]):null};
+      }
+      var a=CLIMATE[m.loc];
+      var k=live?live.k:{ic:'wx-cloud',t:'历年平均'};
+      var hi=live?live.hi:a.hi, lo=live?live.lo:a.lo;
+      chip.innerHTML=ic(k.ic)+(live?k.t:'平均')+' '+hi+'/'+lo+'°'+
+        (live&&live.rain!=null&&live.rain>=30?' · 雨'+live.rain+'%':'')+
+        '<span class="wx-more">'+ic('chev')+'</span>';
+      chip.hidden=false;chip.classList.add('tappable');
+      if(!chip.__w){chip.__w=true;chip.addEventListener('click',function(){openWx(di);});}
+    });
+  }
+
+  function openWx(di){
+    var m=DAYS_META[di];var a=CLIMATE[m.loc];
+    sheet.t.textContent=m.d+' 天气';
+    sheet.a.innerHTML=ic('pin')+'<span>'+LOC[m.loc].name+'</span>';
+    var L=DATA&&DATA[m.loc];var i=L?L.time.indexOf(m.iso):-1;
+    var html='';
+    if(i>=0){
+      var k=kind(L.code[i]);
+      html+='<div class="wx-sum">'+ic(k.ic)+'<span>'+k.t+'</span>'+
+        '<span class="wx-sum-r">'+Math.round(L.tmax[i])+'° / '+Math.round(L.tmin[i])+'°</span></div>';
+      var rows=[],lo=99,hi=-99;
+      for(var h=6;h<=22;h++){
+        var key=m.iso+'T'+('0'+h).slice(-2)+':00';
+        var j=L.hTime.indexOf(key);if(j<0)continue;
+        var t=Math.round(L.hTemp[j]);
+        rows.push({h:h,t:t,r:L.hRain&&L.hRain[j]!=null?Math.round(L.hRain[j]):null});
+        if(t<lo)lo=t;if(t>hi)hi=t;
+      }
+      var span=Math.max(1,hi-lo);
+      html+='<div class="wx-hours">';
+      rows.forEach(function(r){
+        var pct=12+Math.round((r.t-lo)/span*76);
+        html+='<div class="wx-h'+(r.t<=COLD?' cold':'')+'">'+
+          '<span class="wx-h-t">'+('0'+r.h).slice(-2)+':00</span>'+
+          '<span class="wx-h-bar"><i style="width:'+pct+'%"></i></span>'+
+          '<span class="wx-h-d">'+r.t+'°'+(r.r!=null&&r.r>=30?' <em>雨'+r.r+'%</em>':'')+'</span></div>';
+      });
+      html+='</div>';
+    }else{
+      html+='<div class="wx-sum">'+ic('wx-cloud')+'<span>历年平均</span>'+
+        '<span class="wx-sum-r">'+a.hi+'° / '+a.lo+'°</span></div>'+
+        '<p class="para">'+a.note+'</p>'+
+        '<p class="para"><b>现在还拿不到这一天的预报。</b>'+
+        '天气预报最多只能看到两周以内，所以出发前两周这里才会换成实时数据，'+
+        '现在显示的是这个地区五六月的历年平均。</p>';
+    }
+    html+='<p class="wx-note">'+a.wear+'</p>';
+    sheet.b.innerHTML=html;sheet.f.innerHTML='';
+    openSheet();
+  }
+
+  fillAvg();fillChips();
+
+  var CK='syd.wx.v1';
+  function cache(){try{return JSON.parse(localStorage.getItem(CK)||'null');}catch(e){return null;}}
+  function save(d){try{localStorage.setItem(CK,JSON.stringify({at:Date.now(),data:d}));}catch(e){}}
+
+  function grab(k){
+    var c=LOC[k];
+    var u='https://api.open-meteo.com/v1/forecast?latitude='+c.lat+'&longitude='+c.lon+
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'+
+      '&hourly=temperature_2m,precipitation_probability'+
+      '&timezone=Australia%2FSydney&start_date='+TRIP_FROM+'&end_date='+TRIP_TO;
+    var ctrl=('AbortController' in window)?new AbortController():null;
+    if(ctrl)setTimeout(function(){ctrl.abort();},7000);
+    return fetch(u,ctrl?{signal:ctrl.signal}:{})
+      .then(function(r){if(!r.ok)throw 0;return r.json();})
+      .then(function(j){return [k,{time:j.daily.time,code:j.daily.weather_code,
+        tmax:j.daily.temperature_2m_max,tmin:j.daily.temperature_2m_min,
+        rain:j.daily.precipitation_probability_max,
+        hTime:j.hourly.time,hTemp:j.hourly.temperature_2m,
+        hRain:j.hourly.precipitation_probability}];});
+  }
+  function apply(d){
+    DATA=d;fillChips();
+    [].forEach.call(document.querySelectorAll('.ev[data-hour]'),function(li){
+      var art=li.closest('.day');if(!art)return;
+      var L=DATA[DAYS_META[parseInt(art.getAttribute('data-day'),10)].loc];
+      if(!L||!L.hTime)return;
+      var j=L.hTime.indexOf(li.getAttribute('data-hour'));if(j<0)return;
+      put(li,Math.round(L.hTemp[j]),
+          L.hRain&&L.hRain[j]!=null?Math.round(L.hRain[j]):null,false);
+    });
+  }
+  var c=cache();
+  if(c&&Date.now()-c.at<30*60*1000){apply(c.data);return;}
+  if(!window.fetch){if(c)apply(c.data);return;}
+  Promise.all(Object.keys(LOC).map(grab)).then(function(ps){
+    var d={};ps.forEach(function(p){d[p[0]]=p[1];});
+    save(d);apply(d);
+  }).catch(function(){if(c)apply(c.data);});
+})();
+
+</script>
+</body>
+</html>
