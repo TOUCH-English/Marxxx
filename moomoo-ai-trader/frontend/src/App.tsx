@@ -9,6 +9,7 @@ import { ReauthHost } from './components/Reauth';
 import { AppStateProvider } from './state/app';
 import { LoginPage, SetupPage } from './pages/Login';
 import { OverviewPage } from './pages/Overview';
+import { SimplePage } from './pages/Simple';
 import { WizardPage } from './pages/Wizard';
 import { ConnectionPage } from './pages/Connection';
 import { InstrumentsPage, InstrumentDetailPage } from './pages/Instruments';
@@ -60,7 +61,8 @@ export default function Root() {
         <ReauthHost />
         <Routes>
           <Route element={<AppLayout onLoggedOut={() => void check()} />}>
-            <Route index element={<Navigate to="/overview" replace />} />
+            <Route index element={<Navigate to="/simple" replace />} />
+            <Route path="/simple" element={<SimplePage />} />
             <Route path="/overview" element={<OverviewPage />} />
             <Route path="/wizard" element={<WizardPage />} />
             <Route path="/connection" element={<ConnectionPage />} />
@@ -72,7 +74,7 @@ export default function Root() {
             <Route path="/sim" element={<SimPage />} />
             <Route path="/learning" element={<LearningPage />} />
             <Route path="/logs" element={<LogsPage />} />
-            <Route path="*" element={<Navigate to="/overview" replace />} />
+            <Route path="*" element={<Navigate to="/simple" replace />} />
           </Route>
         </Routes>
       </DrawerProvider>

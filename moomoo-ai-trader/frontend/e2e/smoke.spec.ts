@@ -86,8 +86,16 @@ test('冒烟：设置密码 → 登录 → 向导启动 DEMO → 浏览全部页
   await expect(page.getByTestId('scorecard-card')).toBeVisible();
   await expect(page.getByTestId('scorecard-card')).toContainText('关卡 B');
 
+  // 新手首页：白话状态、钱、需要做什么、持仓、进度
+  await page.locator('.ant-menu').getByText('我的账户（简单版）', { exact: true }).click();
+  await expect(page.getByTestId('simple-headline')).toContainText('系统');
+  await expect(page.getByTestId('simple-money')).toContainText('开始时');
+  await expect(page.getByTestId('simple-todo')).toBeVisible();
+  await expect(page.getByTestId('simple-progress')).toContainText('/ 30 笔');
+
   // 5. 浏览全部页面
   const pages: [string, string, string][] = [
+    ['我的账户（简单版）', '我的账户（简单版）', '05a-simple'],
     ['启动向导', '启动向导', '05-wizard'],
     ['连接与权限诊断', '连接与权限诊断', '06-connection'],
     ['自选股与股票详情', '自选股与股票详情', '07-instruments'],
@@ -136,7 +144,7 @@ test('冒烟：设置密码 → 登录 → 向导启动 DEMO → 浏览全部页
   await shot(page, '16-backtest');
 
   // 6. 暂停新开仓：确认后后端状态改变；再恢复
-  await page.locator('.ant-menu').getByText('总览', { exact: true }).click();
+  await page.locator('.ant-menu').getByText('总览（专业版）', { exact: true }).click();
   await expect(page.getByTestId('pause-btn')).toHaveText(/暂停新开仓/);
   await page.getByTestId('pause-btn').click();
   await page.locator('.ant-modal-confirm').getByRole('button', { name: '暂停新开仓' }).click();

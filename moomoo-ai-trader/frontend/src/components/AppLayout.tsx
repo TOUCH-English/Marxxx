@@ -4,6 +4,7 @@ import {
   BulbOutlined,
   DashboardOutlined,
   ExperimentOutlined,
+  HomeOutlined,
   LogoutOutlined,
   ProfileOutlined,
   RobotOutlined,
@@ -26,7 +27,8 @@ const { Sider, Header, Content } = Layout;
 const { Text } = Typography;
 
 export const NAV = [
-  { key: '/overview', icon: <DashboardOutlined />, label: '总览' },
+  { key: '/simple', icon: <HomeOutlined />, label: '我的账户（简单版）' },
+  { key: '/overview', icon: <DashboardOutlined />, label: '总览（专业版）' },
   { key: '/wizard', icon: <RocketOutlined />, label: '启动向导' },
   { key: '/connection', icon: <ApiOutlined />, label: '连接与权限诊断' },
   { key: '/instruments', icon: <StockOutlined />, label: '自选股与股票详情' },
