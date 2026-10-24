@@ -300,6 +300,36 @@ em{font-style:normal;color:var(--accent);font-weight:700}
   background:var(--bg);color:var(--ink-soft);border:1px solid var(--line)}
 .slink:active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 
+/* ═══ 比价表（自己填，存在这台手机上） ═══ */
+.cmp{background:var(--card);border:1px solid var(--line);border-radius:19px;
+  padding:16px;margin-bottom:18px;box-shadow:var(--shadow-sm)}
+.cmp-h{display:flex;align-items:center;gap:7px;font-size:16.5px;font-weight:800;margin-bottom:5px}
+.cmp-h svg.i{font-size:17px;color:var(--accent)}
+.cmp-sub{font-size:12.5px;line-height:1.7;color:var(--ink-soft);margin:0 0 13px}
+.cmp-row{display:grid;grid-template-columns:1fr 46px 72px 42px;gap:6px;align-items:center;
+  margin-bottom:6px}
+.cmp-head{font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--ink-faint);
+  text-align:center;margin-bottom:2px}
+.cmp-head:first-child{text-align:left;padding-left:10px}
+.cmp input{width:100%;min-width:0;font:inherit;font-size:13px;font-weight:700;
+  padding:9px 10px;border-radius:10px;background:var(--bg);color:var(--ink);
+  border:1px solid var(--line);-webkit-appearance:none;appearance:none}
+.cmp input::placeholder{color:var(--ink-faint);font-weight:600}
+.cmp input[type=number]{text-align:center;font-variant-numeric:tabular-nums;
+  -moz-appearance:textfield}
+.cmp input::-webkit-outer-spin-button,.cmp input::-webkit-inner-spin-button{
+  -webkit-appearance:none;margin:0}
+.cmp-ref{width:100%;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;
+  background:var(--bg);border:1px solid var(--line);color:var(--ink-faint);font-size:14px}
+.cmp-ref.on{background:var(--c-see-bg);border-color:var(--c-see);color:var(--c-see)}
+.cmp-out{grid-column:1/-1;font-size:11.5px;font-weight:700;color:var(--ink-faint);
+  padding:0 10px 4px;font-variant-numeric:tabular-nums;min-height:4px}
+.cmp-row.best input{border-color:var(--accent)}
+.cmp-row.best .cmp-out{color:var(--accent)}
+.cmp-note{font-size:11.5px;line-height:1.7;color:var(--ink-faint);
+  background:var(--bg);padding:11px 13px;border-radius:12px;margin:12px 0 0}
+.cmp-note b{color:var(--ink-soft)}
+
 /* ═══ 费用页 ═══ */
 .cost-g{margin:20px 0 0}
 .cost-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
@@ -1654,6 +1684,7 @@ em{font-style:normal;color:var(--accent);font-weight:700}
     </section>
 
     <section data-pane="stay" hidden>
+      <div class="cmp"><div class="cmp-h"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>自己比价</div><p class="cmp-sub">订房网站我这边连不上（网关直接拒绝），<b>价钱只能你去点</b>。查到一个就填一个，这里会自动算每晚多少、换成澳币多少，并把<b>最划算的可退方案</b>标出来。填的东西存在这台手机上。</p><div class="cmp-row"><div class="cmp-head">渠道</div><div class="cmp-head">晚数</div><div class="cmp-head">总价 RM</div><div class="cmp-head">可退</div></div><div class="cmp-row" data-i="0"><input type="text" data-f="name" placeholder="渠道" value="Agoda"><input type="number" inputmode="numeric" data-f="nights" placeholder="7" value="7"><input type="number" inputmode="numeric" data-f="price" placeholder="4797" value="4797"><button type="button" class="cmp-ref" data-f="ref" aria-label="可免费取消"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><div class="cmp-out" data-f="out"></div></div><div class="cmp-row" data-i="1"><input type="text" data-f="name" placeholder="渠道" value="Accor 官网"><input type="number" inputmode="numeric" data-f="nights" placeholder="7" value=""><input type="number" inputmode="numeric" data-f="price" placeholder="4797" value=""><button type="button" class="cmp-ref" data-f="ref" aria-label="可免费取消"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><div class="cmp-out" data-f="out"></div></div><div class="cmp-row" data-i="2"><input type="text" data-f="name" placeholder="渠道" value="Booking.com"><input type="number" inputmode="numeric" data-f="nights" placeholder="7" value=""><input type="number" inputmode="numeric" data-f="price" placeholder="4797" value=""><button type="button" class="cmp-ref" data-f="ref" aria-label="可免费取消"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><div class="cmp-out" data-f="out"></div></div><div class="cmp-row" data-i="3"><input type="text" data-f="name" placeholder="渠道" value="Trip.com"><input type="number" inputmode="numeric" data-f="nights" placeholder="7" value=""><input type="number" inputmode="numeric" data-f="price" placeholder="4797" value=""><button type="button" class="cmp-ref" data-f="ref" aria-label="可免费取消"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><div class="cmp-out" data-f="out"></div></div><div class="cmp-row" data-i="4"><input type="text" data-f="name" placeholder="渠道" value="其他"><input type="number" inputmode="numeric" data-f="nights" placeholder="7" value=""><input type="number" inputmode="numeric" data-f="price" placeholder="4797" value=""><button type="button" class="cmp-ref" data-f="ref" aria-label="可免费取消"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></button><div class="cmp-out" data-f="out"></div></div><p class="cmp-note"><b>绿勾 = 可免费取消。</b>决策规则：<b>可退的比不可退的贵 ≤ RM 500，就选可退的</b>——离出发还有七个月，这笔钱买的是后悔权。<br><br><b>行情参考：</b>四个人七晚，市面上多数 RM 5,000–6,000。低于 RM 5,000 算合理，低于 RM 4,500 算好价。</p></div>
       <section class="seg">
   <div class="seg-head"><span class="seg-name">悉尼市区</span><span class="seg-meta">7 晚 · 5/23 – 5/29</span></div>
   <p class="seg-note">市区不租车，所以<b>走得到车站</b>最重要。目标：走路 5–7 分钟到 Town Hall 或 Central，同时 10 分钟内走得到 Darling Harbour。</p>
@@ -2130,6 +2161,72 @@ var refreshFab;
       el.classList.remove('done');el.setAttribute('aria-checked','false');});
     paintCounts();toast('已清空');
   });
+})();
+
+
+/* ════════════ 比价表 ════════════
+   订房平台这边连不上（网关 403），价钱只能人去点。
+   这里只做三件事：记住填过的、自动换算、把最划算的可退方案标出来。 */
+(function(){
+  var RATE=2.85;                      // 1 澳币 ≈ 2.85 令吉（2026/10）
+  var KEY='syd.cmp';
+  var rows=[].slice.call(document.querySelectorAll('.cmp-row[data-i]'));
+  if(!rows.length)return;
+
+  function load(){try{return JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){return null;}}
+  function save(){
+    var d=rows.map(function(r){
+      return {name:f(r,'name').value, nights:f(r,'nights').value,
+              price:f(r,'price').value, ref:f(r,'ref').classList.contains('on')};
+    });
+    try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}
+  }
+  function f(r,n){return r.querySelector('[data-f="'+n+'"]');}
+
+  function paint(){
+    var best=-1, bestPer=Infinity;
+    rows.forEach(function(r,i){
+      var n=parseFloat(f(r,'nights').value), p=parseFloat(f(r,'price').value);
+      var out=f(r,'out');
+      r.classList.remove('best');
+      if(!(n>0)||!(p>0)){out.textContent='';return;}
+      var per=p/n;
+      out.textContent='每晚 RM '+Math.round(per).toLocaleString()+
+        ' · ≈ A$'+Math.round(per/RATE)+
+        '　|　全程 ≈ A$'+Math.round(p/RATE).toLocaleString();
+      // 只在「可退」里面挑最便宜的——不可退的便宜没有可比性
+      if(f(r,'ref').classList.contains('on')&&per<bestPer){bestPer=per;best=i;}
+    });
+    if(best>=0){
+      rows[best].classList.add('best');
+      var o=f(rows[best],'out');
+      o.textContent=o.textContent+'　← 可退里最划算';
+    }
+  }
+
+  var saved=load();
+  if(saved){
+    saved.forEach(function(d,i){
+      if(!rows[i])return;
+      if(d.name!=null)f(rows[i],'name').value=d.name;
+      if(d.nights!=null)f(rows[i],'nights').value=d.nights;
+      if(d.price!=null)f(rows[i],'price').value=d.price;
+      f(rows[i],'ref').classList.toggle('on',!!d.ref);
+    });
+  }
+  rows.forEach(function(r){
+    ['name','nights','price'].forEach(function(n){
+      f(r,n).addEventListener('input',function(){paint();save();});
+    });
+    var b=f(r,'ref');
+    b.setAttribute('role','checkbox');
+    b.addEventListener('click',function(){
+      b.classList.toggle('on');
+      b.setAttribute('aria-checked',b.classList.contains('on')?'true':'false');
+      paint();save();
+    });
+  });
+  paint();
 })();
 
 
