@@ -77,8 +77,8 @@ export interface OverviewPosition {
   quote_source: string | null;
   quote_ts: string | null;
   market_open?: boolean;
-  pre_price?: Dec | null;
-  after_price?: Dec | null;
+  ext_price?: Dec | null;
+  ext_label?: string;
   last_label?: string;
   below_stop?: boolean;
 }

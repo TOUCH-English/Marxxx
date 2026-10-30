@@ -114,8 +114,7 @@ function PositionsTable({ items }: { items: OverviewPosition[] }) {
               <span>
                 {fmtPrice(p.last)}
                 {p.market_open === false ? <div><Text type="secondary" style={{ fontSize: 11 }}>{p.last_label}</Text></div> : null}
-                {p.pre_price ? <div><Text type="secondary" style={{ fontSize: 11 }}>盘前 {fmtPrice(p.pre_price)}</Text></div> : null}
-                {p.after_price ? <div><Text type="secondary" style={{ fontSize: 11 }}>盘后 {fmtPrice(p.after_price)}</Text></div> : null}
+                {p.ext_price ? <div><Text type="secondary" style={{ fontSize: 11 }}>{p.ext_label} {fmtPrice(p.ext_price)}</Text></div> : null}
                 <div><Text type="secondary" style={{ fontSize: 11 }}>{fmtMyt(p.quote_ts)}</Text></div>
               </span>
             ) : (
@@ -132,7 +131,7 @@ function PositionsTable({ items }: { items: OverviewPosition[] }) {
             p.reconcile_locked ? (
               <Tag color="magenta">对账锁定</Tag>
             ) : p.below_stop ? (
-              <Tag color="red">{p.market_open === false ? '已低于止损 · 等待开盘卖出' : '已触及止损 · 卖出中'}</Tag>
+              <Tag color="red">{p.market_open === false ? '已低于止损 · 开盘后按规则卖出' : '已触及止损 · 卖出中'}</Tag>
             ) : (
               <Tag color="green">受保护</Tag>
             ),

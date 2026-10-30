@@ -43,6 +43,13 @@
 - 卸载：`python3 scripts/launcher.py uninstall-autostart`（会同时停止系统），之后可按原方式双击 `start.command`。
 - 日志：`data/supervisor.log`（守护进程）、`data/web.log`、`data/worker_sim.log`。
 - OpenD 不由本系统启动：需要在 OpenD 中设置开机自动登录；如果要求输入密码，由用户本人在 OpenD 窗口输入。
+- 交易时段内不能安装或卸载（会重启或停止工作进程）；确需立即操作加 `--force`。
+- 项目放在「桌面 / 文稿 / 下载 / iCloud」文件夹时，macOS 隐私保护通常不允许开机自启的程序读写，安装会拒绝；
+  请把项目移到其他位置，或给 `.venv` 的 python 加「完全磁盘访问权限」后用 `--force`。
+- 配置里写的是安装时的项目路径：项目搬家或重新解压到别处后，要在新位置重新运行 `install-autostart`。
+- 电脑重启后要**登录 Mac 用户**才会启动（LaunchAgent 属于登录用户；开了 FileVault 时开机必须先登录）。
+  没登录的那段时间同样不执行止损，重新启动后会记录为停机。
+- 成绩单「交易时段停机」一项一旦出现就会一直显示未通过：这是事实记录，提醒这段运行期间曾有一段时间没有保护。
 
 ## 在 moomoo App 中手动交易了同一只股票
 

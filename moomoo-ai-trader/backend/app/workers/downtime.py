@@ -17,7 +17,7 @@ from sqlalchemy import select
 from ..core.audit import audit, notify
 from ..core.calendar import CCY_MARKET, MYT, get_calendar
 from ..db.models import Authorization
-from ..db.session import write_session
+from ..db.session import read_session, write_session
 from ..services.runs import current_portfolio
 
 log = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def session_overlaps(start: datetime, end: datetime, markets) -> list[dict]:
         while d <= last:
             for a, b in cal.windows(m, d):
                 lo, hi = max(a, start), min(b, end)
-                if hi > lo:
+                if hi - lo >= timedelta(minutes=1):
                     out.append({"market": m, "day": d.isoformat(), "minutes": int((hi - lo).total_seconds() // 60),
                                 "from": lo.isoformat(), "to": hi.isoformat()})
             d += timedelta(days=1)
@@ -47,22 +47,24 @@ def record_downtime(ns: str, start: datetime, end: datetime, reason: str) -> lis
     """记录一次停机；返回与交易时段的重叠（空表示没有影响交易时段）。"""
     if end - start < MIN_GAP:
         return []
-    with write_session(ns) as s:
+    with read_session(ns) as s:
         p = current_portfolio(s, ns)
         if p is None or not p.running or p.data_source in ("DEMO_FIXTURE", "HISTORICAL_REPLAY"):
             return []  # 没有在运行的真实行情组合：没有需要保护的持仓
-        a = s.execute(select(Authorization).where(Authorization.portfolio_id == p.id, Authorization.status == "ACTIVE")
+        pid = p.id
+        a = s.execute(select(Authorization).where(Authorization.portfolio_id == pid, Authorization.status == "ACTIVE")
                       .order_by(Authorization.id.desc()).limit(1)).scalar_one_or_none()
         markets = sorted({CCY_MARKET.get(c, "US") for c in a.capital}) if a is not None and a.capital else ["US"]
-        overlaps = session_overlaps(start, end, markets)
-        span = f"{start.astimezone(MYT):%m-%d %H:%M} → {end.astimezone(MYT):%m-%d %H:%M}（马来西亚时间）"
-        if not overlaps:
-            log.info("工作进程停机 %s，没有跨过交易时段（%s）", span, reason)
-            return []
-        mins = sum(o["minutes"] for o in overlaps)
-        days = "、".join(sorted({f"{o['market']} {o['day']}" for o in overlaps}))
-        msg = f"工作进程停机 {span}，其中 {mins} 分钟在交易时段（{days}）：这段时间止损、止盈没有执行。原因：{reason}"
-        audit(s, "PROTECTION", WORKER_DOWNTIME, msg, actor="worker", portfolio_id=p.id,
+    overlaps = session_overlaps(start, end, markets)  # 在写事务之外计算（首次加载交易日历较慢）
+    span = f"{start.astimezone(MYT):%m-%d %H:%M} → {end.astimezone(MYT):%m-%d %H:%M}（马来西亚时间）"
+    if not overlaps:
+        log.info("工作进程停机 %s，没有跨过交易时段（%s）", span, reason)
+        return []
+    mins = sum(o["minutes"] for o in overlaps)
+    days = "、".join(sorted({f"{o['market']} {o['day']}" for o in overlaps}))
+    msg = f"工作进程停机 {span}，其中 {mins} 分钟在交易时段（{days}）：这段时间止损、止盈没有执行。原因：{reason}"
+    with write_session(ns) as s:
+        audit(s, "PROTECTION", WORKER_DOWNTIME, msg, actor="worker", portfolio_id=pid,
               data={"start": start.isoformat(), "end": end.isoformat(), "reason": reason, "overlaps": overlaps},
               as_of=end)
         notify(s, "error", "系统曾停机，期间没有执行止损", msg, dedupe_key=f"downtime:{ns}:{start.isoformat()}")

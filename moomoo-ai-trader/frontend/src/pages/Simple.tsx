@@ -30,7 +30,7 @@ function todos(o: Overview, sc?: Scorecard): Todo[] {
   }
   for (const pos of o.positions) {
     if (pos.below_stop && pos.market_open === false) {
-      out.push({ level: 'warn', text: `${pos.symbol.replace(/^US\./, '')} 已低于止损价 ${fmtPrice(pos.stop_price)}：美股开盘后系统会自动卖出，不需要您操作。` });
+      out.push({ level: 'warn', text: `${pos.symbol.replace(/^US\./, '')} 已低于止损价 ${fmtPrice(pos.stop_price)}：开盘后如果价格仍低于止损，系统会自动卖出，不需要您操作（价格异常时会先暂停并通知您）。` });
     }
   }
   const down = sc?.downtime_days ?? [];
@@ -179,7 +179,7 @@ export function SimplePage() {
                   <Text> {pos.qty} 股：</Text>
                   {pos.below_stop ? (
                     <Tag color="red" style={{ marginInlineStart: 4 }}>
-                      {pos.market_open === false ? '已低于止损，开盘后自动卖出' : '已触及止损，正在卖出'}
+                      {pos.market_open === false ? '已低于止损，开盘后会按规则卖出' : '已触及止损，正在卖出'}
                     </Tag>
                   ) : null}
                   {pos.unrealized ? (
@@ -193,8 +193,7 @@ export function SimplePage() {
                     <div>
                       <Text type="secondary">
                         休市中：上一收盘价 {fmtPrice(pos.last)}
-                        {pos.pre_price ? `，盘前价 ${fmtPrice(pos.pre_price)}` : ''}
-                        {pos.after_price ? `，盘后价 ${fmtPrice(pos.after_price)}` : ''}（都不是开盘后一定能成交的价格）
+                        {pos.ext_price ? `，${pos.ext_label} ${fmtPrice(pos.ext_price)}` : ''}（都不是开盘后一定能成交的价格）
                       </Text>
                     </div>
                   ) : null}

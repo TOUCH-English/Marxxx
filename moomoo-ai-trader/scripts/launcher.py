@@ -106,23 +106,40 @@ def _alive(pid: int) -> bool:
         return False
 
 
-def _is_ours(pid: int, argv: list[str]) -> bool:
+# pid 文件名 → 进程命令行里一定出现的文字（用来确认 pid 没有被别的程序重用）
+MARKERS = {"supervisor": "launcher.py supervise", "web": "app.api.app", "worker_sim": "app.workers.main --ns sim",
+           "worker_live": "app.workers.main --ns live"}
+
+
+def _marker(argv: list[str]) -> str:
+    if "app.workers.main" in argv and "--ns" in argv:
+        return f"app.workers.main --ns {argv[argv.index('--ns') + 1]}"
+    return next((a for a in argv if a.startswith("app.") or a.endswith(".py")), argv[-1])
+
+
+def _is_ours(pid: int, key: str) -> bool:
     """pid 文件里的进程还活着，并且确实是本系统的进程（电脑重启后 pid 可能被别的程序重用）。"""
     if not _alive(pid):
         return False
     if IS_WIN:
         return True
     r = subprocess.run(["ps", "-ww", "-p", str(pid), "-o", "command="], capture_output=True, text=True)
-    if r.returncode != 0:
-        return False
-    key = next((a for a in argv if a.startswith("app.") or a.endswith(".py")), argv[-1])
-    return key in r.stdout
+    return r.returncode == 0 and key in r.stdout
+
+
+def _read_pid(f: Path) -> int | None:
+    try:
+        t = f.read_text().strip()
+    except OSError:  # 守护进程正在删除 pid 文件
+        return None
+    return int(t) if t.isdigit() else None
 
 
 def status() -> dict[str, bool]:
     out = {}
     for f in sorted(RUN.glob("*.pid")) if RUN.exists() else []:
-        out[f.stem] = _alive(int(f.read_text() or 0))
+        pid = _read_pid(f)
+        out[f.stem] = pid is not None and (_is_ours(pid, MARKERS[f.stem]) if f.stem in MARKERS else _alive(pid))
     return out
 
 
@@ -148,8 +165,26 @@ def _agent_loaded() -> bool:
     return _launchctl("print", f"gui/{os.getuid()}/{AGENT_LABEL}").returncode == 0
 
 
+def _market_open_now() -> bool | None:
+    """美股或马股是否正在常规交易时段（用虚拟环境里的交易日历）；判断不了返回 None。"""
+    code = ("from datetime import datetime, timezone; from app.core.calendar import get_calendar; "
+            "c = get_calendar(); t = datetime.now(timezone.utc); print(c.is_open('US', t) or c.is_open('MY', t))")
+    r = subprocess.run([str(VENV_PY), "-c", code], cwd=str(ROOT / "backend"), capture_output=True, text=True)
+    return r.stdout.strip().endswith("True") if r.returncode == 0 else None
+
+
 def start() -> int:
     if _agent_installed():
+        # 更新后依赖可能变了：先装好依赖与前端，否则守护进程会反复启动失败
+        if not check_env():
+            return 1
+        ensure_venv()
+        build_frontend()
+        st = status()
+        manual = [k for k, v in st.items() if v and k != "supervisor"]
+        if manual and not st.get("supervisor"):
+            say(f"检测到手动启动的进程仍在运行（{', '.join(manual)}），它们没有自动重启保护。请先运行 stop，再 start。")
+            return 2
         STOPPED_FLAG.unlink(missing_ok=True)
         if not _agent_loaded():
             r = _launchctl("bootstrap", f"gui/{os.getuid()}", str(AGENT_PLIST))
@@ -209,8 +244,8 @@ def stop() -> int:
                     break
                 time.sleep(1)
     for name, alive in status().items():
-        pid = int((RUN / f"{name}.pid").read_text())
-        if alive:
+        pid = _read_pid(RUN / f"{name}.pid")
+        if alive and pid is not None:
             try:
                 if IS_WIN:
                     subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
@@ -237,6 +272,7 @@ def agent_plist() -> dict:
         "RunAtLoad": True,
         "KeepAlive": {"SuccessfulExit": False},
         "ThrottleInterval": 30,
+        "ExitTimeOut": 45,  # 守护进程停止时最多等子进程 30 秒；launchd 默认 20 秒就会强制结束
         "ProcessType": "Interactive",  # 避免后台节流（App Nap）拖慢行情与止损
         "StandardOutPath": str(ROOT / "data" / "supervisor.log"),
         "StandardErrorPath": str(ROOT / "data" / "supervisor.log"),
@@ -244,7 +280,27 @@ def agent_plist() -> dict:
     }
 
 
-def install_autostart() -> int:
+PROTECTED_DIRS = ("Desktop", "Documents", "Downloads", "Library/Mobile Documents")
+
+
+def _protected_folder() -> str | None:
+    """macOS 隐私保护的文件夹：由 launchd 启动的 python 通常没有权限读写，自启会一直失败。"""
+    for d in PROTECTED_DIRS:
+        base = Path.home() / d
+        if ROOT == base or base in ROOT.parents:
+            return str(base)
+    return None
+
+
+def _wait_unloaded(timeout_s: int = 60) -> bool:
+    for _ in range(timeout_s):
+        if not _agent_loaded():
+            return True
+        time.sleep(1)
+    return False
+
+
+def install_autostart(force: bool = False) -> int:
     import plistlib
 
     if platform.system() != "Darwin":
@@ -253,6 +309,15 @@ def install_autostart() -> int:
     if not VENV_PY.exists():
         say(f"找不到 {VENV_PY}：请先用 scripts/start.command 完成首次安装")
         return 1
+    if not force and _market_open_now() is not False:
+        say("现在是交易时段（或无法判断）：安装会重启工作进程，请在收盘后再安装（确需立即安装可加 --force）。")
+        return 2
+    folder = _protected_folder()
+    if folder and not force:
+        say(f"项目在 {folder} 里：macOS 隐私保护通常不允许开机自启的程序读写这个文件夹，自启会反复失败。"
+            "请把项目移到其他位置（例如 ~/moomoo-ai-trader），或在「系统设置 → 隐私与安全性 → 完全磁盘访问权限」"
+            f"中加入 {VENV_PY.resolve()} 后，再加 --force 安装。")
+        return 2
     running = [k for k, v in status().items() if v]
     if running and not _agent_loaded():
         say(f"检测到系统正在运行（手动启动：{', '.join(running)}）。请在美股收盘后先运行 stop，再安装。")
@@ -263,7 +328,9 @@ def install_autostart() -> int:
     STOPPED_FLAG.unlink(missing_ok=True)
     if _agent_loaded():
         _launchctl("bootout", f"gui/{os.getuid()}/{AGENT_LABEL}")
-        time.sleep(3)
+        if not _wait_unloaded():
+            say("旧的守护进程 60 秒内没有停止，请稍后再试")
+            return 1
     r = _launchctl("bootstrap", f"gui/{os.getuid()}", str(AGENT_PLIST))
     if r.returncode != 0:
         say(f"launchctl bootstrap 失败：{r.stderr.strip() or r.stdout.strip()}")
@@ -273,7 +340,10 @@ def install_autostart() -> int:
     return 0
 
 
-def uninstall_autostart() -> int:
+def uninstall_autostart(force: bool = False) -> int:
+    if not force and _agent_loaded() and _market_open_now() is not False:
+        say("现在是交易时段（或无法判断）：卸载会停止系统，止损将不再执行。请在收盘后再卸载（确需立即卸载可加 --force）。")
+        return 2
     if _agent_loaded():
         _launchctl("bootout", f"gui/{os.getuid()}/{AGENT_LABEL}")
     AGENT_PLIST.unlink(missing_ok=True)
@@ -310,8 +380,9 @@ def supervise(commands: dict[str, list[str]] | None = None, *, run_dir: Path | N
     cmds = commands if commands is not None else _commands(cfg)
     for name in cmds:
         f = run / f"{name}.pid"
-        if f.exists() and f.read_text().strip().isdigit() and _is_ours(int(f.read_text()), cmds[name]):
-            say(f"{name} 已在运行（PID {f.read_text().strip()}，可能是手动启动的）：守护进程不重复启动。请先运行 stop。")
+        pid = _read_pid(f) if f.exists() else None
+        if pid is not None and _is_ours(pid, _marker(cmds[name])):
+            say(f"{name} 已在运行（PID {pid}，可能是手动启动的）：守护进程不重复启动。请先运行 stop。")
             return 0
     if commands is None:
         subprocess.check_call([str(VENV_PY), "-c", "from app.services.runs import ensure_seed; ensure_seed('sim'); ensure_seed('live')"],
@@ -376,9 +447,9 @@ if __name__ == "__main__":
     if cmd == "supervise":
         sys.exit(supervise())
     if cmd == "install-autostart":
-        sys.exit(install_autostart())
+        sys.exit(install_autostart(force="--force" in sys.argv))
     if cmd == "uninstall-autostart":
-        sys.exit(uninstall_autostart())
+        sys.exit(uninstall_autostart(force="--force" in sys.argv))
     if cmd == "start":
         sys.exit(start())
     if cmd == "stop":

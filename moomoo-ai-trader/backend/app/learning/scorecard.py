@@ -87,6 +87,7 @@ def session_days(s: Session, portfolio_id: int, rows: list, start: datetime, now
 
     完整 = 该日净值记录在收市之后仍有更新（工作进程一直跑到收市），且没有交易时段内的停机记录。
     其余（记录在收市前就停止更新、整天没有记录、或有停机记录）都算停机：那天至少有一段时间止损没有运行。
+    运行在开盘后才开始的第一天不计入任何一类。
     """
     from ..workers.downtime import WORKER_DOWNTIME
 
@@ -99,8 +100,9 @@ def session_days(s: Session, portfolio_id: int, rows: list, start: datetime, now
     complete, missed = [], []
     d, last = cal.local_date(market, start), cal.local_date(market, now)
     while d <= last:
-        close = cal.session_close(market, d)
-        if close is not None and start < close <= now:
+        close, opened = cal.session_close(market, d), cal.session_open(market, d)
+        # 运行在开盘后才开始的那天只运行了半天：既不算完整交易日，也不算停机
+        if close is not None and opened is not None and start <= opened and close <= now:
             r = by_day.get(d.isoformat())
             ok = r is not None and r.updated_at is not None and r.updated_at >= close and d.isoformat() not in down
             (complete if ok else missed).append(d)

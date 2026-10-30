@@ -76,3 +76,45 @@ def test_launch_agent_restarts_only_on_crash_and_starts_at_login():
     assert p["KeepAlive"] == {"SuccessfulExit": False}  # 正常退出（stop / 用户停止）不会被拉起
     assert p["ProgramArguments"][-1] == "supervise" and p["ProgramArguments"][1].endswith("scripts/launcher.py")
     assert p["Label"] == mod.AGENT_LABEL and mod.AGENT_PLIST.name == f"{mod.AGENT_LABEL}.plist"
+
+
+def test_status_ignores_reused_pid_and_install_refuses_during_market_hours(tmp_path, monkeypatch):
+    import subprocess
+
+    mod = _launcher()
+    monkeypatch.setattr(mod, "RUN", tmp_path)
+    other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    try:
+        (tmp_path / "worker_sim.pid").write_text(str(other.pid))  # pid 活着，但不是本系统的工作进程
+        assert mod.status() == {"worker_sim": False}
+        (tmp_path / "web.pid").write_text("")  # 正在被删除 / 写了一半的 pid 文件
+        assert mod.status()["web"] is False
+    finally:
+        other.kill()
+    # 交易时段（或无法判断）不安装 / 不卸载
+    monkeypatch.setattr(mod.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(mod, "VENV_PY", Path(sys.executable))
+    monkeypatch.setattr(mod, "_agent_loaded", lambda: True)
+    for answer in (True, None):
+        monkeypatch.setattr(mod, "_market_open_now", lambda a=answer: a)
+        assert mod.install_autostart() == 2
+        assert mod.uninstall_autostart() == 2
+
+
+def test_protected_folder_and_agent_start_with_manual_processes(tmp_path, monkeypatch):
+    mod = _launcher()
+    monkeypatch.setattr(mod.Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(mod, "ROOT", tmp_path / "Documents" / "moomoo-ai-trader")
+    assert mod._protected_folder() == str(tmp_path / "Documents")
+    monkeypatch.setattr(mod, "ROOT", tmp_path / "moomoo-ai-trader")
+    assert mod._protected_folder() is None
+    # 已安装自启时 start：先装依赖；有手动启动的进程在跑就不启动守护进程（避免它们没人看守）
+    calls = []
+    monkeypatch.setattr(mod, "_agent_installed", lambda: True)
+    monkeypatch.setattr(mod, "check_env", lambda: calls.append("env") or True)
+    monkeypatch.setattr(mod, "ensure_venv", lambda: calls.append("venv"))
+    monkeypatch.setattr(mod, "build_frontend", lambda: calls.append("fe"))
+    monkeypatch.setattr(mod, "status", lambda: {"web": True, "worker_sim": True})
+    monkeypatch.setattr(mod, "_launchctl", lambda *a: calls.append(a))
+    assert mod.start() == 2
+    assert calls == ["env", "venv", "fe"]  # 没有调用 launchctl

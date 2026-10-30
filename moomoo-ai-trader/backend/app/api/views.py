@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..core import authz
-from ..core.calendar import MYT, get_calendar
+from ..core.calendar import MARKET_TZ, MYT, get_calendar
 from ..core.enums import DECISION_OUTCOME_LABELS, MODE_LABELS, ORDER_STATUS_LABELS, Mode
 from ..db.models import (
     AuditEvent,
@@ -47,6 +47,18 @@ def business_time(p: Portfolio | None) -> datetime:
     if p is not None and p.data_source in ("DEMO_FIXTURE", "HISTORICAL_REPLAY") and p.sim_clock:
         return p.sim_clock
     return utcnow()
+
+
+def extended_price(cal, market: str, t: datetime, ext: dict) -> tuple[str | None, str]:
+    """休市时可参考的盘前/盘后价及其名称。交易日 04:00（当地）到开盘之间用盘前价，
+    其余休市时间（收市后、周末、假日）用盘后价；不拿早上的盘前价充当晚上或周末的价格。"""
+    if cal.is_open(market, t):
+        return None, ""
+    opened = cal.session_open(market, cal.local_date(market, t))
+    local = t.astimezone(MARKET_TZ[market])
+    if opened is not None and t < opened and local.hour >= 4:
+        return ext.get("pre_price"), "盘前价"
+    return ext.get("after_price"), "盘后价"
 
 
 def worker_info(s: Session, ns: str) -> dict:
@@ -178,11 +190,9 @@ def overview(s: Session, ns: str) -> dict[str, Any]:
         q = latest_quote(s, x.symbol)
         last = q.last if q and q.last is not None else None
         market_open = cal.is_open(x.market, bt)
-        ext = sessions.get(x.symbol) or {}
         # 休市时 last 一般是上一个常规时段的收盘价；盘前/盘后价另列，不能当作已经可以成交的价格
-        ext_raw = ext.get("pre_price") or ext.get("after_price")
-        ext_price = D(ext_raw) if not market_open and ext_raw else None
-        ref = ext_price if ext_price is not None else last
+        ext_raw, ext_label = extended_price(cal, x.market, bt, sessions.get(x.symbol) or {})
+        ref = D(ext_raw) if ext_raw else last
         out["positions"].append(j({
             "id": x.id, "symbol": x.symbol, "name": _inst_name(s, x.symbol), "market": x.market, "currency": x.currency,
             "qty": x.qty, "avg_cost": x.avg_cost.quantize(Decimal("0.0001")), "last": last,
@@ -192,7 +202,7 @@ def overview(s: Session, ns: str) -> dict[str, Any]:
             "stop_price": x.stop_price, "take_profit_price": x.take_profit_price, "max_hold_until": x.max_hold_until,
             "opened_at": x.opened_at, "strategy_version": x.strategy_version, "reconcile_locked": x.symbol in rec_locked,
             "quote_source": q.source if q else None, "quote_ts": q.source_ts if q else None,
-            "market_open": market_open, "pre_price": ext.get("pre_price"), "after_price": ext.get("after_price"),
+            "market_open": market_open, "ext_price": ext_raw, "ext_label": ext_label,
             "last_label": "最新成交价" if market_open else "上一常规时段收盘价（休市中）",
             "below_stop": bool(x.stop_price is not None and ref is not None and ref <= x.stop_price),
         }))

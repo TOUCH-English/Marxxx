@@ -27,7 +27,7 @@ from .engine import TradingEngine
 
 log = logging.getLogger("worker")
 LEASE_TTL = timedelta(seconds=30)
-PAUSE_GAP = timedelta(minutes=3)
+PAUSE_GAP = timedelta(minutes=3)  # 正常每轮约 2 秒；超过 3 分钟说明进程被挂起或卡住
 
 
 def acquire_lease(ns: str, owner: str) -> bool:
@@ -117,14 +117,15 @@ def main(argv: list[str] | None = None) -> int:
         while not stop["flag"]:
             t0 = time.monotonic()
             now_wall = utcnow()
-            if now_wall - last_wall > PAUSE_GAP:  # 两轮之间隔了很久：进程被挂起（多半是电脑睡眠）
+            # 从上一轮开始算（包括上一轮的 tick）：电脑在 tick 中途睡眠也能发现
+            if now_wall - last_wall > PAUSE_GAP:
                 _record_gap(args.ns, last_wall, now_wall, "工作进程被暂停（多半是电脑睡眠）")
+            last_wall = now_wall
             try:
                 eng.tick()
             except Exception:
                 log.exception("tick error")
             eng.heartbeat(owner, os.getpid())
-            last_wall = utcnow()
             n += 1
             if args.max_ticks and n >= args.max_ticks:
                 break

@@ -107,7 +107,7 @@ def test_scorecard_counts_trading_days_and_does_not_overstate_drawdown(env):
     pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.UPA"], capital={"USD": "1000"})
     with write_session("sim") as s:
         for a in s.execute(select(Authorization).where(Authorization.portfolio_id == pid)).scalars():
-            a.valid_from = US_OPEN  # 运行从 10-21（周三）美股开盘时开始
+            a.valid_from = datetime(2026, 10, 21, 12, tzinfo=timezone.utc)  # 10-21（周三）开盘前开始运行
         for r in s.execute(select(DailyEquity).where(DailyEquity.portfolio_id == pid)).scalars():
             s.delete(r)
         s.flush()
@@ -134,6 +134,13 @@ def test_scorecard_counts_trading_days_and_does_not_overstate_drawdown(env):
     item = next(i for i in out["gate_a"]["items"] if i["name"].startswith("交易时段停机"))
     assert item["status"] == "FAIL" and "2026-10-23" in item["value"]
     assert out["numbers"]["max_drawdown_pct"] == "5.00%"
+    # 运行在开盘后才开始：第一天只跑了半天，两类都不算
+    with write_session("sim") as s:
+        for a in s.execute(select(Authorization).where(Authorization.portfolio_id == pid)).scalars():
+            a.valid_from = datetime(2026, 10, 21, 15, tzinfo=timezone.utc)
+    with read_session("sim") as s:
+        out = scorecard.build(s, pid, price_of=lambda sym: None, now=US_OPEN + timedelta(days=7))
+    assert out["sessions"] == 2 and "2026-10-21" not in out["downtime_days"]
 
 
 def test_downtime_overlap_with_trading_session_is_recorded(env):
@@ -204,15 +211,41 @@ def test_overview_marks_position_below_stop_while_market_closed(env, monkeypatch
         s.execute(select(QuoteSnapshot).where(QuoteSnapshot.symbol == "US.UPA")).scalar_one().last = Decimal("62.00")
         hb = WorkerHeartbeat(name="sim", owner="t", pid=1, started_at=US_OPEN, heartbeat_at=US_OPEN)
         s.add(hb)
-        hb.status = {"portfolios": {str(pid): {"quote_sessions": {"US.UPA": {"pre_price": "60.50", "after_price": None}}}}}
+        hb.status = {"portfolios": {str(pid): {"quote_sessions": {"US.UPA": {"pre_price": "63.00", "after_price": "60.50"}}}}}
     saturday = datetime(2026, 10, 31, 12, tzinfo=timezone.utc)
     monkeypatch.setattr(views, "business_time", lambda p: saturday)
     with read_session("sim") as s:
         pos = views.overview(s, "sim")["positions"][0]
-    # 上一收盘价 62 仍高于止损 61，但盘前价 60.50 已低于止损：开盘后会自动卖出
-    assert pos["market_open"] is False and pos["pre_price"] == "60.50"
+    # 周末：用周五的盘后价 60.50（不拿周五早上的盘前价 63），上一收盘价 62 仍高于止损 61
+    assert pos["market_open"] is False and pos["ext_price"] == "60.50" and pos["ext_label"] == "盘后价"
     assert pos["below_stop"] is True and "收盘价" in pos["last_label"]
+    # 交易日开盘前（美东 08:00）：用盘前价 63，高于止损
+    monkeypatch.setattr(views, "business_time", lambda p: datetime(2026, 11, 2, 13, tzinfo=timezone.utc))
+    with read_session("sim") as s:
+        pos = views.overview(s, "sim")["positions"][0]
+    assert pos["ext_label"] == "盘前价" and pos["ext_price"] == "63.00" and pos["below_stop"] is False
     monkeypatch.setattr(views, "business_time", lambda p: US_OPEN)  # 交易时段：只看最新成交价
     with read_session("sim") as s:
         pos = views.overview(s, "sim")["positions"][0]
     assert pos["market_open"] is True and pos["below_stop"] is False
+
+
+def test_worker_loop_records_long_pause_such_as_sleep(env, monkeypatch):
+    from app.db.models import Portfolio
+    from app.workers import main as wmain
+    from helpers import setup_run
+
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.UPA"], capital={"USD": "2448"})
+    with write_session("sim") as s:
+        s.get(Portfolio, pid).data_source = "MOOMOO_REALTIME"
+    clock = {"t": US_OPEN}
+    monkeypatch.setattr(wmain, "utcnow", lambda: clock["t"])
+
+    def tick():  # 第一轮 tick 中途电脑睡了 40 分钟
+        clock["t"] = clock["t"] + timedelta(minutes=40)
+
+    seen = []
+    monkeypatch.setattr(wmain.downtime, "record_downtime", lambda ns, a, b, why: seen.append((a, b, why)) or [])
+    monkeypatch.setattr(wmain, "TradingEngine", lambda ns, worker_id: SimpleNamespace(tick=tick, heartbeat=lambda o, p: None))
+    assert wmain.main(["--ns", "sim", "--max-ticks", "2"]) == 0
+    assert seen and seen[0][0] == US_OPEN and seen[0][1] - seen[0][0] == timedelta(minutes=40) and "睡眠" in seen[0][2]
