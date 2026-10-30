@@ -36,6 +36,9 @@ class Quote:
     day_low: Decimal | None = None
     day_open: Decimal | None = None
     note: str = ""
+    # 盘前 / 盘后成交价（moomoo 快照另给的字段）。last 在休市时通常是上一个常规时段的收盘价
+    pre_price: Decimal | None = None
+    after_price: Decimal | None = None
 
 
 @dataclass(frozen=True)

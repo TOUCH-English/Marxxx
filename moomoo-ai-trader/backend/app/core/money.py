@@ -41,7 +41,11 @@ def round_to_tick(market: str, price: Decimal, direction: str) -> Decimal:
     if t2 != t:
         n = (out / t2).to_integral_value(rounding=ROUND_FLOOR if direction == "down" else ROUND_CEILING)
         out = n * t2
-    return out.normalize() if out != 0 else Decimal(0)
+    if out == 0:
+        return Decimal(0)
+    n = out.normalize()
+    # normalize() 会把 250.00 变成 2.5E+2；文字里（审计、决策说明）要显示成 250
+    return n.quantize(Decimal(1)) if n.as_tuple().exponent > 0 else n
 
 
 def is_valid_tick(market: str, price: Decimal) -> bool:

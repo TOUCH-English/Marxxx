@@ -15,7 +15,7 @@ const NEED_TRADES = 30;
 type Todo = { level: 'ok' | 'warn' | 'bad'; text: string };
 
 /** 用户现在需要做什么：大多数时候「什么都不用做」。 */
-function todos(o: Overview): Todo[] {
+function todos(o: Overview, sc?: Scorecard): Todo[] {
   const out: Todo[] = [];
   if (o.worker && !o.worker.alive) {
     out.push({ level: 'bad', text: '后台程序没有在运行：请确认 Mac 开着、没有睡眠，moomoo OpenD 已登录。' });
@@ -27,6 +27,15 @@ function todos(o: Overview): Todo[] {
   }
   for (const lk of o.locks ?? []) {
     out.push({ level: 'warn', text: `系统触发了安全暂停：${lk.reason}` });
+  }
+  for (const pos of o.positions) {
+    if (pos.below_stop && pos.market_open === false) {
+      out.push({ level: 'warn', text: `${pos.symbol.replace(/^US\./, '')} 已低于止损价 ${fmtPrice(pos.stop_price)}：美股开盘后系统会自动卖出，不需要您操作。` });
+    }
+  }
+  const down = sc?.downtime_days ?? [];
+  if (down.length) {
+    out.push({ level: 'warn', text: `系统曾在这些交易日停机，期间止损没有运行：${down.slice(-3).join('、')}${down.length > 3 ? ` 等 ${down.length} 天` : ''}。现在已恢复。` });
   }
   if (!out.length) out.push({ level: 'ok', text: '目前不需要您做任何事。系统会自动买卖，止损保护一直开着。' });
   return out;
@@ -97,7 +106,7 @@ export function SimplePage() {
   const usd = o.currencies.find((c) => c.currency === 'USD') ?? o.currencies[0];
   const n = sc.data?.numbers;
   const closed = Number(n?.closed_trades ?? 0);
-  const todoList = todos(o);
+  const todoList = todos(o, sc.data);
   const noTrade = o.why_no_trade?.[0]?.reason;
 
   return (
@@ -168,6 +177,11 @@ export function SimplePage() {
                   <Text strong style={{ fontSize: 15 }}>{pos.symbol.replace(/^US\./, '')}</Text>
                   {pos.name ? <Text type="secondary">（{pos.name}）</Text> : null}
                   <Text> {pos.qty} 股：</Text>
+                  {pos.below_stop ? (
+                    <Tag color="red" style={{ marginInlineStart: 4 }}>
+                      {pos.market_open === false ? '已低于止损，开盘后自动卖出' : '已触及止损，正在卖出'}
+                    </Tag>
+                  ) : null}
                   {pos.unrealized ? (
                     <Text>
                       目前盈亏 <Money v={pos.unrealized} ccy={pos.currency} pnl />
@@ -175,6 +189,15 @@ export function SimplePage() {
                   ) : (
                     <Text type="secondary">暂时没有最新价</Text>
                   )}
+                  {pos.market_open === false && pos.last ? (
+                    <div>
+                      <Text type="secondary">
+                        休市中：上一收盘价 {fmtPrice(pos.last)}
+                        {pos.pre_price ? `，盘前价 ${fmtPrice(pos.pre_price)}` : ''}
+                        {pos.after_price ? `，盘后价 ${fmtPrice(pos.after_price)}` : ''}（都不是开盘后一定能成交的价格）
+                      </Text>
+                    </div>
+                  ) : null}
                   <div>
                     <Text type="secondary">
                       {pos.stop_price ? `跌到 ${fmtPrice(pos.stop_price)} 会自动卖出（止损，控制亏损）` : '没有设止损'}

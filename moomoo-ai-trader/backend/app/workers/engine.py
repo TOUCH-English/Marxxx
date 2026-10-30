@@ -610,11 +610,16 @@ class TradingEngine:
             return
         rt.last_quote_store = wall
         with write_session(self.ns) as s:
-            syms = set(ts.scope) | {p.symbol for p in ledger.open_positions(s, rt.portfolio_id)}
+            held = {p.symbol for p in ledger.open_positions(s, rt.portfolio_id)}
+            syms = set(ts.scope) | held
+            sessions = {}
             for sym in syms:
                 q = rt.quote(sym)
                 if q is None:
                     continue
+                if sym in held and (q.pre_price is not None or q.after_price is not None):
+                    sessions[sym] = {"pre_price": str(q.pre_price) if q.pre_price is not None else None,
+                                     "after_price": str(q.after_price) if q.after_price is not None else None}
                 row = s.execute(select(QuoteSnapshot).where(QuoteSnapshot.symbol == sym)).scalar_one_or_none()
                 if row is None:
                     row = QuoteSnapshot(symbol=sym, source=q.source)
@@ -622,6 +627,7 @@ class TradingEngine:
                 row.last, row.bid, row.ask, row.volume = q.last, q.bid, q.ask, q.volume
                 row.source, row.is_realtime, row.suspended = q.source, q.is_realtime, q.suspended
                 row.source_ts, row.recv_ts = q.source_ts, q.recv_ts
+            rt.quote_sessions = sessions
 
     def _status(self, rt: Runtime, ts: TickState) -> dict:
         try:
@@ -636,7 +642,7 @@ class TradingEngine:
             "ai": {"label": rt.ai_provider.label, "is_fixture": rt.ai_provider.is_fixture,
                    "pending_jobs": len(rt.ai_jobs)},
             "auth_ok": ts.auth_ok, "auth_reason": ts.auth_reason, "health_blocks": ts.health_blocks,
-            "scope_size": len(ts.scope),
+            "scope_size": len(ts.scope), "quote_sessions": rt.quote_sessions,
             "broker_total_assets": (getattr(rt.adapter, "last_accinfo", {}) or {}).get("total_assets"),
         }
 

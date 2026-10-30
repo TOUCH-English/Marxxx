@@ -436,7 +436,7 @@ def parse_request(text: str, risk: dict, rules: dict) -> tuple[dict, dict, list[
             continue
         val = m.group(m.lastindex if kind == "pct" else 2)
         if kind == "pct":
-            r2[key] = str((Decimal(val) / 100).normalize())
+            r2[key] = format((Decimal(val) / 100).normalize(), "f")
         else:
             r2[key] = int(val)
         hits.append(key)

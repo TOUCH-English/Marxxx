@@ -42,6 +42,7 @@ class Runtime:
     ai_jobs: list[PendingAIJob] = field(default_factory=list)
     quotes: dict[str, Quote | None] = field(default_factory=dict)
     last_quote_store: datetime | None = None
+    quote_sessions: dict = field(default_factory=dict)  # symbol -> 盘前/盘后价（给网页区分价格时段）
     last_baseline_eval: dict[str, str] = field(default_factory=dict)
     adapter_instruments: set[str] = field(default_factory=set)  # 已登记到执行通道（本地模拟）的证券
     pool_info: dict[str, dict] = field(default_factory=dict)  # 当前股票池成员的筛选数据（市值、涨跌幅等）

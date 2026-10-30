@@ -98,27 +98,121 @@ def test_error_in_earnings_rule_does_not_block_stop_loss(env, monkeypatch):
 
 
 def test_scorecard_counts_trading_days_and_does_not_overstate_drawdown(env):
+    from app.core.audit import audit
     from app.learning import scorecard
     from helpers import setup_run
 
+    from app.db.models import Authorization
+
     pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.UPA"], capital={"USD": "1000"})
-    start = date(2026, 10, 16)  # 周五
     with write_session("sim") as s:
+        for a in s.execute(select(Authorization).where(Authorization.portfolio_id == pid)).scalars():
+            a.valid_from = US_OPEN  # 运行从 10-21（周三）美股开盘时开始
         for r in s.execute(select(DailyEquity).where(DailyEquity.portfolio_id == pid)).scalars():
             s.delete(r)
         s.flush()
-        for i in range(7):  # 周五到下周四，含周末两天
-            d = start + timedelta(days=i)
-            s.add(DailyEquity(portfolio_id=pid, currency="USD", day_myt=d.isoformat(), start_equity=Decimal(1000),
-                              last_equity=Decimal(1000), min_equity=Decimal(1000), flows=Decimal(0),
-                              hwm_adjusted=Decimal(1000), updated_at=US_OPEN))
+        for i in range(12):  # 10-16 到 10-27，含两个周末
+            d = date(2026, 10, 16) + timedelta(days=i)
+            eq = Decimal(1000) if d.isoformat() <= "2026-10-20" else Decimal(1100)
+            s.add(DailyEquity(portfolio_id=pid, currency="USD", day_myt=d.isoformat(), start_equity=eq,
+                              last_equity=eq, min_equity=eq, flows=Decimal(0), hwm_adjusted=eq,
+                              updated_at=datetime(d.year, d.month, d.day, 23, tzinfo=timezone.utc)))  # 收市后仍在更新
+        s.flush()
         # 某天先跌到 950 再涨到 1100：回撤是 5%，不是 (1100-950)/1100 = 13.6%
         row = s.execute(select(DailyEquity).where(DailyEquity.day_myt == "2026-10-20")).scalar_one()
         row.min_equity, row.last_equity, row.hwm_adjusted = Decimal(950), Decimal(1100), Decimal(1100)
-        s.flush()
-        for r in s.execute(select(DailyEquity).where(DailyEquity.day_myt > "2026-10-20")).scalars():
-            r.start_equity = r.last_equity = r.min_equity = r.hwm_adjusted = Decimal(1100)
+        # 10-23：工作进程在开盘前就停了（记录停在 13:00 UTC）→ 停机日
+        row = s.execute(select(DailyEquity).where(DailyEquity.day_myt == "2026-10-23")).scalar_one()
+        row.updated_at = datetime(2026, 10, 23, 13, tzinfo=timezone.utc)
+        # 10-26：盘中睡眠了一段时间，之后恢复（记录在收市后仍更新，但有停机记录）→ 停机日
+        audit(s, "PROTECTION", "WORKER_DOWNTIME", "test", portfolio_id=pid,
+              data={"overlaps": [{"market": "US", "day": "2026-10-26", "minutes": 40}]})
     with read_session("sim") as s:
         out = scorecard.build(s, pid, price_of=lambda sym: None, now=US_OPEN + timedelta(days=7))
-    assert out["sessions"] == 5
+    assert out["sessions"] == 3  # 10-21、10-22、10-27；周末不算，10-28 还没收市
+    assert out["downtime_days"] == ["2026-10-23", "2026-10-26"]
+    item = next(i for i in out["gate_a"]["items"] if i["name"].startswith("交易时段停机"))
+    assert item["status"] == "FAIL" and "2026-10-23" in item["value"]
     assert out["numbers"]["max_drawdown_pct"] == "5.00%"
+
+
+def test_downtime_overlap_with_trading_session_is_recorded(env):
+    from app.core.audit import audit as _a  # noqa: F401
+    from app.db.models import AuditEvent, Notification
+    from app.workers import downtime
+    from helpers import setup_run
+
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.UPA"], capital={"USD": "2448"})
+    with write_session("sim") as s:
+        from app.db.models import Portfolio
+
+        s.get(Portfolio, pid).data_source = "MOOMOO_REALTIME"
+    # 周三 04:18 UTC → 周四 06:36 UTC：覆盖了周三整个美股常规时段（13:30–20:00 UTC）
+    start = datetime(2026, 10, 28, 4, 18, tzinfo=timezone.utc)
+    end = datetime(2026, 10, 29, 6, 36, tzinfo=timezone.utc)
+    ov = downtime.record_downtime("sim", start, end, "测试")
+    assert [(o["market"], o["day"], o["minutes"]) for o in ov] == [("US", "2026-10-28", 390)]
+    with read_session("sim") as s:
+        ev = s.execute(select(AuditEvent).where(AuditEvent.action == "WORKER_DOWNTIME")).scalar_one()
+        assert ev.portfolio_id == pid and "止损" in ev.message
+        assert s.execute(select(Notification).where(Notification.level == "error")).first()
+    # 周末或夜里停机：不影响交易时段，不记录
+    assert downtime.record_downtime("sim", datetime(2026, 10, 31, 1, tzinfo=timezone.utc),
+                                    datetime(2026, 11, 1, 23, tzinfo=timezone.utc), "周末") == []
+    # 短于 2 分钟：不记录
+    assert downtime.record_downtime("sim", end, end + timedelta(seconds=90), "短") == []
+
+
+def test_worker_restart_records_gap_since_last_heartbeat(env, monkeypatch):
+    from app.db.models import Portfolio, WorkerHeartbeat
+    from app.workers import main as wmain
+    from helpers import setup_run
+
+    pid, _ = setup_run("sim", "LOCAL_PAPER", symbols=["US.UPA"], capital={"USD": "2448"})
+    with write_session("sim") as s:
+        s.get(Portfolio, pid).data_source = "MOOMOO_REALTIME"
+        s.add(WorkerHeartbeat(name="sim", owner="mac:123", pid=123, started_at=US_OPEN, heartbeat_at=US_OPEN))
+    assert wmain.last_seen("sim") == (US_OPEN, False)
+    seen = []
+    monkeypatch.setattr(wmain.downtime, "record_downtime", lambda ns, a, b, why: seen.append((ns, a, why)) or [])
+    monkeypatch.setattr(wmain, "TradingEngine", lambda ns, worker_id: SimpleNamespace(tick=lambda: None,
+                                                                                       heartbeat=lambda o, p: None))
+    assert wmain.main(["--ns", "sim", "--max-ticks", "1"]) == 0
+    assert seen and seen[0][1] == US_OPEN and "异常中断" in seen[0][2]
+    # 正常停止后：记录为正常停止，时间按释放前的心跳
+    assert wmain.last_seen("sim")[1] is True
+
+
+def test_tick_rounding_never_shows_scientific_notation():
+    from app.core.money import round_to_tick
+
+    assert str(round_to_tick("US", Decimal("250.00"), "down")) == "250"
+    assert f"@≤{round_to_tick('US', Decimal('2500.004'), 'down')}" == "@≤2500"
+    assert str(round_to_tick("US", Decimal("182.385"), "up")) == "182.39"
+
+
+def test_overview_marks_position_below_stop_while_market_closed(env, monkeypatch):
+    from app.api import views
+    from app.db.models import QuoteSnapshot, WorkerHeartbeat
+
+    prov = CtxProvider()
+    _spy(prov, weak=False)
+    prov.add("US.UPA", trend(80, 60.0, 0.05), "64.00")
+    pid, eng, fb, clock = _run(prov, ["US.UPA"], ScriptedAI(lambda p: _buy(p)), n=4)
+    with write_session("sim") as s:
+        assert ledger.get_open_position(s, pid, "US.UPA").stop_price == Decimal("61.00")
+        s.execute(select(QuoteSnapshot).where(QuoteSnapshot.symbol == "US.UPA")).scalar_one().last = Decimal("62.00")
+        hb = WorkerHeartbeat(name="sim", owner="t", pid=1, started_at=US_OPEN, heartbeat_at=US_OPEN)
+        s.add(hb)
+        hb.status = {"portfolios": {str(pid): {"quote_sessions": {"US.UPA": {"pre_price": "60.50", "after_price": None}}}}}
+    saturday = datetime(2026, 10, 31, 12, tzinfo=timezone.utc)
+    monkeypatch.setattr(views, "business_time", lambda p: saturday)
+    with read_session("sim") as s:
+        pos = views.overview(s, "sim")["positions"][0]
+    # 上一收盘价 62 仍高于止损 61，但盘前价 60.50 已低于止损：开盘后会自动卖出
+    assert pos["market_open"] is False and pos["pre_price"] == "60.50"
+    assert pos["below_stop"] is True and "收盘价" in pos["last_label"]
+    monkeypatch.setattr(views, "business_time", lambda p: US_OPEN)  # 交易时段：只看最新成交价
+    with read_session("sim") as s:
+        pos = views.overview(s, "sim")["positions"][0]
+    assert pos["market_open"] is True and pos["below_stop"] is False

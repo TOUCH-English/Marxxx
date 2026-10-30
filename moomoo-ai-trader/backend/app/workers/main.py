@@ -22,10 +22,12 @@ from ..db.models import WorkerHeartbeat
 from ..db.session import write_session
 from ..db.types import utcnow
 from ..services.runs import ensure_seed
+from . import downtime
 from .engine import TradingEngine
 
 log = logging.getLogger("worker")
 LEASE_TTL = timedelta(seconds=30)
+PAUSE_GAP = timedelta(minutes=3)
 
 
 def acquire_lease(ns: str, owner: str) -> bool:
@@ -40,6 +42,24 @@ def acquire_lease(ns: str, owner: str) -> bool:
         else:
             hb.owner, hb.pid, hb.started_at, hb.heartbeat_at = owner, os.getpid(), now, now
     return True
+
+
+def last_seen(ns: str):
+    """上一个工作进程最后一次心跳的时间，以及它是否正常停止。没有记录返回 (None, False)。"""
+    with write_session(ns) as s:
+        hb = s.get(WorkerHeartbeat, ns)
+        if hb is None:
+            return None, False
+        if hb.owner.startswith("released:"):  # 正常停止时 release_lease 把心跳往前拨了 2 个租约周期
+            return hb.heartbeat_at + LEASE_TTL * 2, True
+        return hb.heartbeat_at, False
+
+
+def _record_gap(ns: str, start, end, reason: str) -> None:
+    try:
+        downtime.record_downtime(ns, start, end, reason)
+    except Exception:  # 停机记录失败不能影响交易保护
+        log.exception("停机记录失败")
 
 
 def release_lease(ns: str, owner: str) -> None:
@@ -69,6 +89,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error("已有 %s 工作进程在运行（文件锁被占用），本进程退出", args.ns)
         return 2
     owner = f"{socket.gethostname()}:{os.getpid()}"
+    prev_seen, prev_clean = last_seen(args.ns)
     # 已拿到文件锁 = 本机没有其他工作进程；租约可能是上一个被强制结束的进程留下的，等待其过期后接管
     deadline = time.monotonic() + LEASE_TTL.total_seconds() + 5
     while not acquire_lease(args.ns, owner):
@@ -78,6 +99,9 @@ def main(argv: list[str] | None = None) -> int:
             return 3
         log.info("等待上一个工作进程的租约过期…")
         time.sleep(2)
+    if prev_seen is not None:
+        _record_gap(args.ns, prev_seen, utcnow(),
+                    "上次是正常停止后重新启动" if prev_clean else "上次异常中断（电脑重启、程序崩溃或被强制结束）")
     stop = {"flag": False}
 
     def _sig(*_):
@@ -88,14 +112,19 @@ def main(argv: list[str] | None = None) -> int:
     eng = TradingEngine(args.ns, worker_id=owner)
     n = 0
     log.info("%s 工作进程启动（%s）", args.ns, owner)
+    last_wall = utcnow()
     try:
         while not stop["flag"]:
             t0 = time.monotonic()
+            now_wall = utcnow()
+            if now_wall - last_wall > PAUSE_GAP:  # 两轮之间隔了很久：进程被挂起（多半是电脑睡眠）
+                _record_gap(args.ns, last_wall, now_wall, "工作进程被暂停（多半是电脑睡眠）")
             try:
                 eng.tick()
             except Exception:
                 log.exception("tick error")
             eng.heartbeat(owner, os.getpid())
+            last_wall = utcnow()
             n += 1
             if args.max_ticks and n >= args.max_ticks:
                 break

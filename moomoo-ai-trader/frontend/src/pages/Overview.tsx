@@ -107,12 +107,36 @@ function PositionsTable({ items }: { items: OverviewPosition[] }) {
         { title: '证券', render: (_, p) => <Space direction="vertical" size={0}><Text strong>{p.symbol}</Text><Text type="secondary" style={{ fontSize: 12 }}>{p.name}</Text></Space> },
         { title: '数量', dataIndex: 'qty' },
         { title: '成本价', dataIndex: 'avg_cost', render: (v: string) => fmtPrice(v) },
-        { title: '最新价', render: (_, p) => (p.last ? <span>{fmtPrice(p.last)}<div><Text type="secondary" style={{ fontSize: 11 }}>{fmtMyt(p.quote_ts)}</Text></div></span> : <Text type="secondary">暂无报价</Text>) },
+        {
+          title: '最新价',
+          render: (_, p) =>
+            p.last ? (
+              <span>
+                {fmtPrice(p.last)}
+                {p.market_open === false ? <div><Text type="secondary" style={{ fontSize: 11 }}>{p.last_label}</Text></div> : null}
+                {p.pre_price ? <div><Text type="secondary" style={{ fontSize: 11 }}>盘前 {fmtPrice(p.pre_price)}</Text></div> : null}
+                {p.after_price ? <div><Text type="secondary" style={{ fontSize: 11 }}>盘后 {fmtPrice(p.after_price)}</Text></div> : null}
+                <div><Text type="secondary" style={{ fontSize: 11 }}>{fmtMyt(p.quote_ts)}</Text></div>
+              </span>
+            ) : (
+              <Text type="secondary">暂无报价</Text>
+            ),
+        },
         { title: '市值', render: (_, p) => <Money v={p.market_value} ccy={p.currency} /> },
         { title: '浮动盈亏', render: (_, p) => <span><Money v={p.unrealized} pnl />{p.unrealized_pct ? <Text type="secondary">（{fmtPct(p.unrealized_pct, true)}）</Text> : null}</span> },
         { title: '保护：止损 / 止盈', render: (_, p) => `${fmtPrice(p.stop_price)} / ${fmtPrice(p.take_profit_price)}` },
         { title: '最长持有至', dataIndex: 'max_hold_until', render: (v: string | null) => fmtMyt(v) },
-        { title: '状态', render: (_, p) => (p.reconcile_locked ? <Tag color="magenta">对账锁定</Tag> : <Tag color="green">受保护</Tag>) },
+        {
+          title: '状态',
+          render: (_, p) =>
+            p.reconcile_locked ? (
+              <Tag color="magenta">对账锁定</Tag>
+            ) : p.below_stop ? (
+              <Tag color="red">{p.market_open === false ? '已低于止损 · 等待开盘卖出' : '已触及止损 · 卖出中'}</Tag>
+            ) : (
+              <Tag color="green">受保护</Tag>
+            ),
+        },
       ]}
     />
   );

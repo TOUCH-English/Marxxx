@@ -7,7 +7,7 @@
 """
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -81,6 +81,33 @@ def _benchmark(provider, start: datetime, now: datetime) -> Decimal | None:
     return (D(last) / D(base) - 1) if base else None
 
 
+def session_days(s: Session, portfolio_id: int, rows: list, start: datetime, now: datetime, market: str
+                 ) -> tuple[list[date], list[date]]:
+    """运行以来已经收市的交易日，分成（完整，停机）两类。
+
+    完整 = 该日净值记录在收市之后仍有更新（工作进程一直跑到收市），且没有交易时段内的停机记录。
+    其余（记录在收市前就停止更新、整天没有记录、或有停机记录）都算停机：那天至少有一段时间止损没有运行。
+    """
+    from ..workers.downtime import WORKER_DOWNTIME
+
+    cal = get_calendar()
+    by_day = {str(r.day_myt): r for r in rows}
+    down = set()
+    for ev in s.execute(select(AuditEvent).where(AuditEvent.portfolio_id == portfolio_id,
+                                                 AuditEvent.action == WORKER_DOWNTIME)).scalars():
+        down |= {o["day"] for o in (ev.data or {}).get("overlaps", []) if o.get("market") == market}
+    complete, missed = [], []
+    d, last = cal.local_date(market, start), cal.local_date(market, now)
+    while d <= last:
+        close = cal.session_close(market, d)
+        if close is not None and start < close <= now:
+            r = by_day.get(d.isoformat())
+            ok = r is not None and r.updated_at is not None and r.updated_at >= close and d.isoformat() not in down
+            (complete if ok else missed).append(d)
+        d += timedelta(days=1)
+    return complete, missed
+
+
 def _item(name: str, value: str, target: str, status: str, note: str = "") -> dict:
     return {"name": name, "value": value, "target": target, "status": status, "status_cn": STATUS_CN[status], "note": note}
 
@@ -150,10 +177,8 @@ def build(s: Session, portfolio_id: int, *, price_of, provider=None, ccy: str = 
         if r_.hwm_adjusted > 0:
             mdd = max(mdd, (r_.hwm_adjusted - r_.last_equity) / r_.hwm_adjusted)
         prev_hwm = r_.hwm_adjusted
-    # 工作进程周末也在运行，每天都会有净值记录；只数真正的交易日
-    cal = get_calendar()
-    mkt = CCY_MARKET.get(ccy, "US")
-    sessions = sum(1 for r_ in rows if cal.is_session_day(mkt, date.fromisoformat(str(r_.day_myt))))
+    complete, missed = session_days(s, portfolio_id, rows, start, now, CCY_MARKET.get(ccy, "US"))
+    sessions = len(complete)
 
     prot_issues = s.execute(select(AuditEvent).where(AuditEvent.portfolio_id == portfolio_id, AuditEvent.created_at_utc >= start,
                                                      AuditEvent.action.in_(["NO_QUOTE", "PRICE_GAP_HOLD"]))).scalars().all()
@@ -166,7 +191,10 @@ def build(s: Session, portfolio_id: int, *, price_of, provider=None, ccy: str = 
     ai_rate = (Decimal(ai_bad) / Decimal(ai_calls)) if ai_calls else None
     month_budget = D(get_settings().ai_monthly_budget_usd or "0")
     gate_a = _gate([
-        _item("运行天数", f"{sessions} 天", f"≥ {GATE_A_MIN_SESSIONS} 个交易日", PASS if enough_days else INSUFFICIENT),
+        _item("运行天数", f"{sessions} 天", f"≥ {GATE_A_MIN_SESSIONS} 个交易日", PASS if enough_days else INSUFFICIENT,
+              "只算整个交易时段系统都在运行的交易日"),
+        _item("交易时段停机（期间止损不运行）", f"{len(missed)} 天" + (f"（{'、'.join(d.isoformat() for d in missed)}）" if missed else ""),
+              "0 天", PASS if not missed else FAIL, "电脑重启、睡眠或程序停止都会造成；这些交易日不计入运行天数"),
         _item("保护异常（缺报价 / 价格断层）", f"{len(prot_issues)} 次", "0 次", PASS if not prot_issues else FAIL,
               "出现时请查看通知并人工确认"),
         _item("订单异常（状态未知 / 需人工复核）", f"{len(order_issues)} 笔", "0 笔", PASS if not order_issues else FAIL),
@@ -203,6 +231,7 @@ def build(s: Session, portfolio_id: int, *, price_of, provider=None, ccy: str = 
         verdict = "样本还不够，暂不下结论。系统运作情况看关卡 A。"
     return {
         "currency": ccy, "period_start": start.isoformat(), "as_of": now.isoformat(), "sessions": sessions,
+        "downtime_days": [d.isoformat() for d in missed],
         "numbers": {
             "capital": str(capital.quantize(Decimal("0.01"))), "equity": str(ev.equity.quantize(Decimal("0.01"))), "pnl": str(pnl.quantize(Decimal("0.01"))),
             "return_pct": pct(ret), "ai_cost_usd": str(ai_cost.quantize(Decimal("0.01"))), "net_return_pct": pct(net_ret),

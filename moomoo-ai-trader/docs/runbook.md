@@ -24,6 +24,25 @@
 1. 运行 `scripts/start`。工作进程启动时先做对账：中断在「提交中」的订单标为未知并查询券商。
 2. 锁定（亏损/回撤）不会因重启解除。
 3. 关机期间系统不会执行止损。
+4. 已安装 macOS 自动启动（见下节）时，登录 Mac 后会自动启动，不需要手动运行。
+5. 工作进程每次启动都会检查上次停到现在有没有跨过交易时段；有的话记录「工作进程停机」并发通知，
+   成绩单把那些交易日算作「交易时段停机」，不计入运行天数。电脑睡眠造成的长时间暂停也一样记录。
+
+## macOS 自动启动（LaunchAgent）
+
+- 安装：美股收盘后，先 `python3 scripts/launcher.py stop`，再 `python3 scripts/launcher.py install-autostart`
+  （或双击 `scripts/install_autostart.command`）。只影响当前用户，不需要管理员密码。
+- 效果：
+  - 登录 Mac 后自动启动网页和工作进程；
+  - 任一进程异常退出，守护进程 5 秒起按退避自动重启（最多每 60 秒一次）；
+  - 守护进程本身崩溃时由 launchd 重新拉起（KeepAlive SuccessfulExit=false）；
+  - 运行期间用 `caffeinate` 阻止闲置睡眠（合上笔记本盖子仍会睡眠）。
+- 停止：`python3 scripts/launcher.py stop`。会卸载守护进程并写入 `data/run/STOPPED_BY_USER`，
+  之后即使重新登录也不会自动启动，直到运行 `start`。
+- 不会重复：已有手动启动的进程在运行时，守护进程不启动；同一命名空间的工作进程还有文件锁和数据库租约双重互斥。
+- 卸载：`python3 scripts/launcher.py uninstall-autostart`（会同时停止系统），之后可按原方式双击 `start.command`。
+- 日志：`data/supervisor.log`（守护进程）、`data/web.log`、`data/worker_sim.log`。
+- OpenD 不由本系统启动：需要在 OpenD 中设置开机自动登录；如果要求输入密码，由用户本人在 OpenD 窗口输入。
 
 ## 在 moomoo App 中手动交易了同一只股票
 

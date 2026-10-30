@@ -159,7 +159,8 @@ class MoomooQuoteProvider:
                      volume=int(float(r.get("volume") or 0)), prev_close=_px(r, "prev_close_price"), source=self.name,
                      is_realtime=True, source_ts=src, recv_ts=recv, suspended=bool(r.get("suspension")),
                      day_high=_px(r, "high_price"), day_low=_px(r, "low_price"), day_open=_px(r, "open_price"),
-                     note="moomoo 快照（API 权限可能与 App 不同）")
+                     note="moomoo 快照（API 权限可能与 App 不同）",
+                     pre_price=_px(r, "pre_price"), after_price=_px(r, "after_price"))
 
     def quote(self, symbol: str, now: datetime) -> Quote | None:
         t = time.monotonic()

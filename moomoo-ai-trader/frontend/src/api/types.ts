@@ -76,6 +76,11 @@ export interface OverviewPosition {
   reconcile_locked: boolean;
   quote_source: string | null;
   quote_ts: string | null;
+  market_open?: boolean;
+  pre_price?: Dec | null;
+  after_price?: Dec | null;
+  last_label?: string;
+  below_stop?: boolean;
 }
 
 export interface RiskLockRow {
@@ -880,6 +885,7 @@ export interface Scorecard {
   period_start: string;
   as_of: string;
   sessions: number;
+  downtime_days?: string[];
   numbers: Record<string, string | number | null>;
   benchmark_note: string;
   gate_a: Gate;
